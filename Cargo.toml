@@ -1,0 +1,19 @@
+[package]
+name = "yofi"
+version = "0.1.0"
+authors = ["Kitsu <mail@kitsu.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.34"
+wayland-protocols = { version = "0.28.2", default-features = false, features = ["unstable_protocols", "client"] }
+sctk = { version = "0.12.0", package = "smithay-client-toolkit", default-features = false, features = ["calloop"] }
+raqote = "0.8.0"
+font-kit = "*"
+xdg = "2.2.0"
+fep = { version = "1.1.1", package = "freedesktop_entry_parser" }
+shlex = "0.1.1"
+fuse-rust = { git = "https://github.com/l4l/fuse-rust.git", rev = "da2f4e385" }
+nix = "0.19.1"
