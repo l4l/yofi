@@ -13,12 +13,14 @@ pub fn find_entries() -> Vec<Entry> {
 
     let mut dirs = xdg.get_data_dirs();
     dirs.push(xdg.get_data_home());
-    traverse_dirs(dirs)
+    let mut entries = vec![];
+    traverse_dirs(&mut entries, dirs);
+    entries.sort_unstable_by(|x, y| x.name.cmp(&y.name));
+    entries.dedup_by(|x, y| x.name == y.name);
+    entries
 }
 
-fn traverse_dirs(paths: impl IntoIterator<Item = PathBuf>) -> Vec<Entry> {
-    let mut entries = vec![];
-
+fn traverse_dirs(entries: &mut Vec<Entry>, paths: impl IntoIterator<Item = PathBuf>) {
     for path in paths.into_iter() {
         let apps_dir = path.join("applications");
 
@@ -67,5 +69,4 @@ fn traverse_dirs(paths: impl IntoIterator<Item = PathBuf>) -> Vec<Entry> {
             }
         }
     }
-    entries
 }
