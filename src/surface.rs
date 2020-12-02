@@ -142,7 +142,7 @@ impl Surface {
         let buf = dt.get_data();
         let buf =
             unsafe { &*std::ptr::slice_from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4) };
-        pool.write(&buf).unwrap();
+        pool.write_all(&buf).unwrap();
 
         // Create a new buffer from the pool
         let buffer = pool.buffer(
