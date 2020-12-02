@@ -2,17 +2,17 @@ use fuse_rust::SearchResult;
 use sctk::seat::keyboard::keysyms;
 
 use crate::input::KeyPress;
-use crate::Entry;
+use crate::DesktopEntry;
 
 pub struct State {
     input_buf: String,
     selected_item: usize,
     processed_entries: Vec<SearchResult>,
-    entries: Vec<Entry>,
+    entries: Vec<DesktopEntry>,
 }
 
 impl State {
-    pub fn from_entries(entries: Vec<Entry>) -> Self {
+    pub fn from_entries(entries: Vec<DesktopEntry>) -> Self {
         Self {
             input_buf: String::new(),
             selected_item: 0,
@@ -79,7 +79,7 @@ impl State {
         self.selected_item
     }
 
-    pub fn processed_entries(&self) -> impl Iterator<Item = &Entry> {
+    pub fn processed_entries(&self) -> impl Iterator<Item = &DesktopEntry> {
         self.processed_entries
             .iter()
             .map(move |r| &self.entries[r.index])

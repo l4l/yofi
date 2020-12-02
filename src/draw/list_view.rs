@@ -5,9 +5,12 @@ use font_kit::source::SystemSource;
 use raqote::{DrawOptions, DrawTarget, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
-use crate::Entry;
 
 const ENTRY_HEIGHT: f32 = 25.;
+
+pub struct ListItem<'a> {
+    pub name: &'a str,
+}
 
 pub struct ListView<'a, It> {
     items: It,
@@ -44,7 +47,7 @@ std::thread_local! {
 
 impl<'a, It> Drawable for ListView<'a, It>
 where
-    It: Iterator<Item = &'a Entry>,
+    It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         for (i, item) in self
@@ -65,7 +68,7 @@ where
             dt.draw_text(
                 &self.font,
                 24.,
-                item.name.as_str(),
+                item.name,
                 pos,
                 &Source::Solid(color),
                 &DrawOptions::new(),

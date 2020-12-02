@@ -1,6 +1,6 @@
 pub use raqote::{DrawTarget, Point};
 
-use crate::Entry;
+pub use list_view::ListItem;
 
 mod input_text;
 mod list_view;
@@ -34,7 +34,7 @@ impl<'a, It> Widget<'a, It> {
 
 impl<'a, It> Drawable for Widget<'a, It>
 where
-    It: Iterator<Item = &'a Entry>,
+    It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, start_point: Point) -> Space {
         match self {
