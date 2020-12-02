@@ -24,7 +24,26 @@ sctk::default_environment!(Env,
     ]
 );
 
+fn setup_logger() {
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Debug)
+        .chain(fern::log_file("/tmp/yofi.log").unwrap())
+        .apply()
+        .unwrap();
+}
+
 fn main() {
+    setup_logger();
+
     let (env, display, queue) =
         sctk::new_default_environment!(Env, fields = [layer_shell: SimpleGlobal::new()])
             .expect("Initial roundtrip failed!");

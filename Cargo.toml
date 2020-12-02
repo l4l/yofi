@@ -17,3 +17,6 @@ fep = { version = "1.1.1", package = "freedesktop_entry_parser" }
 shlex = "0.1.1"
 fuse-rust = { git = "https://github.com/l4l/fuse-rust.git", rev = "da2f4e385" }
 nix = "0.19.1"
+log = "0.4.11"
+fern = "0.6.0"
+chrono = "0.4.19"

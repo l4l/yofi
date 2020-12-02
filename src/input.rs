@@ -25,50 +25,45 @@ struct SeatInfo {
 
 fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) {
     match event {
-        KbEvent::Enter { keysyms, .. } => {
-            println!("gained focus while {} keys pressed", keysyms.len())
-        }
-        KbEvent::Leave { .. } => println!("lost focus"),
         KbEvent::Key {
             keysym,
             state: KeyState::Pressed,
             utf8,
             ..
         } => {
-            println!(
+            log::debug!(
                 "key {:?}: {:x} (text: {:?})",
                 KeyState::Pressed,
                 keysym,
                 utf8
             );
-            if let Err(err) = tx.send(KeyPress {
+            tx.send(KeyPress {
                 keysym,
                 sym: utf8.and_then(|s| s.chars().next()),
                 ctrl: state.ctrl,
-            }) {
-                println!("cannot process key: {}", err);
-            }
+            })
+            .expect("key handling failed");
         }
         KbEvent::Key {
             keysym,
             state,
             utf8,
             ..
-        } => println!("key {:?}: {:x} (text: {:?})", state, keysym, utf8),
+        } => log::debug!("key {:?}: {:x} (text: {:?})", state, keysym, utf8),
         KbEvent::Modifiers { modifiers } => {
-            println!("modifiers changed to {:?}", modifiers);
+            log::debug!("modifiers changed to {:?}", modifiers);
             state.ctrl = modifiers.ctrl;
         }
         KbEvent::Repeat { keysym, utf8, .. } => {
-            println!("key repeat {:x} (text: {:?})", keysym, utf8);
-            if let Err(err) = tx.send(KeyPress {
+            log::debug!("key repeat {:x} (text: {:?})", keysym, utf8);
+            tx.send(KeyPress {
                 keysym,
                 sym: utf8.and_then(|s| s.chars().next()),
                 ctrl: state.ctrl,
-            }) {
-                println!("cannot process key: {}", err);
-            }
+            })
+            .expect("key handling failed");
         }
+        KbEvent::Enter { .. } | KbEvent::Leave { .. } => {}
     }
 }
 
@@ -103,7 +98,9 @@ impl InputHandler {
                             send_event(&mut state, &tx, event);
                         },
                     )
-                    .map_err(|e| eprintln!("failed to map keyboard on seat {}: {:?}", seat_name, e))
+                    .map_err(|e| {
+                        log::error!("failed to map keyboard on seat {}: {:?}", seat_name, e)
+                    })
                     .ok();
                 }
             } else if let Some((kbd, source)) = data.keyboard.take() {

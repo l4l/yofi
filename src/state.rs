@@ -64,9 +64,7 @@ impl State {
             KeyPress { sym: Some(sym), .. } if !sym.is_control() && !event.ctrl => {
                 self.input_buf.push(sym)
             }
-            _ => {
-                println!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl);
-            }
+            _ => log::debug!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl),
         }
         false
     }

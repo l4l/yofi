@@ -22,12 +22,12 @@ pub fn find_entries() -> Vec<Entry> {
 
 fn read_dir(path: &Path) -> impl Iterator<Item = DirEntry> {
     fs::read_dir(&path)
-        .map_err(|e| eprintln!("cannot read {:?} folder: {}, skipping", path, e))
+        .map_err(|e| log::warn!("cannot read {:?} folder: {}, skipping", path, e))
         .into_iter()
         .flatten()
         .filter_map(|e| {
             if let Err(err) = &e {
-                eprintln!("failed to read file: {}", err);
+                log::warn!("failed to read file: {}", err);
             }
 
             e.ok()
@@ -48,7 +48,7 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
     let dir_entry_path = dir_entry.path();
 
     match dir_entry.file_type() {
-        Err(err) => eprintln!("failed to get `{:?}` file type: {}", dir_entry_path, err),
+        Err(err) => log::warn!("failed to get `{:?}` file type: {}", dir_entry_path, err),
         Ok(tp) if tp.is_dir() => {
             for dir_entry in read_dir(&dir_entry_path) {
                 traverse_dir_entry(&mut entries, dir_entry);
@@ -62,7 +62,7 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
     let entry = match fep::parse_entry(&dir_entry_path) {
         Ok(e) => e,
         Err(err) => {
-            eprintln!("cannot parse {:?}: {}, skipping", dir_entry, err);
+            log::warn!("cannot parse {:?}: {}, skipping", dir_entry, err);
             return;
         }
     };
@@ -76,10 +76,10 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
         }
         (n, e) => {
             if n.is_none() {
-                eprintln!("entry {:?} has no \"Name\" attribute", dir_entry_path);
+                log::debug!("entry {:?} has no \"Name\" attribute", dir_entry_path);
             }
             if e.is_none() {
-                eprintln!("entry {:?} has no \"Exec\" attribute", dir_entry_path);
+                log::debug!("entry {:?} has no \"Exec\" attribute", dir_entry_path);
             }
         }
     }
