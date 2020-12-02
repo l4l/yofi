@@ -50,17 +50,14 @@ where
     It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
-        for (i, item) in self
-            .items
-            .skip(self.selected_item.saturating_sub(3))
-            .enumerate()
-        {
+        let skip = self.selected_item.saturating_sub(3);
+        for (i, item) in self.items.skip(skip).enumerate() {
             let y = point.y + 28. + (i as f32) * ENTRY_HEIGHT;
             if y + ENTRY_HEIGHT > space.height {
                 break;
             }
             let pos = Point::new(point.x + 10., y);
-            let color = if i == self.selected_item {
+            let color = if i + skip == self.selected_item {
                 self.selected_font_color
             } else {
                 self.font_color
