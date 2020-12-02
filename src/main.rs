@@ -9,6 +9,7 @@ use sctk::{
 
 mod draw;
 mod input;
+mod state;
 mod surface;
 
 use surface::EventStatus;
@@ -101,62 +102,15 @@ fn main() {
     dirs.push(xdg.get_data_home());
     let desktop_entries = traverse_dirs(dirs);
 
-    let mut input = String::new();
-    let mut selected = 0usize;
-    let mut processed_entries: Vec<fuse_rust::SearchResult> = vec![];
+    let mut state = state::State::from_entries(desktop_entries);
 
     loop {
         let mut should_redraw = false;
         for event in key_stream.try_iter() {
             should_redraw = true;
 
-            use input::KeyPress;
-            use sctk::seat::keyboard::keysyms;
-            match event {
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_Escape,
-                    ..
-                } => return,
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_BackSpace,
-                    ..
-                } => {
-                    input.pop();
-                }
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_Up,
-                    ..
-                } => selected = selected.saturating_sub(1),
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_Down,
-                    ..
-                } => selected = desktop_entries.len().min(selected + 1),
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_Return,
-                    ..
-                } => {
-                    if selected >= processed_entries.len() {
-                        continue;
-                    }
-                    let entry = &desktop_entries[processed_entries[selected].index];
-                    let args = shlex::split(&entry.exec)
-                        .unwrap()
-                        .into_iter()
-                        .map(|s| std::ffi::CString::new(s).unwrap())
-                        .collect::<Vec<_>>();
-                    nix::unistd::execvp(&args[0], &args[1..]).unwrap();
-                }
-                KeyPress {
-                    keysym: keysyms::XKB_KEY_bracketright,
-                    ctrl: true,
-                    ..
-                } => input.clear(),
-                KeyPress { sym: Some(sym), .. } if !sym.is_control() && !event.ctrl => {
-                    input.push(sym)
-                }
-                _ => {
-                    println!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl);
-                }
+            if state.process_event(event) {
+                return;
             }
         }
 
@@ -169,18 +123,13 @@ fn main() {
         if should_redraw {
             use std::iter::once;
 
-            let fuse = fuse_rust::Fuse::default();
-            processed_entries = fuse
-                .search_text_in_iterable(&input, desktop_entries.iter().map(|e| e.name.as_str()));
+            state.process_entries();
 
-            let widgets = once(draw::Widget::input_text(&input))
-                //
-                .chain(once(draw::Widget::list_view(
-                    processed_entries.iter().map(|r| &desktop_entries[r.index]),
-                    // desktop_entries.iter(),
-                    selected,
-                )));
-            surface.redraw(widgets.into_iter());
+            let input_widget = draw::Widget::input_text(&state.input_buf());
+            let list_view_widget =
+                draw::Widget::list_view(state.processed_entries(), state.selected_item());
+
+            surface.redraw(once(input_widget).chain(once(list_view_widget)));
         }
 
         display.flush().unwrap();
