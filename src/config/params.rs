@@ -21,14 +21,14 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .input_text
                 .as_ref()
                 .and_then(|c| c.bg_color)
-                .or_else(|| config.bg_color)
+                .or(config.bg_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xc0, 0x75, 0x71, 0x5e)),
             font_color: config
                 .input_text
                 .as_ref()
                 .and_then(|c| c.font_color)
-                .or_else(|| config.font_color)
+                .or(config.font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
         }
@@ -49,7 +49,7 @@ impl<'a> From<&'a Config> for ListParams {
                 .list_items
                 .as_ref()
                 .and_then(|c| c.font_color)
-                .or_else(|| config.font_color)
+                .or(config.font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
             selected_font_color: config
