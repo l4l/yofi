@@ -88,5 +88,11 @@ impl State {
             &self.input_buf,
             self.entries.iter().map(|e| e.name.as_str()),
         );
+
+        self.selected_item = self
+            .processed_entries
+            .len()
+            .saturating_sub(1)
+            .min(self.selected_item);
     }
 }
