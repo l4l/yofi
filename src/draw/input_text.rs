@@ -80,7 +80,7 @@ impl<'a> Drawable for InputText<'a> {
 
         Space {
             width: space.width,
-            height: 2.0 * VERTICAL_MARGIN + BORDER_RADIUS,
+            height: 2.0 * VERTICAL_MARGIN + 2.0 * BORDER_RADIUS,
         }
     }
 }

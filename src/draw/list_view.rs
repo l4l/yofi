@@ -51,12 +51,13 @@ where
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let skip = self.selected_item.saturating_sub(3);
+        let top_offset = point.y + 28.;
         for (i, item) in self.items.skip(skip).enumerate() {
-            let y = point.y + 28. + (i as f32) * ENTRY_HEIGHT;
-            if y + ENTRY_HEIGHT > space.height {
+            let relative_offset = (i as f32) * ENTRY_HEIGHT;
+            if relative_offset + ENTRY_HEIGHT > space.height {
                 break;
             }
-            let pos = Point::new(point.x + 10., y);
+            let pos = Point::new(point.x + 10., top_offset + relative_offset);
             let color = if i + skip == self.selected_item {
                 self.selected_font_color
             } else {
