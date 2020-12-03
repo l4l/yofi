@@ -1,5 +1,4 @@
 use std::cell::Cell;
-use std::io::{Seek, SeekFrom, Write};
 use std::rc::Rc;
 
 use sctk::{
@@ -116,33 +115,33 @@ impl Surface {
         // First make sure the pool is the right size
         pool.resize((4 * width * height) as usize).unwrap();
 
-        let mut dt = DrawTarget::new(width as i32, height as i32);
+        {
+            let buf: &mut [u8] = &mut pool.mmap();
+            let buf_ptr: *mut u32 = buf.as_mut_ptr() as *mut _;
+            let buf: &mut [u32] =
+                unsafe { &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, buf.len() / 4) };
+            let mut dt = DrawTarget::from_buf(width as i32, height as i32, buf);
 
-        dt.clear(raqote::SolidSource::from_unpremultiplied_argb(
-            0x77, 0xff, 0xff, 0xff,
-        ));
+            dt.clear(raqote::SolidSource::from_unpremultiplied_argb(
+                0x77, 0xff, 0xff, 0xff,
+            ));
 
-        let mut space_left = Space {
-            width: width as f32,
-            height: height as f32,
-        };
-        let mut point = Point::new(0., 0.);
+            let mut space_left = Space {
+                width: width as f32,
+                height: height as f32,
+            };
+            let mut point = Point::new(0., 0.);
 
-        for d in drawables {
-            let occupied = d.draw(&mut dt, space_left, point);
-            debug_assert!(
-                occupied.width <= space_left.width && occupied.height <= space_left.height
-            );
+            for d in drawables {
+                let occupied = d.draw(&mut dt, space_left, point);
+                debug_assert!(
+                    occupied.width <= space_left.width && occupied.height <= space_left.height
+                );
 
-            point.y += occupied.height;
-            space_left.height -= occupied.height;
+                point.y += occupied.height;
+                space_left.height -= occupied.height;
+            }
         }
-
-        pool.seek(SeekFrom::Start(0)).unwrap();
-        let buf = dt.get_data();
-        let buf =
-            unsafe { &*std::ptr::slice_from_raw_parts(buf.as_ptr() as *const u8, buf.len() * 4) };
-        pool.write_all(&buf).unwrap();
 
         // Create a new buffer from the pool
         let buffer = pool.buffer(
