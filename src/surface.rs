@@ -122,10 +122,6 @@ impl Surface {
                 unsafe { &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, buf.len() / 4) };
             let mut dt = DrawTarget::from_buf(width as i32, height as i32, buf);
 
-            dt.clear(raqote::SolidSource::from_unpremultiplied_argb(
-                0x77, 0xff, 0xff, 0xff,
-            ));
-
             let mut space_left = Space {
                 width: width as f32,
                 height: height as f32,

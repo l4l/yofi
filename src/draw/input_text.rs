@@ -1,7 +1,6 @@
 use std::f32::consts;
 
 use font_kit::loaders::freetype::Font;
-use font_kit::source::SystemSource;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
@@ -10,33 +9,21 @@ const VERTICAL_MARGIN: f32 = 5.0;
 const HORIZONTAL_MARGIN: f32 = 5.0;
 const BORDER_RADIUS: f32 = 15.0;
 
+pub struct Params {
+    pub font: Font,
+    pub bg_color: SolidSource,
+    pub font_color: SolidSource,
+}
+
 pub struct InputText<'a> {
     text: &'a str,
-    font: Font,
-    font_bg_color: SolidSource,
-    font_color: SolidSource,
+    params: Params,
 }
 
 impl<'a> InputText<'a> {
-    pub fn new(text: &'a str) -> Self {
-        Self {
-            text,
-            font: FONT.with(Clone::clone),
-            font_bg_color: SolidSource::from_unpremultiplied_argb(0x90, 0xcc, 0xcc, 0xcc),
-            font_color: SolidSource::from_unpremultiplied_argb(0xff, 0, 0, 0),
-        }
+    pub fn new(text: &'a str, params: Params) -> Self {
+        Self { text, params }
     }
-}
-
-std::thread_local! {
-    static FONT: Font = SystemSource::new()
-        .select_best_match(
-            &[font_kit::family_name::FamilyName::SansSerif],
-            &font_kit::properties::Properties::new(),
-        )
-        .unwrap()
-        .load()
-        .unwrap();
 }
 
 impl<'a> Drawable for InputText<'a> {
@@ -64,17 +51,17 @@ impl<'a> Drawable for InputText<'a> {
 
         dt.fill(
             &path,
-            &Source::Solid(self.font_bg_color),
+            &Source::Solid(self.params.bg_color),
             &DrawOptions::new(),
         );
 
         let pos = Point::new(point.x + BORDER_RADIUS + VERTICAL_MARGIN + 5.0, 28.);
         dt.draw_text(
-            &self.font,
+            &self.params.font,
             24.,
             self.text,
             pos,
-            &Source::Solid(self.font_color),
+            &Source::Solid(self.params.font_color),
             &DrawOptions::new(),
         );
 

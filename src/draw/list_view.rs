@@ -1,12 +1,17 @@
 use std::marker::PhantomData;
 
 use font_kit::loaders::freetype::Font;
-use font_kit::source::SystemSource;
 use raqote::{DrawOptions, DrawTarget, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
 
 const ENTRY_HEIGHT: f32 = 25.;
+
+pub struct Params {
+    pub font: Font,
+    pub font_color: SolidSource,
+    pub selected_font_color: SolidSource,
+}
 
 pub struct ListItem<'a> {
     pub name: &'a str,
@@ -15,34 +20,19 @@ pub struct ListItem<'a> {
 pub struct ListView<'a, It> {
     items: It,
     selected_item: usize,
-    font: Font,
-    font_color: SolidSource,
-    selected_font_color: SolidSource,
+    params: Params,
     _tparam: PhantomData<&'a ()>,
 }
 
 impl<It> ListView<'_, It> {
-    pub fn new(items: It, selected_item: usize) -> Self {
+    pub fn new(items: It, selected_item: usize, params: Params) -> Self {
         Self {
             items,
             selected_item,
-            font: FONT.with(Clone::clone),
-            font_color: SolidSource::from_unpremultiplied_argb(0xff, 0, 0, 0),
-            selected_font_color: SolidSource::from_unpremultiplied_argb(0x90, 0x90, 0, 0xcc),
+            params,
             _tparam: PhantomData,
         }
     }
-}
-
-std::thread_local! {
-    static FONT: Font = SystemSource::new()
-        .select_best_match(
-            &[font_kit::family_name::FamilyName::SansSerif],
-            &font_kit::properties::Properties::new(),
-        )
-        .unwrap()
-        .load()
-        .unwrap();
 }
 
 impl<'a, It> Drawable for ListView<'a, It>
@@ -59,12 +49,12 @@ where
             }
             let pos = Point::new(point.x + 10., top_offset + relative_offset);
             let color = if i + skip == self.selected_item {
-                self.selected_font_color
+                self.params.selected_font_color
             } else {
-                self.font_color
+                self.params.font_color
             };
             dt.draw_text(
-                &self.font,
+                &self.params.font,
                 24.,
                 item.name,
                 pos,

@@ -9,6 +9,7 @@ use sctk::{
 
 pub use desktop::Entry as DesktopEntry;
 
+mod config;
 mod desktop;
 mod draw;
 mod input;
@@ -42,6 +43,8 @@ fn setup_logger() {
 }
 
 fn main() {
+    let config = config::Config::load();
+
     setup_logger();
 
     let (env, display, queue) =
@@ -80,15 +83,21 @@ fn main() {
 
             state.process_entries();
 
-            let input_widget = draw::Widget::input_text(&state.input_buf());
+            let background = draw::Widget::background(config.param());
+            let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
             let list_view_widget = draw::Widget::list_view(
                 state.processed_entries().map(|e| draw::ListItem {
                     name: e.name.as_str(),
                 }),
                 state.selected_item(),
+                config.param(),
             );
 
-            surface.redraw(once(input_widget).chain(once(list_view_widget)));
+            surface.redraw(
+                once(background)
+                    .chain(once(input_widget))
+                    .chain(once(list_view_widget)),
+            );
         }
 
         display.flush().unwrap();
