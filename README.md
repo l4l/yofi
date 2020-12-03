@@ -8,7 +8,28 @@
 
 ## Configuring
 
-TBD
+Sample configuration:
+
+```toml
+# This file should be placed at ~/.config/yofi/yofi.config
+
+# ~~Fallback values
+# font = "DejaVu Sans"
+bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
+# font_color = 0xf8f8f2ff
+
+# ~~Block for input field
+[input_text]
+# font = ...
+font_color = 0xf8f8f2ff
+bg_color = 0x75715eff
+
+# ~~Block for a list with search results
+[list_items]
+# font = ...
+font_color = 0xf8f8f2ff
+selected_font_color = 0xa6e22eff
+```
 
 ## Running
 
