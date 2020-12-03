@@ -401,8 +401,9 @@ dependencies = [
 
 [[package]]
 name = "fuse-rust"
-version = "0.1.2"
-source = "git+https://github.com/l4l/fuse-rust.git?rev=da2f4e385#da2f4e3853b5e188a89dc6a6f2c474d328465062"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6412c06af53377f410ea60e55b2bc241f90661c660aeb2c0f9b9759629f9c2fa"
 dependencies = [
  "crossbeam",
 ]
