@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use fuse_rust::SearchResult;
 use sctk::seat::keyboard::keysyms;
 
@@ -9,15 +11,17 @@ pub struct State {
     selected_item: usize,
     processed_entries: Vec<SearchResult>,
     entries: Vec<DesktopEntry>,
+    term: Vec<CString>,
 }
 
 impl State {
-    pub fn from_entries(entries: Vec<DesktopEntry>) -> Self {
+    pub fn new(entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
         Self {
             input_buf: String::new(),
             selected_item: 0,
             processed_entries: vec![],
             entries,
+            term,
         }
     }
 
@@ -52,9 +56,20 @@ impl State {
                 let args = shlex::split(&entry.exec)
                     .unwrap()
                     .into_iter()
-                    .map(|s| std::ffi::CString::new(s).unwrap())
+                    .map(|s| CString::new(s).unwrap())
                     .collect::<Vec<_>>();
-                nix::unistd::execvp(&args[0], &args[1..]).unwrap();
+                let (prog, args) = if entry.is_terminal {
+                    assert!(
+                        !self.term.is_empty(),
+                        "Cannot find terminal, specify `term` in config"
+                    );
+                    self.term.extend(args);
+                    (&self.term[0], &self.term[1..])
+                } else {
+                    (&args[0], &args[1..])
+                };
+                log::debug!("executing command: {:?} {:?}", prog, args);
+                nix::unistd::execvp(prog, args).unwrap();
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_bracketright,

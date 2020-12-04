@@ -60,7 +60,7 @@ fn main() {
         .quick_insert(event_loop.handle())
         .unwrap();
 
-    let mut state = state::State::from_entries(desktop::find_entries());
+    let mut state = state::State::new(desktop::find_entries(), config.terminal_command());
 
     loop {
         let mut should_redraw = false;

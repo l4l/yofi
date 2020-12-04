@@ -1,3 +1,4 @@
+use std::ffi::CString;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -8,6 +9,7 @@ mod params;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Config {
+    term: Option<String>,
     font: Option<String>,
     bg_color: Option<u32>,
     font_color: Option<u32>,
@@ -49,5 +51,19 @@ impl Config {
         T: for<'a> From<&'a Self>,
     {
         self.into()
+    }
+
+    pub fn terminal_command(&self) -> Vec<CString> {
+        if let Some(cmd) = self.term.as_ref() {
+            shlex::split(&cmd)
+                .unwrap()
+                .into_iter()
+                .map(|s| CString::new(s).unwrap())
+                .collect::<Vec<_>>()
+        } else if let Ok(term) = std::env::var("TERM") {
+            vec![CString::new(term).unwrap()]
+        } else {
+            vec![]
+        }
     }
 }

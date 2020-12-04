@@ -6,6 +6,7 @@ use xdg::BaseDirectories;
 pub struct Entry {
     pub name: String,
     pub exec: String,
+    pub is_terminal: bool,
 }
 
 pub fn find_entries() -> Vec<Entry> {
@@ -72,6 +73,10 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
             entries.push(Entry {
                 name: n.to_owned(),
                 exec: e.to_owned(),
+                is_terminal: main_section
+                    .attr("Terminal")
+                    .map(|s| s == "true")
+                    .unwrap_or(false),
             });
         }
         (n, e) => {
