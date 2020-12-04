@@ -24,6 +24,7 @@ pub enum EventStatus {
 pub struct Params {
     pub width: u32,
     pub height: u32,
+    pub window_offsets: Option<(i32, i32)>,
 }
 
 pub struct Surface {
@@ -53,6 +54,12 @@ impl Surface {
         let width = params.width;
         let height = params.height;
 
+        if let Some((top_offset, left_offset)) = params.window_offsets {
+            let mut anchor = zwlr_layer_surface_v1::Anchor::Left;
+            anchor.insert(zwlr_layer_surface_v1::Anchor::Top);
+            layer_surface.set_anchor(anchor);
+            layer_surface.set_margin(top_offset, 0, 0, left_offset);
+        }
         layer_surface.set_size(width, height);
         layer_surface.set_keyboard_interactivity(1);
 
