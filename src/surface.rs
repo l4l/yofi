@@ -21,6 +21,11 @@ pub enum EventStatus {
     Idle,
 }
 
+pub struct Params {
+    pub width: u32,
+    pub height: u32,
+}
+
 pub struct Surface {
     surface: wl_surface::WlSurface,
     layer_surface: Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>,
@@ -30,7 +35,7 @@ pub struct Surface {
 }
 
 impl Surface {
-    pub fn new(env: &Environment<super::Env>) -> Self {
+    pub fn new(env: &Environment<super::Env>, params: Params) -> Self {
         let pools = env
             .create_double_pool(|_| {})
             .expect("Failed to create a memory pool!");
@@ -45,8 +50,8 @@ impl Surface {
             "yofi".to_owned(),
         );
 
-        let width = 400;
-        let height = 512;
+        let width = params.width;
+        let height = params.height;
 
         layer_surface.set_size(width, height);
         layer_surface.set_keyboard_interactivity(1);

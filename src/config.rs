@@ -9,6 +9,8 @@ mod params;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Config {
+    width: Option<u32>,
+    height: Option<u32>,
     term: Option<String>,
     font: Option<String>,
     bg_color: Option<u32>,

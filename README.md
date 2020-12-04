@@ -13,7 +13,9 @@ Sample configuration:
 ```toml
 # This file should be placed at ~/.config/yofi/yofi.config
 
-# ~~Fallback values
+# ~~Global values, used as fallback if needed
+width = 400
+height = 512
 # font = "DejaVu Sans"
 bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
 # font_color = 0xf8f8f2ff

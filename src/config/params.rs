@@ -6,6 +6,7 @@ use raqote::SolidSource;
 
 use super::Config;
 use crate::draw::{BgParams, InputTextParams, ListParams};
+use crate::surface::Params as SurfaceParams;
 
 impl<'a> From<&'a Config> for InputTextParams {
     fn from(config: &'a Config) -> InputTextParams {
@@ -69,6 +70,15 @@ impl<'a> From<&'a Config> for BgParams {
                 .bg_color
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xee, 0x27, 0x28, 0x22)),
+        }
+    }
+}
+
+impl<'a> From<&'a Config> for SurfaceParams {
+    fn from(config: &'a Config) -> SurfaceParams {
+        SurfaceParams {
+            width: config.width.unwrap_or(400),
+            height: config.height.unwrap_or(512),
         }
     }
 }
