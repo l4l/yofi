@@ -1,19 +1,23 @@
 use std::fs::{self, DirEntry};
 use std::path::{Path, PathBuf};
 
+use lazy_static::lazy_static;
 use xdg::BaseDirectories;
+
+lazy_static! {
+    pub static ref XDG_DIRS: BaseDirectories = BaseDirectories::new().unwrap();
+}
 
 pub struct Entry {
     pub name: String,
+    pub desktop_fname: String,
     pub exec: String,
     pub is_terminal: bool,
 }
 
 pub fn find_entries() -> Vec<Entry> {
-    let xdg = BaseDirectories::new().unwrap();
-
-    let mut dirs = xdg.get_data_dirs();
-    dirs.push(xdg.get_data_home());
+    let mut dirs = XDG_DIRS.get_data_dirs();
+    dirs.push(XDG_DIRS.get_data_home());
     let mut entries = vec![];
     traverse_dirs(&mut entries, dirs);
     entries.sort_unstable_by(|x, y| x.name.cmp(&y.name));
@@ -72,6 +76,12 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
         (Some(n), Some(e)) => {
             entries.push(Entry {
                 name: n.to_owned(),
+                desktop_fname: dir_entry_path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .expect("desktop file name is not in utf-8")
+                    .to_owned(),
                 exec: e.to_owned(),
                 is_terminal: main_section
                     .attr("Terminal")

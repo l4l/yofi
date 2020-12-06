@@ -11,7 +11,7 @@ use sctk::{
 };
 use structopt::{clap::ArgGroup, StructOpt};
 
-pub use desktop::Entry as DesktopEntry;
+pub use desktop::{Entry as DesktopEntry, XDG_DIRS};
 
 mod config;
 mod desktop;

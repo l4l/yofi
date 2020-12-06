@@ -1069,6 +1069,7 @@ dependencies = [
  "font-kit",
  "freedesktop_entry_parser",
  "fuse-rust",
+ "lazy_static",
  "log",
  "nix 0.19.1",
  "raqote",
