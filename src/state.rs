@@ -1,13 +1,52 @@
-use fuse_rust::SearchResult;
+use either::Either;
+use fuse_rust::{Fuse, SearchResult};
 
 use crate::draw::ListItem;
 use crate::input::KeyPress;
 use crate::mode::Mode;
 
+struct Preprocessed(Either<Vec<SearchResult>, usize>);
+
+impl Preprocessed {
+    fn processed(processed: Vec<SearchResult>) -> Self {
+        Self(Either::Left(processed))
+    }
+
+    fn unfiltred(len: usize) -> Self {
+        Self(Either::Right(len))
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            Self(Either::Left(x)) => x.len(),
+            Self(Either::Right(x)) => *x,
+        }
+    }
+
+    fn index(&self, selected_item: usize) -> usize {
+        if selected_item >= self.len() {
+            panic!("Internal error: selected_item overflow");
+        }
+
+        match self {
+            Self(Either::Left(x)) => x[selected_item].index,
+            Self(Either::Right(_)) => selected_item,
+        }
+    }
+
+    fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
+        match self {
+            Self(Either::Left(x)) => Either::Left(x.iter().map(move |r| mode.list_item(r.index))),
+            Self(Either::Right(x)) => Either::Right((0..*x).map(move |i| mode.list_item(i))),
+        }
+        .into_iter()
+    }
+}
+
 pub struct State {
     input_buf: String,
     selected_item: usize,
-    processed_entries: Vec<SearchResult>,
+    preprocessed: Preprocessed,
     inner: Mode,
 }
 
@@ -16,7 +55,7 @@ impl State {
         Self {
             input_buf: String::new(),
             selected_item: 0,
-            processed_entries: vec![],
+            preprocessed: Preprocessed::unfiltred(inner.entries_len()),
             inner,
         }
     }
@@ -47,11 +86,7 @@ impl State {
                 keysym: keysyms::XKB_KEY_Return,
                 ..
             } => {
-                if self.selected_item >= self.processed_entries.len() {
-                    panic!("Internal error: selected_item overflow");
-                }
-                self.inner
-                    .eval(self.processed_entries[self.selected_item].index);
+                self.inner.eval(self.preprocessed.index(self.selected_item));
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_bracketright,
@@ -75,17 +110,21 @@ impl State {
     }
 
     pub fn processed_entries(&self) -> impl Iterator<Item = ListItem<'_>> {
-        self.processed_entries
-            .iter()
-            .map(move |r| self.inner.list_item(r.index))
+        self.preprocessed.list_items(&self.inner)
     }
 
     pub fn process_entries(&mut self) {
-        self.processed_entries = fuse_rust::Fuse::default()
-            .search_text_in_iterable(&self.input_buf, self.inner.text_entries());
+        if self.input_buf.is_empty() {
+            self.preprocessed = Preprocessed::unfiltred(self.inner.entries_len());
+            return;
+        }
+
+        self.preprocessed = Preprocessed::processed(
+            Fuse::default().search_text_in_iterable(&self.input_buf, self.inner.text_entries()),
+        );
 
         self.selected_item = self
-            .processed_entries
+            .preprocessed
             .len()
             .saturating_sub(1)
             .min(self.selected_item);
