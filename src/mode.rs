@@ -1,5 +1,7 @@
 use std::ffi::CString;
 
+use either::Either;
+
 use crate::DesktopEntry;
 
 mod apps;
@@ -42,8 +44,12 @@ impl Mode {
     delegate!(pub fn eval(&mut self, idx: usize) -> std::convert::Infallible);
     delegate!(pub fn entries_len(&self) -> usize);
     delegate!(pub fn list_item(&self, idx: usize) -> crate::draw::ListItem<'_>);
-    delegate!(
-        pub fn text_entries(&self) -> Box<dyn Iterator<Item = &str> + '_>,
-        wrap_with(Box::new)
-    );
+
+    pub fn text_entries(&self) -> impl Iterator<Item = &str> + '_ {
+        match self {
+            Mode::AppsMode(mode) => Either::Left(mode.text_entries()),
+            Mode::DialogMode(mode) => Either::Right(mode.text_entries()),
+        }
+        .into_iter()
+    }
 }

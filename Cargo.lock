@@ -257,6 +257,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
 name = "euclid"
 version = "0.20.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1058,6 +1064,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "either",
  "fern",
  "font-kit",
  "freedesktop_entry_parser",

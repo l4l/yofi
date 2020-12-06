@@ -23,6 +23,7 @@ chrono = "0.4.19"
 serde = { version = "1.0.117", features = ["derive"] }
 toml = "0.5.7"
 structopt = "0.3.21"
+either = "1.6.1"
 
 [profile.release]
 lto = true
