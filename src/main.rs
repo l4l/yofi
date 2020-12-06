@@ -1,3 +1,6 @@
+use std::path::{Path, PathBuf};
+
+use log::LevelFilter;
 use sctk::{
     environment::SimpleGlobal,
     reexports::{
@@ -6,6 +9,7 @@ use sctk::{
     },
     WaylandSource,
 };
+use structopt::{clap::ArgGroup, StructOpt};
 
 pub use desktop::Entry as DesktopEntry;
 
@@ -13,6 +17,7 @@ mod config;
 mod desktop;
 mod draw;
 mod input;
+mod mode;
 mod state;
 mod surface;
 
@@ -25,7 +30,16 @@ sctk::default_environment!(Env,
     ]
 );
 
-fn setup_logger() {
+#[macro_export]
+macro_rules! prog_name {
+    () => {
+        "yofi"
+    };
+}
+
+const DEFAULT_LOG_PATH: &str = concat!(concat!("/tmp/", prog_name!()), ".log");
+
+fn setup_logger(level: LevelFilter, log_file: impl AsRef<Path>) {
     fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -36,16 +50,54 @@ fn setup_logger() {
                 message
             ))
         })
-        .level(log::LevelFilter::Debug)
-        .chain(fern::log_file("/tmp/yofi.log").unwrap())
+        .level(level)
+        .chain(fern::log_file(log_file).unwrap())
         .apply()
         .unwrap();
 }
 
-fn main() {
-    let config = config::Config::load();
+#[derive(StructOpt)]
+#[structopt(
+    group = ArgGroup::with_name("verbosity").multiple(false),
+)]
+struct Args {
+    #[structopt(short, long, group = "verbosity")]
+    verbose: bool,
+    #[structopt(short, long, group = "verbosity")]
+    quiet: bool,
+    #[structopt(long)]
+    log_file: Option<PathBuf>,
+    #[structopt(long)]
+    config_file: Option<PathBuf>,
+    #[structopt(subcommand)]
+    mode: Option<ModeArg>,
+}
 
-    setup_logger();
+#[derive(StructOpt)]
+enum ModeArg {
+    Apps,
+    Dialog,
+}
+
+impl Default for ModeArg {
+    fn default() -> Self {
+        ModeArg::Apps
+    }
+}
+
+fn main() {
+    let mut args = Args::from_args();
+
+    let config = config::Config::load(args.config_file.take());
+
+    setup_logger(
+        match (args.verbose, args.quiet) {
+            (true, _) => LevelFilter::Debug,
+            (_, true) => LevelFilter::Warn,
+            _ => LevelFilter::Info,
+        },
+        args.log_file.unwrap_or_else(|| DEFAULT_LOG_PATH.into()),
+    );
 
     let (env, display, queue) =
         sctk::new_default_environment!(Env, fields = [layer_shell: SimpleGlobal::new()])
@@ -60,7 +112,12 @@ fn main() {
         .quick_insert(event_loop.handle())
         .unwrap();
 
-    let mut state = state::State::new(desktop::find_entries(), config.terminal_command());
+    let cmd = match args.mode.take().unwrap_or_default() {
+        ModeArg::Apps => mode::Mode::apps(desktop::find_entries(), config.terminal_command()),
+        ModeArg::Dialog => mode::Mode::dialog(),
+    };
+
+    let mut state = state::State::new(cmd);
 
     loop {
         let mut should_redraw = false;
@@ -86,9 +143,7 @@ fn main() {
             let background = draw::Widget::background(config.param());
             let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
             let list_view_widget = draw::Widget::list_view(
-                state.processed_entries().map(|e| draw::ListItem {
-                    name: e.name.as_str(),
-                }),
+                state.processed_entries(),
                 state.selected_item(),
                 config.param(),
             );
