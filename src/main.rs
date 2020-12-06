@@ -13,6 +13,7 @@ use structopt::{clap::ArgGroup, StructOpt};
 
 pub use desktop::Entry as DesktopEntry;
 
+mod command;
 mod config;
 mod desktop;
 mod draw;
@@ -97,7 +98,8 @@ fn main() {
         .quick_insert(event_loop.handle())
         .unwrap();
 
-    let mut state = state::State::new(desktop::find_entries(), config.terminal_command());
+    let cmd = command::apps::AppsCommand::new(desktop::find_entries(), config.terminal_command());
+    let mut state = state::State::new(cmd);
 
     loop {
         let mut should_redraw = false;
@@ -123,9 +125,7 @@ fn main() {
             let background = draw::Widget::background(config.param());
             let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
             let list_view_widget = draw::Widget::list_view(
-                state.processed_entries().map(|e| draw::ListItem {
-                    name: e.name.as_str(),
-                }),
+                state.processed_entries(),
                 state.selected_item(),
                 config.param(),
             );
