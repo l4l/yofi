@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-const CONFIG_FILENAME: &str = "yofi.config";
+const DEFAULT_CONFIG_PATH: &str = concat!(crate::prog_name!(), ".config");
 
 mod params;
 
@@ -36,15 +36,15 @@ struct ListItems {
 }
 
 fn config_path() -> PathBuf {
-    xdg::BaseDirectories::with_prefix("yofi")
+    xdg::BaseDirectories::with_prefix(crate::prog_name!())
         .unwrap()
-        .place_config_file(CONFIG_FILENAME)
+        .place_config_file(DEFAULT_CONFIG_PATH)
         .expect("cannot create configuration directory")
 }
 
 impl Config {
-    pub fn load() -> Self {
-        std::fs::read_to_string(config_path())
+    pub fn load(path: Option<PathBuf>) -> Self {
+        std::fs::read_to_string(path.unwrap_or_else(config_path))
             .map(|config_content| toml::from_str(&config_content).expect("invalid config"))
             .unwrap_or_default()
     }

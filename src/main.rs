@@ -1,3 +1,6 @@
+use std::path::{Path, PathBuf};
+
+use log::LevelFilter;
 use sctk::{
     environment::SimpleGlobal,
     reexports::{
@@ -6,6 +9,7 @@ use sctk::{
     },
     WaylandSource,
 };
+use structopt::{clap::ArgGroup, StructOpt};
 
 pub use desktop::Entry as DesktopEntry;
 
@@ -25,7 +29,16 @@ sctk::default_environment!(Env,
     ]
 );
 
-fn setup_logger() {
+#[macro_export]
+macro_rules! prog_name {
+    () => {
+        "yofi"
+    };
+}
+
+const DEFAULT_LOG_PATH: &str = concat!(concat!("/tmp/", prog_name!()), ".log");
+
+fn setup_logger(level: LevelFilter, log_file: impl AsRef<Path>) {
     fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -36,16 +49,40 @@ fn setup_logger() {
                 message
             ))
         })
-        .level(log::LevelFilter::Debug)
-        .chain(fern::log_file("/tmp/yofi.log").unwrap())
+        .level(level)
+        .chain(fern::log_file(log_file).unwrap())
         .apply()
         .unwrap();
 }
 
-fn main() {
-    let config = config::Config::load();
+#[derive(StructOpt)]
+#[structopt(
+    group = ArgGroup::with_name("verbosity").multiple(false),
+)]
+struct Args {
+    #[structopt(short, long, group = "verbosity")]
+    verbose: bool,
+    #[structopt(short, long, group = "verbosity")]
+    quiet: bool,
+    #[structopt(long)]
+    log_file: Option<PathBuf>,
+    #[structopt(long)]
+    config_file: Option<PathBuf>,
+}
 
-    setup_logger();
+fn main() {
+    let mut args = Args::from_args();
+
+    let config = config::Config::load(args.config_file.take());
+
+    setup_logger(
+        match (args.verbose, args.quiet) {
+            (true, _) => LevelFilter::Debug,
+            (_, true) => LevelFilter::Warn,
+            _ => LevelFilter::Info,
+        },
+        args.log_file.unwrap_or_else(|| DEFAULT_LOG_PATH.into()),
+    );
 
     let (env, display, queue) =
         sctk::new_default_environment!(Env, fields = [layer_shell: SimpleGlobal::new()])
