@@ -114,14 +114,13 @@ impl State {
     }
 
     pub fn process_entries(&mut self) {
-        if self.input_buf.is_empty() {
-            self.preprocessed = Preprocessed::unfiltred(self.inner.entries_len());
-            return;
-        }
-
-        self.preprocessed = Preprocessed::processed(
-            Fuse::default().search_text_in_iterable(&self.input_buf, self.inner.text_entries()),
-        );
+        self.preprocessed = if self.input_buf.is_empty() {
+            Preprocessed::unfiltred(self.inner.entries_len())
+        } else {
+            Preprocessed::processed(
+                Fuse::default().search_text_in_iterable(&self.input_buf, self.inner.text_entries()),
+            )
+        };
 
         self.selected_item = self
             .preprocessed
