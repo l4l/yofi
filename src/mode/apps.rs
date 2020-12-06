@@ -3,12 +3,12 @@ use std::ffi::CString;
 use crate::draw::ListItem;
 use crate::DesktopEntry;
 
-pub struct AppsCommand {
+pub struct AppsMode {
     entries: Vec<DesktopEntry>,
     term: Vec<CString>,
 }
 
-impl AppsCommand {
+impl AppsMode {
     pub fn new(entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
         Self { entries, term }
     }

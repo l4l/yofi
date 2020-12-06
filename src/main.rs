@@ -13,11 +13,11 @@ use structopt::{clap::ArgGroup, StructOpt};
 
 pub use desktop::Entry as DesktopEntry;
 
-mod command;
 mod config;
 mod desktop;
 mod draw;
 mod input;
+mod mode;
 mod state;
 mod surface;
 
@@ -69,6 +69,20 @@ struct Args {
     log_file: Option<PathBuf>,
     #[structopt(long)]
     config_file: Option<PathBuf>,
+    #[structopt(subcommand)]
+    mode: Option<ModeArg>,
+}
+
+#[derive(StructOpt)]
+enum ModeArg {
+    Apps,
+    Dialog,
+}
+
+impl Default for ModeArg {
+    fn default() -> Self {
+        ModeArg::Apps
+    }
 }
 
 fn main() {
@@ -98,7 +112,11 @@ fn main() {
         .quick_insert(event_loop.handle())
         .unwrap();
 
-    let cmd = command::apps::AppsCommand::new(desktop::find_entries(), config.terminal_command());
+    let cmd = match args.mode.take().unwrap_or_default() {
+        ModeArg::Apps => mode::Mode::apps(desktop::find_entries(), config.terminal_command()),
+        ModeArg::Dialog => mode::Mode::dialog(),
+    };
+
     let mut state = state::State::new(cmd);
 
     loop {

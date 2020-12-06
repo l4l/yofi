@@ -1,18 +1,18 @@
 use fuse_rust::SearchResult;
 
-use crate::command::apps::AppsCommand;
 use crate::draw::ListItem;
 use crate::input::KeyPress;
+use crate::mode::Mode;
 
 pub struct State {
     input_buf: String,
     selected_item: usize,
     processed_entries: Vec<SearchResult>,
-    inner: AppsCommand,
+    inner: Mode,
 }
 
 impl State {
-    pub fn new(inner: AppsCommand) -> Self {
+    pub fn new(inner: Mode) -> Self {
         Self {
             input_buf: String::new(),
             selected_item: 0,
