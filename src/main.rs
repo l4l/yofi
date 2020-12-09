@@ -11,11 +11,12 @@ use sctk::{
 };
 use structopt::{clap::ArgGroup, StructOpt};
 
-pub use desktop::{Entry as DesktopEntry, XDG_DIRS};
+pub use desktop::Entry as DesktopEntry;
 
 mod config;
 mod desktop;
 mod draw;
+mod icon;
 mod input;
 mod mode;
 mod state;
@@ -113,7 +114,12 @@ fn main() {
         .unwrap();
 
     let cmd = match args.mode.take().unwrap_or_default() {
-        ModeArg::Apps => mode::Mode::apps(desktop::find_entries(), config.terminal_command()),
+        ModeArg::Apps => {
+            desktop::find_icon_paths(desktop::Config::default()).expect("called only once");
+
+            log::error!("icons found:\n{:?}", desktop::icon_paths());
+            mode::Mode::apps(desktop::find_entries(), config.terminal_command())
+        }
         ModeArg::Dialog => mode::Mode::dialog(),
     };
 

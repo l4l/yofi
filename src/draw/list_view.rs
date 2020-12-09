@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
 use font_kit::loaders::freetype::Font;
-use raqote::{DrawOptions, DrawTarget, Point, SolidSource, Source};
+use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
 
-const ENTRY_HEIGHT: f32 = 25.;
+const ENTRY_HEIGHT: f32 = 28.;
 
 pub struct Params {
     pub font: Font,
@@ -15,6 +15,7 @@ pub struct Params {
 
 pub struct ListItem<'a> {
     pub name: &'a str,
+    pub icon: Option<Image<'a>>,
 }
 
 pub struct ListView<'a, It> {
@@ -47,7 +48,20 @@ where
             if relative_offset + ENTRY_HEIGHT > space.height {
                 break;
             }
-            let pos = Point::new(point.x + 10., top_offset + relative_offset);
+
+            let x_offset = point.x + 10.;
+            let y_offset = top_offset + relative_offset;
+
+            let x_offset = if let Some(icon) = item.icon.as_ref() {
+                let opt = raqote::DrawOptions::default();
+                dt.draw_image_at(x_offset, y_offset - icon.height as f32, &icon, &opt);
+
+                x_offset + icon.width as f32 + 3.0
+            } else {
+                x_offset
+            };
+
+            let pos = Point::new(x_offset, y_offset);
             let color = if i + skip == self.selected_item {
                 self.params.selected_font_color
             } else {

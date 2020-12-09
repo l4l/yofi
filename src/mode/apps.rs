@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 
 use crate::draw::ListItem;
-use crate::DesktopEntry;
+use crate::{desktop, DesktopEntry};
 
 pub struct AppsMode {
     entries: Vec<DesktopEntry>,
@@ -15,7 +15,7 @@ pub struct AppsMode {
 
 impl AppsMode {
     pub fn new(mut entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
-        let usage: HashMap<String, usize> = crate::XDG_DIRS
+        let usage: HashMap<String, usize> = desktop::xdg_dirs()
             .place_cache_file(concat!(crate::prog_name!(), ".cache"))
             .and_then(File::open)
             .map_err(|e| log::error!("cannot open cache file: {}", e))
@@ -68,7 +68,7 @@ impl AppsMode {
 
         *self.usage.entry(entry.desktop_fname.clone()).or_default() += 1;
 
-        if let Err(e) = crate::XDG_DIRS
+        if let Err(e) = desktop::xdg_dirs()
             .place_cache_file(concat!(crate::prog_name!(), ".cache"))
             .and_then(File::create)
             .and_then(|mut f| {
@@ -98,8 +98,11 @@ impl AppsMode {
     }
 
     pub fn list_item(&self, idx: usize) -> ListItem<'_> {
+        let entry = &self.entries[idx];
+
         ListItem {
-            name: self.entries[idx].name.as_str(),
+            name: entry.name.as_str(),
+            icon: entry.icon.as_ref().map(|i| i.as_image()),
         }
     }
 

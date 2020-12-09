@@ -31,6 +31,7 @@ impl DialogMode {
     pub fn list_item(&self, idx: usize) -> ListItem<'_> {
         ListItem {
             name: self.lines[idx].as_str(),
+            icon: None,
         }
     }
 
