@@ -17,6 +17,8 @@ pub struct Config {
     bg_color: Option<u32>,
     font_color: Option<u32>,
 
+    icon: Option<Icon>,
+
     input_text: Option<InputText>,
     list_items: Option<ListItems>,
 }
@@ -33,6 +35,13 @@ struct ListItems {
     font: Option<String>,
     font_color: Option<u32>,
     selected_font_color: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Icon {
+    size: Option<u32>,
+    theme: Option<String>,
+    fallback_icon_path: Option<PathBuf>,
 }
 
 fn config_path() -> PathBuf {

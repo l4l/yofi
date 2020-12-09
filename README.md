@@ -33,6 +33,13 @@ bg_color = 0x75715eff
 # font = ...
 font_color = 0xf8f8f2ff
 selected_font_color = 0xa6e22eff
+
+# When section presents, icons are displayed
+[icon]
+size = 16 # no scaling is performed, so need to choose exact size
+theme = "Adwaita"
+# if no icon found for an app, this on will be used instead
+fallback_icon_path = "/usr/share/icons/Adwaita/16x16/categories/applications-engineering-symbolic.symbolic.png"
 ```
 
 ## Running

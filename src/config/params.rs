@@ -5,6 +5,7 @@ use font_kit::source::SystemSource;
 use raqote::SolidSource;
 
 use super::Config;
+use crate::desktop::{IconConfig, DEFAULT_ICON_SIZE, DEFAULT_THEME};
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::surface::Params as SurfaceParams;
 
@@ -59,6 +60,17 @@ impl<'a> From<&'a Config> for ListParams {
                 .and_then(|c| c.selected_font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xff, 0xa6, 0xe2, 0x2e)),
+            icon_size: config
+                .icon
+                .as_ref()
+                .map(|i| i.size.unwrap_or(DEFAULT_ICON_SIZE)),
+            fallback_icon: config
+                .icon
+                .as_ref()
+                .and_then(|i| i.fallback_icon_path.as_ref())
+                .map(|path| {
+                    crate::icon::Icon::load_icon(&path).expect("cannot load fallback icon")
+                }),
         }
     }
 }
@@ -81,6 +93,19 @@ impl<'a> From<&'a Config> for SurfaceParams {
             height: config.height.unwrap_or(512),
             window_offsets: config.window_offsets,
         }
+    }
+}
+
+impl<'a> From<&'a Config> for Option<IconConfig> {
+    fn from(config: &'a Config) -> Option<IconConfig> {
+        config.icon.as_ref().map(|c| IconConfig {
+            icon_size: c.size.unwrap_or(DEFAULT_ICON_SIZE),
+            theme: c
+                .theme
+                .as_ref()
+                .unwrap_or_else(|| once_cell::sync::Lazy::force(&DEFAULT_THEME))
+                .clone(),
+        })
     }
 }
 

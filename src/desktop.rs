@@ -1,7 +1,7 @@
 use std::fs::{self, DirEntry};
 use std::path::{Path, PathBuf};
 
-use once_cell::sync::OnceCell;
+use once_cell::sync::{Lazy, OnceCell};
 use xdg::BaseDirectories;
 
 use crate::icon::Icon;
@@ -98,24 +98,9 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
                     .map(|s| s == "true")
                     .unwrap_or(false),
                 icon: main_section.attr("Icon").and_then(|name| {
-                    icon_paths().and_then(|p| p.get(name)).and_then(|icons| {
-                        icons
-                            .iter()
-                            .filter_map(|path| {
-                                let failed_to_load = |e| {
-                                    log::info!("failed to load icon at path `{:?}`: {}", path, e)
-                                };
-                                match path.extension().unwrap().to_str().unwrap() {
-                                    "png" => Icon::from_png_path(path).map_err(failed_to_load).ok(),
-                                    "svg" => Icon::from_svg_path(path).map_err(failed_to_load).ok(),
-                                    ext => {
-                                        log::error!("unknown icon extension: {:?}", ext);
-                                        None
-                                    }
-                                }
-                            })
-                            .last()
-                    })
+                    icon_paths()
+                        .and_then(|p| p.get(name))
+                        .and_then(|icons| icons.iter().filter_map(Icon::load_icon).next())
                 }),
             });
         }
@@ -130,37 +115,27 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
     }
 }
 
-const DEFAULT_THEME: &str = "hicolor";
+const FALLBACK_THEME: &str = "hicolor";
+pub const DEFAULT_ICON_SIZE: u32 = 16;
 
-pub struct Config {
-    icon_size: u32,
-    theme: String,
-}
+pub static DEFAULT_THEME: Lazy<String> = Lazy::new(|| {
+    let path = PathBuf::from("/usr/share/icons/default/index.theme");
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            icon_size: 16,
-            theme: {
-                let path = PathBuf::new()
-                    .join("usr")
-                    .join("share")
-                    .join("icons")
-                    .join("default")
-                    .join("index.theme");
+    fep::parse_entry(path)
+        .map_err(|e| log::error!("failed to parse default entry: {}", e))
+        .ok()
+        .and_then(|entry| {
+            entry
+                .section("Icon Theme")
+                .attr("Inherits")
+                .map(|s| s.to_string())
+        })
+        .unwrap_or_else(|| FALLBACK_THEME.to_string())
+});
 
-                fep::parse_entry(path)
-                    .ok()
-                    .and_then(|entry| {
-                        entry
-                            .section("Icon Theme")
-                            .attr("Inherits")
-                            .map(|s| s.to_string())
-                    })
-                    .unwrap_or_else(|| DEFAULT_THEME.to_string())
-            },
-        }
-    }
+pub struct IconConfig {
+    pub icon_size: u32,
+    pub theme: String,
 }
 
 use std::collections::HashMap;
@@ -168,7 +143,7 @@ use std::collections::HashMap;
 type IconPaths = HashMap<String, Vec<PathBuf>>;
 static ICON_PATHS: OnceCell<IconPaths> = OnceCell::new();
 
-pub fn find_icon_paths(config: Config) -> Result<(), ()> {
+pub fn find_icon_paths(config: IconConfig) -> Result<(), ()> {
     ICON_PATHS.set(traverse_icon_dirs(config)).map_err(|_| ())
 }
 
@@ -176,7 +151,7 @@ pub fn icon_paths<'a>() -> Option<&'a IconPaths> {
     ICON_PATHS.get()
 }
 
-fn traverse_icon_dirs(config: Config) -> IconPaths {
+fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
     let mut icons = IconPaths::new();
 
     fn traverse_dir(mut icons: &mut IconPaths, theme: &str, icon_size: u32) {
@@ -197,8 +172,8 @@ fn traverse_icon_dirs(config: Config) -> IconPaths {
     }
 
     traverse_dir(&mut icons, &config.theme, config.icon_size);
-    if config.theme != DEFAULT_THEME {
-        traverse_dir(&mut icons, DEFAULT_THEME, config.icon_size);
+    if config.theme != FALLBACK_THEME {
+        traverse_dir(&mut icons, FALLBACK_THEME, config.icon_size);
     }
 
     icons

@@ -8,7 +8,20 @@ pub struct Icon {
 }
 
 impl Icon {
-    pub fn from_png_path(path: impl AsRef<Path>) -> IoResult<Self> {
+    pub fn load_icon(path: impl AsRef<Path>) -> Option<Icon> {
+        let path = path.as_ref();
+        let failed_to_load = |e| log::info!("failed to load icon at path `{:?}`: {}", path, e);
+        match path.extension()?.to_str()? {
+            "png" => Icon::from_png_path(path).map_err(failed_to_load).ok(),
+            "svg" => Icon::from_svg_path(path).map_err(failed_to_load).ok(),
+            ext => {
+                log::error!("unknown icon extension: {:?}", ext);
+                None
+            }
+        }
+    }
+
+    fn from_png_path(path: impl AsRef<Path>) -> IoResult<Self> {
         let decoder = png::Decoder::new(BufReader::new(std::fs::File::open(path)?));
         let (info, mut reader) = decoder.read_info().unwrap();
         let mut buf = vec![0; info.buffer_size()];
@@ -45,7 +58,7 @@ impl Icon {
         })
     }
 
-    pub fn from_svg_path(path: impl AsRef<Path>) -> IoResult<Self> {
+    fn from_svg_path(path: impl AsRef<Path>) -> IoResult<Self> {
         let opt = Default::default();
         let tree = usvg::Tree::from_file(path, &opt)
             .map_err(|e| IoError::new(IoErrorKind::Other, format!("svg open error: {}", e)))?;

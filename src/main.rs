@@ -115,9 +115,10 @@ fn main() {
 
     let cmd = match args.mode.take().unwrap_or_default() {
         ModeArg::Apps => {
-            desktop::find_icon_paths(desktop::Config::default()).expect("called only once");
+            if let Some(icon_config) = config.param() {
+                desktop::find_icon_paths(icon_config).expect("called only once");
+            }
 
-            log::error!("icons found:\n{:?}", desktop::icon_paths());
             mode::Mode::apps(desktop::find_entries(), config.terminal_command())
         }
         ModeArg::Dialog => mode::Mode::dialog(),

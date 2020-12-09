@@ -11,6 +11,8 @@ pub struct Params {
     pub font: Font,
     pub font_color: SolidSource,
     pub selected_font_color: SolidSource,
+    pub icon_size: Option<u32>,
+    pub fallback_icon: Option<crate::icon::Icon>,
 }
 
 pub struct ListItem<'a> {
@@ -52,16 +54,20 @@ where
             let x_offset = point.x + 10.;
             let y_offset = top_offset + relative_offset;
 
-            let x_offset = if let Some(icon) = item.icon.as_ref() {
-                let opt = raqote::DrawOptions::default();
-                dt.draw_image_at(x_offset, y_offset - icon.height as f32, &icon, &opt);
+            let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
+            if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
+                dt.draw_image_at(
+                    x_offset,
+                    y_offset - icon.height as f32,
+                    &icon,
+                    &DrawOptions::default(),
+                );
+            }
 
-                x_offset + icon.width as f32 + 3.0
-            } else {
-                x_offset
-            };
-
-            let pos = Point::new(x_offset, y_offset);
+            let pos = Point::new(
+                x_offset + self.params.icon_size.map(|s| s as f32 + 3.0).unwrap_or(0.0),
+                y_offset,
+            );
             let color = if i + skip == self.selected_item {
                 self.params.selected_font_color
             } else {
