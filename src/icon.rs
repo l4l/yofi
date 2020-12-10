@@ -88,10 +88,13 @@ fn rgba_to_argb(buf: &[u8]) -> Vec<u32> {
     let mut data = vec![];
 
     for chunk in buf.chunks(4) {
-        let a = u32::from(chunk[3]) << 24;
-        let r = u32::from(chunk[0]) << 16;
-        let g = u32::from(chunk[1]) << 8;
-        let b = u32::from(chunk[2]);
+        let src =
+            raqote::SolidSource::from_unpremultiplied_argb(chunk[3], chunk[0], chunk[1], chunk[2]);
+
+        let a = u32::from(src.a) << 24;
+        let r = u32::from(src.r) << 16;
+        let g = u32::from(src.g) << 8;
+        let b = u32::from(src.b);
 
         data.push(a | r | g | b);
     }
