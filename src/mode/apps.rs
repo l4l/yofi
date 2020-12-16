@@ -4,7 +4,7 @@ use std::ffi::CString;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 
-use crate::draw::ListItem;
+use super::Entry;
 use crate::{desktop, DesktopEntry};
 
 pub struct AppsMode {
@@ -98,10 +98,10 @@ impl AppsMode {
         self.entries.len()
     }
 
-    pub fn list_item(&self, idx: usize) -> ListItem<'_> {
+    pub fn entry(&self, idx: usize) -> Entry<'_> {
         let entry = &self.entries[idx];
 
-        ListItem {
+        Entry {
             name: entry.name.as_str(),
             icon: entry.icon.as_ref().map(|i| i.as_image()),
         }

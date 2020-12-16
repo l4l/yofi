@@ -36,8 +36,20 @@ impl Preprocessed {
 
     fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
         match self {
-            Self(Either::Left(x)) => Either::Left(x.iter().map(move |r| mode.list_item(r.index))),
-            Self(Either::Right(x)) => Either::Right((0..*x).map(move |i| mode.list_item(i))),
+            Self(Either::Left(x)) => Either::Left(x.iter().map(move |r| {
+                let e = mode.entry(r.index);
+                ListItem {
+                    name: e.name,
+                    icon: e.icon,
+                }
+            })),
+            Self(Either::Right(x)) => Either::Right((0..*x).map(move |i| {
+                let e = mode.entry(i);
+                ListItem {
+                    name: e.name,
+                    icon: e.icon,
+                }
+            })),
         }
         .into_iter()
     }
