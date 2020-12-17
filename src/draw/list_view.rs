@@ -4,6 +4,7 @@ use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
+use crate::style::Margin;
 
 const ENTRY_HEIGHT: f32 = 28.;
 
@@ -13,6 +14,8 @@ pub struct Params {
     pub selected_font_color: SolidSource,
     pub icon_size: Option<u32>,
     pub fallback_icon: Option<crate::icon::Icon>,
+    pub margin: Margin,
+    pub item_spacing: f32,
 }
 
 pub struct ListItem<'a> {
@@ -44,14 +47,14 @@ where
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let skip = self.selected_item.saturating_sub(3);
-        let top_offset = point.y + 28.;
+        let top_offset = point.y + self.params.margin.top + 28.;
         for (i, item) in self.items.skip(skip).enumerate() {
-            let relative_offset = (i as f32) * ENTRY_HEIGHT;
-            if relative_offset + ENTRY_HEIGHT > space.height {
+            let relative_offset = (i as f32) * (ENTRY_HEIGHT + self.params.item_spacing);
+            if relative_offset + self.params.margin.bottom + ENTRY_HEIGHT > space.height {
                 break;
             }
 
-            let x_offset = point.x + 10.;
+            let x_offset = point.x + self.params.margin.left;
             let y_offset = top_offset + relative_offset;
 
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());

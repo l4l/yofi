@@ -81,6 +81,16 @@ impl<'a> From<&'a Config> for ListParams {
                 .map(|path| {
                     crate::icon::Icon::load_icon(&path).expect("cannot load fallback icon")
                 }),
+            margin: config
+                .list_items
+                .as_ref()
+                .and_then(|c| c.margin.clone())
+                .unwrap_or_default(),
+            item_spacing: config
+                .list_items
+                .as_ref()
+                .and_then(|c| c.item_spacing)
+                .unwrap_or_default(),
         }
     }
 }
