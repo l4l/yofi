@@ -1,13 +1,15 @@
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+
+use crate::style::{Margin, Padding};
 
 const DEFAULT_CONFIG_PATH: &str = concat!(crate::prog_name!(), ".config");
 
 mod params;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Deserialize)]
 pub struct Config {
     width: Option<u32>,
     height: Option<u32>,
@@ -23,21 +25,23 @@ pub struct Config {
     list_items: Option<ListItems>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct InputText {
     font: Option<String>,
     bg_color: Option<u32>,
     font_color: Option<u32>,
+    margin: Option<Margin>,
+    padding: Option<Padding>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct ListItems {
     font: Option<String>,
     font_color: Option<u32>,
     selected_font_color: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct Icon {
     size: Option<u32>,
     theme: Option<String>,

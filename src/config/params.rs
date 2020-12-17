@@ -33,6 +33,16 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .or(config.font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
+            margin: config
+                .input_text
+                .as_ref()
+                .and_then(|c| c.margin.clone())
+                .unwrap_or_default(),
+            padding: config
+                .input_text
+                .as_ref()
+                .and_then(|c| c.padding.clone())
+                .unwrap_or_default(),
         }
     }
 }
