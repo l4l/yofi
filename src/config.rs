@@ -41,6 +41,7 @@ struct ListItems {
     selected_font_color: Option<u32>,
     margin: Option<Margin>,
     item_spacing: Option<f32>,
+    icon_spacing: Option<f32>,
 }
 
 #[derive(Deserialize)]

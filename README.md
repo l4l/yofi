@@ -44,6 +44,8 @@ margin = "5 10"
 # By default there's around 10 pixels spaced,
 # the amount can be reduced by specifying a negative value
 item_spacing = 2
+# Spacing between an icon and a text.
+icon_spacing = 5
 
 # When section presents, icons are displayed
 [icon]

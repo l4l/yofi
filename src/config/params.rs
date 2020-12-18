@@ -91,6 +91,11 @@ impl<'a> From<&'a Config> for ListParams {
                 .as_ref()
                 .and_then(|c| c.item_spacing)
                 .unwrap_or_default(),
+            icon_spacing: config
+                .list_items
+                .as_ref()
+                .and_then(|c| c.icon_spacing)
+                .unwrap_or_default(),
         }
     }
 }

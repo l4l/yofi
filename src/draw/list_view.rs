@@ -16,6 +16,7 @@ pub struct Params {
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
     pub item_spacing: f32,
+    pub icon_spacing: f32,
 }
 
 pub struct ListItem<'a> {
@@ -68,7 +69,9 @@ where
             }
 
             let pos = Point::new(
-                x_offset + self.params.icon_size.map(|s| s as f32 + 3.0).unwrap_or(0.0),
+                x_offset
+                    + self.params.icon_size.map(|s| s as f32).unwrap_or(0.0)
+                    + self.params.icon_spacing,
                 y_offset,
             );
             let color = if i + skip == self.selected_item {
