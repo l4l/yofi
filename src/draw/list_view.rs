@@ -61,18 +61,28 @@ where
 
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
-                dt.draw_image_at(
-                    x_offset,
-                    y_offset - icon.height as f32,
-                    &icon,
-                    &DrawOptions::default(),
-                );
+                if icon.width == icon.height
+                    && icon.height == self.params.icon_size.map(|s| s as i32).unwrap_or(0)
+                {
+                    dt.draw_image_at(
+                        x_offset,
+                        y_offset - icon_size,
+                        &icon,
+                        &DrawOptions::default(),
+                    );
+                } else {
+                    dt.draw_image_with_size_at(
+                        icon_size,
+                        icon_size,
+                        x_offset,
+                        y_offset - icon_size,
+                        &icon,
+                        &DrawOptions::default(),
+                    );
+                }
             }
 
-            let pos = Point::new(
-                x_offset + icon_size + self.params.icon_spacing,
-                y_offset - (entry_height - FONT_SIZE) / 2.0,
-            );
+            let pos = Point::new(x_offset + icon_size + self.params.icon_spacing, y_offset);
             let color = if i + skip == self.selected_item {
                 self.params.selected_font_color
             } else {
