@@ -53,6 +53,7 @@ impl AppsMode {
         let args = shlex::split(&entry.exec)
             .unwrap()
             .into_iter()
+            .filter(|s| !s.starts_with('%')) // TODO: use placeholders somehow
             .map(|s| CString::new(s).unwrap())
             .collect::<Vec<_>>();
         let (prog, args) = if entry.is_terminal {
