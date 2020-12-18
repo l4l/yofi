@@ -21,6 +21,46 @@ pub struct Margin {
     pub right: f32,
 }
 
+impl Padding {
+    pub const fn all(val: f32) -> Self {
+        Self {
+            top: val,
+            bottom: val,
+            left: val,
+            right: val,
+        }
+    }
+
+    pub const fn from_pair(vertical: f32, horizontal: f32) -> Self {
+        Self {
+            top: vertical,
+            bottom: vertical,
+            left: horizontal,
+            right: horizontal,
+        }
+    }
+}
+
+impl Margin {
+    pub const fn all(val: f32) -> Self {
+        Self {
+            top: val,
+            bottom: val,
+            left: val,
+            right: val,
+        }
+    }
+
+    pub const fn from_pair(vertical: f32, horizontal: f32) -> Self {
+        Self {
+            top: vertical,
+            bottom: vertical,
+            left: horizontal,
+            right: horizontal,
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for Padding {
     fn deserialize<D>(d: D) -> Result<Self, D::Error>
     where
@@ -72,18 +112,8 @@ impl FromStr for Padding {
             .collect::<Result<Vec<f32>, _>>()?;
 
         match values.len() {
-            1 => Ok(Self {
-                top: values[0],
-                bottom: values[0],
-                left: values[0],
-                right: values[0],
-            }),
-            2 => Ok(Self {
-                top: values[0],
-                bottom: values[0],
-                left: values[1],
-                right: values[1],
-            }),
+            1 => Ok(Self::all(values[0])),
+            2 => Ok(Self::from_pair(values[0], values[1])),
             4 => Ok(Self {
                 top: values[0],
                 bottom: values[2],
@@ -107,18 +137,8 @@ impl FromStr for Margin {
             .collect::<Result<Vec<f32>, _>>()?;
 
         match values.len() {
-            1 => Ok(Self {
-                top: values[0],
-                bottom: values[0],
-                left: values[0],
-                right: values[0],
-            }),
-            2 => Ok(Self {
-                top: values[0],
-                bottom: values[0],
-                left: values[1],
-                right: values[1],
-            }),
+            1 => Ok(Self::all(values[0])),
+            2 => Ok(Self::from_pair(values[0], values[1])),
             4 => Ok(Self {
                 top: values[0],
                 bottom: values[2],

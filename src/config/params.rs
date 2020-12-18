@@ -7,6 +7,7 @@ use raqote::SolidSource;
 use super::Config;
 use crate::desktop::{IconConfig, DEFAULT_ICON_SIZE, DEFAULT_THEME};
 use crate::draw::{BgParams, InputTextParams, ListParams};
+use crate::style::{Margin, Padding};
 use crate::surface::Params as SurfaceParams;
 
 impl<'a> From<&'a Config> for InputTextParams {
@@ -37,12 +38,12 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .input_text
                 .as_ref()
                 .and_then(|c| c.margin.clone())
-                .unwrap_or_default(),
+                .unwrap_or_else(|| Margin::all(5.0)),
             padding: config
                 .input_text
                 .as_ref()
                 .and_then(|c| c.padding.clone())
-                .unwrap_or_default(),
+                .unwrap_or_else(|| Padding::from_pair(1.7, -4.0)),
         }
     }
 }
@@ -85,17 +86,17 @@ impl<'a> From<&'a Config> for ListParams {
                 .list_items
                 .as_ref()
                 .and_then(|c| c.margin.clone())
-                .unwrap_or_default(),
+                .unwrap_or_else(|| Margin::from_pair(5.0, 15.0)),
             item_spacing: config
                 .list_items
                 .as_ref()
                 .and_then(|c| c.item_spacing)
-                .unwrap_or_default(),
+                .unwrap_or(2.0),
             icon_spacing: config
                 .list_items
                 .as_ref()
                 .and_then(|c| c.icon_spacing)
-                .unwrap_or_default(),
+                .unwrap_or(10.0),
         }
     }
 }
