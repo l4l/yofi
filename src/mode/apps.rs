@@ -61,9 +61,9 @@ impl AppsMode {
                 "Cannot find terminal, specify `term` in config"
             );
             self.term.extend(args);
-            (&self.term[0], &self.term[1..])
+            (&self.term[0], &self.term[0..])
         } else {
-            (&args[0], &args[1..])
+            (&args[0], &args[0..])
         };
 
         *self.usage.entry(entry.desktop_fname.clone()).or_default() += 1;
