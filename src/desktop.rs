@@ -98,9 +98,15 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
                     .map(|s| s == "true")
                     .unwrap_or(false),
                 icon: main_section.attr("Icon").and_then(|name| {
-                    icon_paths()
-                        .and_then(|p| p.get(name))
-                        .and_then(|icons| icons.iter().filter_map(Icon::load_icon).next())
+                    let icon_path = Path::new(name);
+
+                    if icon_path.is_absolute() {
+                        Icon::load_icon(icon_path)
+                    } else {
+                        icon_paths()
+                            .and_then(|p| p.get(name))
+                            .and_then(|icons| icons.iter().filter_map(Icon::load_icon).next())
+                    }
                 }),
             });
         }
