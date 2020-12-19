@@ -20,6 +20,7 @@ mod icon;
 mod input;
 mod mode;
 mod state;
+mod style;
 mod surface;
 
 sctk::default_environment!(Env,

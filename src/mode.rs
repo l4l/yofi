@@ -1,6 +1,7 @@
 use std::ffi::CString;
 
 use either::Either;
+use raqote::Image;
 
 use crate::DesktopEntry;
 
@@ -32,6 +33,11 @@ pub enum Mode {
     DialogMode(dialog::DialogMode),
 }
 
+pub struct Entry<'a> {
+    pub name: &'a str,
+    pub icon: Option<Image<'a>>,
+}
+
 impl Mode {
     pub fn apps(entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
         Self::AppsMode(apps::AppsMode::new(entries, term))
@@ -43,7 +49,7 @@ impl Mode {
 
     delegate!(pub fn eval(&mut self, idx: usize) -> std::convert::Infallible);
     delegate!(pub fn entries_len(&self) -> usize);
-    delegate!(pub fn list_item(&self, idx: usize) -> crate::draw::ListItem<'_>);
+    delegate!(pub fn entry(&self, idx: usize) -> Entry<'_>);
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + '_ {
         match self {

@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader};
 
-use crate::draw::ListItem;
+use super::Entry;
 
 pub struct DialogMode {
     lines: Vec<String>,
@@ -28,8 +28,8 @@ impl DialogMode {
         self.lines.len()
     }
 
-    pub fn list_item(&self, idx: usize) -> ListItem<'_> {
-        ListItem {
+    pub fn entry(&self, idx: usize) -> Entry<'_> {
+        Entry {
             name: self.lines[idx].as_str(),
             icon: None,
         }

@@ -3,9 +3,8 @@ use std::marker::PhantomData;
 use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
-use super::{Drawable, Space};
-
-const ENTRY_HEIGHT: f32 = 28.;
+use super::{Drawable, Space, FONT_SIZE};
+use crate::style::Margin;
 
 pub struct Params {
     pub font: Font,
@@ -13,6 +12,9 @@ pub struct Params {
     pub selected_font_color: SolidSource,
     pub icon_size: Option<u32>,
     pub fallback_icon: Option<crate::icon::Icon>,
+    pub margin: Margin,
+    pub item_spacing: f32,
+    pub icon_spacing: f32,
 }
 
 pub struct ListItem<'a> {
@@ -44,15 +46,18 @@ where
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let skip = self.selected_item.saturating_sub(3);
-        let top_offset = point.y + 28.;
+        let top_offset = point.y + self.params.margin.top;
+        let icon_size = self.params.icon_size.map(|s| s as f32).unwrap_or(0.0);
+        let entry_height = FONT_SIZE.max(icon_size);
+
         for (i, item) in self.items.skip(skip).enumerate() {
-            let relative_offset = (i as f32) * ENTRY_HEIGHT;
-            if relative_offset + ENTRY_HEIGHT > space.height {
+            let relative_offset = (i as f32) * (entry_height + self.params.item_spacing);
+            if relative_offset + self.params.margin.bottom + entry_height > space.height {
                 break;
             }
 
-            let x_offset = point.x + 10.;
-            let y_offset = top_offset + relative_offset;
+            let x_offset = point.x + self.params.margin.left;
+            let y_offset = top_offset + relative_offset + entry_height;
 
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
@@ -65,8 +70,8 @@ where
             }
 
             let pos = Point::new(
-                x_offset + self.params.icon_size.map(|s| s as f32 + 3.0).unwrap_or(0.0),
-                y_offset,
+                x_offset + icon_size + self.params.icon_spacing,
+                y_offset - (entry_height - FONT_SIZE) / 2.0,
             );
             let color = if i + skip == self.selected_item {
                 self.params.selected_font_color
@@ -75,7 +80,7 @@ where
             };
             dt.draw_text(
                 &self.params.font,
-                24.,
+                FONT_SIZE,
                 item.name,
                 pos,
                 &Source::Solid(color),

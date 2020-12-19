@@ -8,6 +8,8 @@ mod background;
 mod input_text;
 mod list_view;
 
+const FONT_SIZE: f32 = 24.0;
+
 #[derive(Clone, Copy)]
 pub struct Space {
     pub width: f32,

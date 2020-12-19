@@ -3,16 +3,15 @@ use std::f32::consts;
 use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
-use super::{Drawable, Space};
-
-const VERTICAL_MARGIN: f32 = 5.0;
-const HORIZONTAL_MARGIN: f32 = 5.0;
-const BORDER_RADIUS: f32 = 15.0;
+use super::{Drawable, Space, FONT_SIZE};
+use crate::style::{Margin, Padding};
 
 pub struct Params {
     pub font: Font,
     pub bg_color: SolidSource,
     pub font_color: SolidSource,
+    pub margin: Margin,
+    pub padding: Padding,
 }
 
 pub struct InputText<'a> {
@@ -30,20 +29,25 @@ impl<'a> Drawable for InputText<'a> {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
-        let side_offset = BORDER_RADIUS + HORIZONTAL_MARGIN;
-        let y_center = point.y + BORDER_RADIUS + VERTICAL_MARGIN;
+        let border_diameter = self.params.padding.top + FONT_SIZE + self.params.padding.bottom;
+        let border_radius = border_diameter / 2.0;
+
+        let left_x_center = point.x + self.params.margin.left + border_radius;
+        let y_center = point.y + self.params.margin.top + border_radius;
 
         pb.arc(
-            point.x + side_offset,
+            left_x_center,
             y_center,
-            BORDER_RADIUS,
+            border_radius,
             consts::FRAC_PI_2,
             consts::PI,
         );
+        let right_x_center = (point.x + space.width - border_radius - self.params.margin.right)
+            .max(left_x_center - border_radius);
         pb.arc(
-            point.x + space.width - side_offset,
+            right_x_center,
             y_center,
-            BORDER_RADIUS,
+            border_radius,
             3.0 * consts::FRAC_PI_2,
             consts::PI,
         );
@@ -55,19 +59,23 @@ impl<'a> Drawable for InputText<'a> {
             &DrawOptions::new(),
         );
 
-        let pos = Point::new(point.x + BORDER_RADIUS + VERTICAL_MARGIN + 5.0, 28.);
+        let pos = Point::new(
+            left_x_center + self.params.padding.left,
+            FONT_SIZE / /*empirical magic:*/ 3.0 + y_center,
+        );
         dt.draw_text(
             &self.params.font,
-            24.,
+            FONT_SIZE,
             self.text,
             pos,
             &Source::Solid(self.params.font_color),
             &DrawOptions::new(),
         );
+        // TODO: use padding.right for text wrapping/clipping
 
         Space {
             width: space.width,
-            height: 2.0 * VERTICAL_MARGIN + 2.0 * BORDER_RADIUS,
+            height: point.y + self.params.margin.top + border_diameter + self.params.margin.bottom,
         }
     }
 }

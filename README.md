@@ -27,12 +27,25 @@ bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
 # font = ...
 font_color = 0xf8f8f2ff
 bg_color = 0x75715eff
+# Margin/padding values are specified as in CSS
+# i.e. either a signle for all directions
+# or two values, the first for top/bottom and the second for left/right
+# or finally four values for top, right, bottom and left directions.
+margin = "5"
+padding = "1.7 -4"
 
 # ~~Block for a list with search results
 [list_items]
 # font = ...
 font_color = 0xf8f8f2ff
 selected_font_color = 0xa6e22eff
+margin = "5 10"
+# Additional spacing between list items.
+# By default there's around 10 pixels spaced,
+# the amount can be reduced by specifying a negative value
+item_spacing = 2
+# Spacing between an icon and a text.
+icon_spacing = 5
 
 # When section presents, icons are displayed
 [icon]
