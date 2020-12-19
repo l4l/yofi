@@ -86,7 +86,10 @@ impl<'a> From<&'a Config> for ListParams {
                 .list_items
                 .as_ref()
                 .and_then(|c| c.margin.clone())
-                .unwrap_or_else(|| Margin::from_pair(5.0, 15.0)),
+                .unwrap_or_else(|| Margin {
+                    top: 10.0,
+                    ..Margin::from_pair(5.0, 15.0)
+                }),
             item_spacing: config
                 .list_items
                 .as_ref()
