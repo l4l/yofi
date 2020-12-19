@@ -156,17 +156,20 @@ fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
 
     fn traverse_dir(mut icons: &mut IconPaths, theme: &str, icon_size: u32) {
         for dir in xdg_dirs().get_data_dirs() {
-            let base_path = dir
-                .join("icons")
-                .join(&theme)
-                .join(format!("{0}x{0}", icon_size));
+            let theme_dir = dir.join("icons").join(&theme);
 
-            if !base_path.exists() {
-                continue;
+            let base_path = theme_dir.join(format!("{0}x{0}", icon_size));
+            if base_path.exists() {
+                for entry in read_dir(&base_path) {
+                    traverse_icon_dir(&mut icons, entry);
+                }
             }
 
-            for entry in read_dir(&base_path) {
-                traverse_icon_dir(&mut icons, entry);
+            let base_path = theme_dir.join("scalable");
+            if base_path.exists() {
+                for entry in read_dir(&base_path) {
+                    traverse_icon_dir(&mut icons, entry);
+                }
             }
         }
     }
