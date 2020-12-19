@@ -176,6 +176,13 @@ fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
         traverse_dir(&mut icons, FALLBACK_THEME, config.icon_size);
     }
 
+    let pixmap_dir = Path::new("/usr/share/pixmaps/");
+    if pixmap_dir.exists() {
+        for entry in read_dir(pixmap_dir) {
+            traverse_icon_dir(&mut icons, entry);
+        }
+    }
+
     icons
 }
 
