@@ -5,52 +5,40 @@ use font_kit::source::SystemSource;
 use raqote::SolidSource;
 
 use super::Config;
-use crate::desktop::{IconConfig, DEFAULT_ICON_SIZE, DEFAULT_THEME};
+use crate::desktop::{IconConfig, DEFAULT_THEME};
 use crate::draw::{BgParams, InputTextParams, ListParams};
+use crate::icon::Icon;
 use crate::style::{Margin, Padding};
 use crate::surface::Params as SurfaceParams;
 
 const DEFAULT_FONT_SIZE: u16 = 24;
+const DEFAULT_ICON_SIZE: u16 = 16;
+
+macro_rules! select_conf {
+    ($config:ident, $base:ident, $field:ident) => {
+        select_conf!(noglob: $config, $base, $field).or_else(|| $config.$field.clone())
+    };
+    (noglob: $config:ident, $base:ident, $field:ident) => {
+        $config.$base.as_ref().and_then(|c| c.$field.clone())
+    };
+}
 
 impl<'a> From<&'a Config> for InputTextParams {
     fn from(config: &'a Config) -> InputTextParams {
         InputTextParams {
-            font: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.font.clone())
-                .or_else(|| config.font.clone())
+            font: select_conf!(config, input_text, font)
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
-            font_size: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.font_size)
-                .or_else(|| config.font_size)
-                .unwrap_or(DEFAULT_FONT_SIZE),
-            bg_color: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.bg_color)
-                .or(config.bg_color)
+            font_size: select_conf!(config, input_text, font_size).unwrap_or(DEFAULT_FONT_SIZE),
+            bg_color: select_conf!(config, input_text, bg_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xc0, 0x75, 0x71, 0x5e)),
-            font_color: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.font_color)
-                .or(config.font_color)
+            font_color: select_conf!(config, input_text, font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
-            margin: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.margin.clone())
+            margin: select_conf!(noglob: config, input_text, margin)
                 .unwrap_or_else(|| Margin::all(5.0)),
-            padding: config
-                .input_text
-                .as_ref()
-                .and_then(|c| c.padding.clone())
+            padding: select_conf!(noglob: config, input_text, padding)
                 .unwrap_or_else(|| Padding::from_pair(1.7, -4.0)),
         }
     }
@@ -59,61 +47,25 @@ impl<'a> From<&'a Config> for InputTextParams {
 impl<'a> From<&'a Config> for ListParams {
     fn from(config: &'a Config) -> ListParams {
         ListParams {
-            font: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.font.clone())
-                .or_else(|| config.font.clone())
+            font: select_conf!(config, list_items, font)
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
-            font_size: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.font_size)
-                .or_else(|| config.font_size)
-                .unwrap_or(DEFAULT_FONT_SIZE),
-            font_color: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.font_color)
-                .or(config.font_color)
+            font_size: select_conf!(config, list_items, font_size).unwrap_or(DEFAULT_FONT_SIZE),
+            font_color: select_conf!(config, list_items, font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
-            selected_font_color: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.selected_font_color)
+            selected_font_color: select_conf!(noglob: config, list_items, selected_font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xff, 0xa6, 0xe2, 0x2e)),
-            icon_size: config
-                .icon
-                .as_ref()
-                .map(|i| i.size.unwrap_or(DEFAULT_ICON_SIZE)),
-            fallback_icon: config
-                .icon
-                .as_ref()
-                .and_then(|i| i.fallback_icon_path.as_ref())
-                .map(|path| {
-                    crate::icon::Icon::load_icon(&path).expect("cannot load fallback icon")
-                }),
-            margin: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.margin.clone())
-                .unwrap_or_else(|| Margin {
-                    top: 10.0,
-                    ..Margin::from_pair(5.0, 15.0)
-                }),
-            item_spacing: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.item_spacing)
-                .unwrap_or(2.0),
-            icon_spacing: config
-                .list_items
-                .as_ref()
-                .and_then(|c| c.icon_spacing)
-                .unwrap_or(10.0),
+            icon_size: select_conf!(noglob: config, icon, size).unwrap_or(0),
+            fallback_icon: select_conf!(noglob: config, icon, fallback_icon_path)
+                .map(|path| Icon::load_icon(&path).expect("cannot load fallback icon")),
+            margin: select_conf!(noglob: config, list_items, margin).unwrap_or_else(|| Margin {
+                top: 10.0,
+                ..Margin::from_pair(5.0, 15.0)
+            }),
+            item_spacing: select_conf!(noglob: config, list_items, item_spacing).unwrap_or(2.0),
+            icon_spacing: select_conf!(noglob: config, list_items, icon_spacing).unwrap_or(10.0),
         }
     }
 }

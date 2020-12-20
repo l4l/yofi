@@ -11,7 +11,7 @@ pub struct Params {
     pub font_size: u16,
     pub font_color: SolidSource,
     pub selected_font_color: SolidSource,
-    pub icon_size: Option<u32>,
+    pub icon_size: u16,
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
     pub item_spacing: f32,
@@ -49,7 +49,7 @@ where
         let skip = self.selected_item.saturating_sub(3);
         let top_offset = point.y + self.params.margin.top;
         let font_size = f32::from(self.params.font_size);
-        let icon_size = self.params.icon_size.map(|s| s as f32).unwrap_or(0.0);
+        let icon_size = f32::from(self.params.icon_size);
         let entry_height = font_size.max(icon_size);
 
         for (i, item) in self.items.skip(skip).enumerate() {
@@ -63,9 +63,7 @@ where
 
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
-                if icon.width == icon.height
-                    && icon.height == self.params.icon_size.map(|s| s as i32).unwrap_or(0)
-                {
+                if icon.width == icon.height && icon.height == i32::from(self.params.icon_size) {
                     dt.draw_image_at(
                         x_offset,
                         y_offset - icon_size,

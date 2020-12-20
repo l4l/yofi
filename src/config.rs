@@ -49,7 +49,7 @@ struct ListItems {
 
 #[derive(Deserialize)]
 struct Icon {
-    size: Option<u32>,
+    size: Option<u16>,
     theme: Option<String>,
     fallback_icon_path: Option<PathBuf>,
 }

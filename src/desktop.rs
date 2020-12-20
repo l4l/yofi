@@ -122,7 +122,6 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
 }
 
 const FALLBACK_THEME: &str = "hicolor";
-pub const DEFAULT_ICON_SIZE: u32 = 16;
 
 pub static DEFAULT_THEME: Lazy<String> = Lazy::new(|| {
     let path = PathBuf::from("/usr/share/icons/default/index.theme");
@@ -140,7 +139,7 @@ pub static DEFAULT_THEME: Lazy<String> = Lazy::new(|| {
 });
 
 pub struct IconConfig {
-    pub icon_size: u32,
+    pub icon_size: u16,
     pub theme: String,
 }
 
@@ -160,7 +159,7 @@ pub fn icon_paths<'a>() -> Option<&'a IconPaths> {
 fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
     let mut icons = IconPaths::new();
 
-    fn traverse_dir(mut icons: &mut IconPaths, theme: &str, icon_size: u32) {
+    fn traverse_dir(mut icons: &mut IconPaths, theme: &str, icon_size: u16) {
         for dir in xdg_dirs().get_data_dirs() {
             let theme_dir = dir.join("icons").join(&theme);
 
