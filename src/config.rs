@@ -16,6 +16,7 @@ pub struct Config {
     window_offsets: Option<(i32, i32)>,
     term: Option<String>,
     font: Option<String>,
+    font_size: Option<u16>,
     bg_color: Option<u32>,
     font_color: Option<u32>,
 
@@ -28,6 +29,7 @@ pub struct Config {
 #[derive(Deserialize)]
 struct InputText {
     font: Option<String>,
+    font_size: Option<u16>,
     bg_color: Option<u32>,
     font_color: Option<u32>,
     margin: Option<Margin>,
@@ -37,6 +39,7 @@ struct InputText {
 #[derive(Deserialize)]
 struct ListItems {
     font: Option<String>,
+    font_size: Option<u16>,
     font_color: Option<u32>,
     selected_font_color: Option<u32>,
     margin: Option<Margin>,

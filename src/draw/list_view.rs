@@ -3,11 +3,12 @@ use std::marker::PhantomData;
 use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
-use super::{Drawable, Space, FONT_SIZE};
+use super::{Drawable, Space};
 use crate::style::Margin;
 
 pub struct Params {
     pub font: Font,
+    pub font_size: u16,
     pub font_color: SolidSource,
     pub selected_font_color: SolidSource,
     pub icon_size: Option<u32>,
@@ -47,8 +48,9 @@ where
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let skip = self.selected_item.saturating_sub(3);
         let top_offset = point.y + self.params.margin.top;
+        let font_size = f32::from(self.params.font_size);
         let icon_size = self.params.icon_size.map(|s| s as f32).unwrap_or(0.0);
-        let entry_height = FONT_SIZE.max(icon_size);
+        let entry_height = font_size.max(icon_size);
 
         for (i, item) in self.items.skip(skip).enumerate() {
             let relative_offset = (i as f32) * (entry_height + self.params.item_spacing);
@@ -90,7 +92,7 @@ where
             };
             dt.draw_text(
                 &self.params.font,
-                FONT_SIZE,
+                font_size,
                 item.name,
                 pos,
                 &Source::Solid(color),

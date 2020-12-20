@@ -10,6 +10,8 @@ use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::style::{Margin, Padding};
 use crate::surface::Params as SurfaceParams;
 
+const DEFAULT_FONT_SIZE: u16 = 24;
+
 impl<'a> From<&'a Config> for InputTextParams {
     fn from(config: &'a Config) -> InputTextParams {
         InputTextParams {
@@ -20,6 +22,12 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .or_else(|| config.font.clone())
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
+            font_size: config
+                .input_text
+                .as_ref()
+                .and_then(|c| c.font_size)
+                .or_else(|| config.font_size)
+                .unwrap_or(DEFAULT_FONT_SIZE),
             bg_color: config
                 .input_text
                 .as_ref()
@@ -58,6 +66,12 @@ impl<'a> From<&'a Config> for ListParams {
                 .or_else(|| config.font.clone())
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
+            font_size: config
+                .list_items
+                .as_ref()
+                .and_then(|c| c.font_size)
+                .or_else(|| config.font_size)
+                .unwrap_or(DEFAULT_FONT_SIZE),
             font_color: config
                 .list_items
                 .as_ref()

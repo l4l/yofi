@@ -3,11 +3,12 @@ use std::f32::consts;
 use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
-use super::{Drawable, Space, FONT_SIZE};
+use super::{Drawable, Space};
 use crate::style::{Margin, Padding};
 
 pub struct Params {
     pub font: Font,
+    pub font_size: u16,
     pub bg_color: SolidSource,
     pub font_color: SolidSource,
     pub margin: Margin,
@@ -29,7 +30,9 @@ impl<'a> Drawable for InputText<'a> {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
-        let border_diameter = self.params.padding.top + FONT_SIZE + self.params.padding.bottom;
+        let font_size = f32::from(self.params.font_size);
+
+        let border_diameter = self.params.padding.top + font_size + self.params.padding.bottom;
         let border_radius = border_diameter / 2.0;
 
         let left_x_center = point.x + self.params.margin.left + border_radius;
@@ -61,11 +64,11 @@ impl<'a> Drawable for InputText<'a> {
 
         let pos = Point::new(
             left_x_center + self.params.padding.left,
-            FONT_SIZE / /*empirical magic:*/ 3.0 + y_center,
+            font_size / /*empirical magic:*/ 3.0 + y_center,
         );
         dt.draw_text(
             &self.params.font,
-            FONT_SIZE,
+            font_size,
             self.text,
             pos,
             &Source::Solid(self.params.font_color),
