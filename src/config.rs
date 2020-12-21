@@ -62,7 +62,7 @@ struct Icon {
 
 fn config_path() -> PathBuf {
     xdg::BaseDirectories::with_prefix(crate::prog_name!())
-        .unwrap()
+        .expect("failed to get xdg dirs")
         .place_config_file(DEFAULT_CONFIG_PATH)
         .expect("cannot create configuration directory")
 }

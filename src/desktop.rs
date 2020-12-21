@@ -6,18 +6,19 @@ use xdg::BaseDirectories;
 
 use crate::icon::Icon;
 
-pub static XDG_DIRS: OnceCell<BaseDirectories> = OnceCell::new(); //BaseDirectories::new().unwrap();
+pub static XDG_DIRS: OnceCell<BaseDirectories> = OnceCell::new();
 
 pub struct Entry {
     pub name: String,
     pub desktop_fname: String,
+    pub path: PathBuf,
     pub exec: String,
     pub is_terminal: bool,
     pub icon: Option<Icon>,
 }
 
 pub fn xdg_dirs<'a>() -> &'a BaseDirectories {
-    XDG_DIRS.get_or_init(|| BaseDirectories::new().unwrap())
+    XDG_DIRS.get_or_init(|| BaseDirectories::new().expect("failed to get xdg dirs"))
 }
 
 pub fn find_entries() -> Vec<Entry> {
@@ -34,7 +35,7 @@ pub fn find_entries() -> Vec<Entry> {
 
 fn read_dir(path: &Path) -> impl Iterator<Item = DirEntry> {
     fs::read_dir(&path)
-        .map_err(|e| log::warn!("cannot read {:?} folder: {}, skipping", path, e))
+        .map_err(|e| log::debug!("cannot read {:?} folder: {}, skipping", path, e))
         .into_iter()
         .flatten()
         .filter_map(|e| {
@@ -92,6 +93,7 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
                     .to_str()
                     .expect("desktop file name is not in utf-8")
                     .to_owned(),
+                path: dir_entry_path,
                 exec: e.to_owned(),
                 is_terminal: main_section
                     .attr("Terminal")
@@ -111,11 +113,15 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
             });
         }
         (n, e) => {
-            if n.is_none() {
-                log::debug!("entry {:?} has no \"Name\" attribute", dir_entry_path);
-            }
-            if e.is_none() {
-                log::debug!("entry {:?} has no \"Exec\" attribute", dir_entry_path);
+            if n.is_none() && e.is_none() {
+                log::debug!(
+                    r#"entry {:?} has no "Name" nor "Exec" attribute"#,
+                    dir_entry_path
+                );
+            } else if n.is_none() {
+                log::debug!(r#"entry {:?} has no "Name" attribute"#, dir_entry_path);
+            } else if e.is_none() {
+                log::debug!(r#"entry {:?} has no "Exec" attribute"#, dir_entry_path);
             }
         }
     }
@@ -124,10 +130,10 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
 const FALLBACK_THEME: &str = "hicolor";
 
 pub static DEFAULT_THEME: Lazy<String> = Lazy::new(|| {
-    let path = PathBuf::from("/usr/share/icons/default/index.theme");
+    let path = "/usr/share/icons/default/index.theme";
 
-    fep::parse_entry(path)
-        .map_err(|e| log::error!("failed to parse default entry: {}", e))
+    fep::parse_entry(PathBuf::from(path))
+        .map_err(|e| log::warn!("failed to parse index theme ({}): {}", path, e))
         .ok()
         .and_then(|entry| {
             entry

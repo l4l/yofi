@@ -31,7 +31,7 @@ fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) 
             utf8,
             ..
         } => {
-            log::debug!(
+            log::trace!(
                 "key {:?}: {:x} (text: {:?})",
                 KeyState::Pressed,
                 keysym,
@@ -49,13 +49,13 @@ fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) 
             state,
             utf8,
             ..
-        } => log::debug!("key {:?}: {:x} (text: {:?})", state, keysym, utf8),
+        } => log::trace!("key {:?}: {:x} (text: {:?})", state, keysym, utf8),
         KbEvent::Modifiers { modifiers } => {
-            log::debug!("modifiers changed to {:?}", modifiers);
+            log::trace!("modifiers changed to {:?}", modifiers);
             state.ctrl = modifiers.ctrl;
         }
         KbEvent::Repeat { keysym, utf8, .. } => {
-            log::debug!("key repeat {:x} (text: {:?})", keysym, utf8);
+            log::trace!("key repeat {:x} (text: {:?})", keysym, utf8);
             tx.send(KeyPress {
                 keysym,
                 sym: utf8.and_then(|s| s.chars().next()),

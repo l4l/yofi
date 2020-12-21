@@ -1,5 +1,7 @@
-use std::io::{BufReader, Error as IoError, ErrorKind as IoErrorKind, Result as IoResult};
+use std::io::BufReader;
 use std::path::Path;
+
+use anyhow::{anyhow, Result};
 
 pub struct Icon {
     width: u32,
@@ -15,17 +17,21 @@ impl Icon {
             "png" => Icon::from_png_path(path).map_err(failed_to_load).ok(),
             "svg" => Icon::from_svg_path(path).map_err(failed_to_load).ok(),
             ext => {
-                log::error!("unknown icon extension: {:?}", ext);
+                log::info!("unsupported icon extension: {:?}", ext);
                 None
             }
         }
     }
 
-    fn from_png_path(path: impl AsRef<Path>) -> IoResult<Self> {
+    fn from_png_path(path: impl AsRef<Path>) -> Result<Self> {
         let decoder = png::Decoder::new(BufReader::new(std::fs::File::open(path)?));
-        let (info, mut reader) = decoder.read_info().unwrap();
+        let (info, mut reader) = decoder
+            .read_info()
+            .map_err(|e| anyhow!("failed to read png info: {}", e))?;
         let mut buf = vec![0; info.buffer_size()];
-        reader.next_frame(&mut buf).unwrap();
+        reader
+            .next_frame(&mut buf)
+            .map_err(|e| anyhow!("failed to read png frame: {}", e))?;
 
         let data = match info.color_type {
             png::ColorType::RGB => {
@@ -43,12 +49,7 @@ impl Icon {
                 data
             }
             png::ColorType::RGBA => rgba_to_argb(buf.as_slice()),
-            color_type => {
-                return Err(IoError::new(
-                    IoErrorKind::Other,
-                    format!("unsupported icon color type: {:?}", color_type),
-                ))
-            }
+            color_type => anyhow::bail!("unsupported icon color type {:?}", color_type),
         };
 
         Ok(Self {
@@ -58,13 +59,13 @@ impl Icon {
         })
     }
 
-    fn from_svg_path(path: impl AsRef<Path>) -> IoResult<Self> {
+    fn from_svg_path(path: impl AsRef<Path>) -> Result<Self> {
         let opt = Default::default();
-        let tree = usvg::Tree::from_file(path, &opt)
-            .map_err(|e| IoError::new(IoErrorKind::Other, format!("svg open error: {}", e)))?;
+        let tree =
+            usvg::Tree::from_file(path, &opt).map_err(|e| anyhow!("svg open error: {}", e))?;
 
         let rendered = resvg::render(&tree, usvg::FitTo::Original, None)
-            .ok_or_else(|| IoError::new(IoErrorKind::Other, "cannot render svg"))?;
+            .ok_or_else(|| anyhow!("cannot render svg"))?;
 
         Ok(Self {
             width: rendered.width(),

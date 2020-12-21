@@ -12,19 +12,29 @@ impl Usage {
         let usage = crate::desktop::xdg_dirs()
             .place_cache_file(path)
             .and_then(File::open)
-            .map_err(|e| log::error!("cannot open cache file: {}", e))
+            .map_err(|e| {
+                if e.kind() != std::io::ErrorKind::NotFound {
+                    log::error!("cannot open cache file: {}", e)
+                }
+            })
             .map(BufReader::new)
             .into_iter()
             .flat_map(|rdr| {
                 rdr.lines()
                     .filter(|l| l.as_ref().map(|l| !l.is_empty()).unwrap_or(true))
                     .map(|l| {
-                        let line = l.map_err(|e| log::error!("unable to read the line: {}", e))?;
+                        let line = l.map_err(|e| {
+                            log::error!("unable to read the line from cache: {}", e)
+                        })?;
                         let mut iter = line.split(' ');
                         let (count, entry) = (iter.next().ok_or(())?, iter.next().ok_or(())?);
 
                         let count = count.parse().map_err(|e| {
-                            log::error!("unable to parse count (\"{}\"): {}", count, e)
+                            log::error!(
+                                "invalid cache file, unable to parse count (\"{}\"): {}",
+                                count,
+                                e
+                            )
                         })?;
 
                         Ok((entry.to_string(), count))

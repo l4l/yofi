@@ -52,7 +52,12 @@ impl BinsMode {
         let (prog, args) = (&self.term[0], &self.term[0..]);
 
         log::debug!("executing command: {:?} {:?}", prog, args);
-        nix::unistd::execvp(prog, args).unwrap();
+        nix::unistd::execvp(prog, args).unwrap_or_else(|e| {
+            panic!(
+                "failed to launch command line `{:?} {:?}`: {}",
+                prog, args, e
+            )
+        });
 
         unreachable!()
     }

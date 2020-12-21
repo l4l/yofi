@@ -50,7 +50,12 @@ impl AppsMode {
         self.usage.try_update_cache(CACHE_PATH);
 
         log::debug!("executing command: {:?} {:?}", prog, args);
-        nix::unistd::execvp(prog, args).unwrap();
+        nix::unistd::execvp(prog, args).unwrap_or_else(|e| {
+            panic!(
+                "failed to launch desktop file {:?} with command line `{:?} {:?}`: {}",
+                entry.path, prog, args, e
+            )
+        });
 
         unreachable!()
     }
