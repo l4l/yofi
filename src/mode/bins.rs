@@ -19,7 +19,7 @@ impl BinsMode {
         let usage = Usage::from_path(CACHE_PATH);
 
         let mut bins: Vec<_> = std::env::var("PATH")
-            .map(|paths| paths.split(":").map(|s| s.to_owned()).collect())
+            .map(|paths| paths.split(':').map(|s| s.to_owned()).collect())
             .unwrap_or_else(|_| vec!["/usr/bin".into()])
             .into_iter()
             .flat_map(std::fs::read_dir)
