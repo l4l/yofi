@@ -57,7 +57,11 @@ impl<'a> From<&'a Config> for ListParams {
             selected_font_color: select_conf!(noglob: config, list_items, selected_font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xff, 0xa6, 0xe2, 0x2e)),
-            icon_size: select_conf!(noglob: config, icon, size).unwrap_or(0),
+            icon_size: config
+                .icon
+                .as_ref()
+                .map(|c| c.size.unwrap_or(DEFAULT_ICON_SIZE))
+                .unwrap_or(0),
             fallback_icon: select_conf!(noglob: config, icon, fallback_icon_path)
                 .map(|path| Icon::load_icon(&path).expect("cannot load fallback icon")),
             margin: select_conf!(noglob: config, list_items, margin).unwrap_or_else(|| Margin {
