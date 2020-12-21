@@ -26,6 +26,12 @@ pub struct Config {
     list_items: Option<ListItems>,
 }
 
+impl Config {
+    pub fn disable_icons(&mut self) {
+        self.icon = None;
+    }
+}
+
 #[derive(Deserialize)]
 struct InputText {
     font: Option<String>,

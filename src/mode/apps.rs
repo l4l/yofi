@@ -1,45 +1,23 @@
 use std::cmp::Reverse;
-use std::collections::HashMap;
 use std::ffi::CString;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
 
 use super::Entry;
-use crate::{desktop, DesktopEntry};
+use crate::usage_cache::Usage;
+use crate::DesktopEntry;
+
+const CACHE_PATH: &str = concat!(crate::prog_name!(), ".cache");
 
 pub struct AppsMode {
     entries: Vec<DesktopEntry>,
     term: Vec<CString>,
-    usage: HashMap<String, usize>,
+    usage: Usage,
 }
 
 impl AppsMode {
     pub fn new(mut entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
-        let usage: HashMap<String, usize> = desktop::xdg_dirs()
-            .place_cache_file(concat!(crate::prog_name!(), ".cache"))
-            .and_then(File::open)
-            .map_err(|e| log::error!("cannot open cache file: {}", e))
-            .map(BufReader::new)
-            .into_iter()
-            .flat_map(|rdr| {
-                rdr.lines()
-                    .filter(|l| l.as_ref().map(|l| !l.is_empty()).unwrap_or(true))
-                    .map(|l| {
-                        let line = l.map_err(|e| log::error!("unable to read the line: {}", e))?;
-                        let mut iter = line.split(' ');
-                        let (count, progname) = (iter.next().ok_or(())?, iter.next().ok_or(())?);
+        let usage = Usage::from_path(CACHE_PATH);
 
-                        let count = count.parse().map_err(|e| {
-                            log::error!("unable to parse count (\"{}\"): {}", count, e)
-                        })?;
-
-                        Ok((progname.to_string(), count))
-                    })
-            })
-            .collect::<Result<_, ()>>()
-            .unwrap_or_default();
-
-        entries.sort_by_key(|e| Reverse(usage.get(&e.desktop_fname).unwrap_or(&0)));
+        entries.sort_by_key(|e| Reverse(usage.entry_count(&e.desktop_fname)));
 
         Self {
             entries,
@@ -67,26 +45,9 @@ impl AppsMode {
             (&args[0], &args[0..])
         };
 
-        *self.usage.entry(entry.desktop_fname.clone()).or_default() += 1;
-
-        if let Err(e) = desktop::xdg_dirs()
-            .place_cache_file(concat!(crate::prog_name!(), ".cache"))
-            .and_then(File::create)
-            .and_then(|mut f| {
-                let mut buf = vec![];
-
-                for (progname, count) in &self.usage {
-                    let s = format!("{} ", count);
-                    buf.extend(s.as_bytes());
-                    buf.extend(progname.as_bytes());
-                    buf.push(b'\n');
-                }
-
-                f.write_all(&buf)
-            })
-        {
-            log::error!("failed to update cache: {}", e);
-        }
+        self.usage
+            .increment_entry_usage(entry.desktop_fname.clone());
+        self.usage.try_update_cache(CACHE_PATH);
 
         log::debug!("executing command: {:?} {:?}", prog, args);
         nix::unistd::execvp(prog, args).unwrap();

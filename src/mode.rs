@@ -6,6 +6,7 @@ use raqote::Image;
 use crate::DesktopEntry;
 
 mod apps;
+mod bins;
 mod dialog;
 
 macro_rules! delegate {
@@ -22,6 +23,7 @@ macro_rules! delegate {
         pub fn $name ( & $($m)? self, $($ident : $tp),* ) -> $ret {
             match self {
                 Mode::AppsMode(mode) => $($wrap)?(mode.$name($($ident),*)),
+                Mode::BinAppsMode(mode) => $($wrap)?(mode.$name($($ident),*)),
                 Mode::DialogMode(mode) => $($wrap)?(mode.$name($($ident),*)),
             }
         }
@@ -30,6 +32,7 @@ macro_rules! delegate {
 
 pub enum Mode {
     AppsMode(apps::AppsMode),
+    BinAppsMode(bins::BinsMode),
     DialogMode(dialog::DialogMode),
 }
 
@@ -43,6 +46,10 @@ impl Mode {
         Self::AppsMode(apps::AppsMode::new(entries, term))
     }
 
+    pub fn bins(term: Vec<CString>) -> Self {
+        Self::BinAppsMode(bins::BinsMode::new(term))
+    }
+
     pub fn dialog() -> Self {
         Self::DialogMode(dialog::DialogMode::new())
     }
@@ -53,7 +60,8 @@ impl Mode {
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + '_ {
         match self {
-            Mode::AppsMode(mode) => Either::Left(mode.text_entries()),
+            Mode::AppsMode(mode) => Either::Left(Either::Right(mode.text_entries())),
+            Mode::BinAppsMode(mode) => Either::Left(Either::Left(mode.text_entries())),
             Mode::DialogMode(mode) => Either::Right(mode.text_entries()),
         }
         .into_iter()

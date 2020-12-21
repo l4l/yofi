@@ -22,6 +22,7 @@ mod mode;
 mod state;
 mod style;
 mod surface;
+mod usage_cache;
 
 sctk::default_environment!(Env,
     fields = [
@@ -78,6 +79,7 @@ struct Args {
 #[derive(StructOpt)]
 enum ModeArg {
     Apps,
+    Binapps,
     Dialog,
 }
 
@@ -90,7 +92,7 @@ impl Default for ModeArg {
 fn main() {
     let mut args = Args::from_args();
 
-    let config = config::Config::load(args.config_file.take());
+    let mut config = config::Config::load(args.config_file.take());
 
     setup_logger(
         match (args.verbose, args.quiet) {
@@ -121,6 +123,10 @@ fn main() {
             }
 
             mode::Mode::apps(desktop::find_entries(), config.terminal_command())
+        }
+        ModeArg::Binapps => {
+            config.disable_icons();
+            mode::Mode::bins(config.terminal_command())
         }
         ModeArg::Dialog => mode::Mode::dialog(),
     };
