@@ -105,6 +105,17 @@ impl State {
                 ctrl: true,
                 ..
             } => self.input_buf.clear(),
+            KeyPress {
+                keysym: keysyms::XKB_KEY_w,
+                ctrl: true,
+                ..
+            } => {
+                if let Some(pos) = self.input_buf.rfind(|x: char| !x.is_alphanumeric()) {
+                    self.input_buf.truncate(pos);
+                } else {
+                    self.input_buf.clear();
+                }
+            }
             KeyPress { sym: Some(sym), .. } if !sym.is_control() && !event.ctrl => {
                 self.input_buf.push(sym)
             }
