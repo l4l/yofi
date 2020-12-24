@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use font_kit::loaders::freetype::Font;
+use oneshot::Sender;
 use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
@@ -25,16 +26,26 @@ pub struct ListItem<'a> {
 
 pub struct ListView<'a, It> {
     items: It,
+    skip_offset: usize,
     selected_item: usize,
+    new_skip: Sender<usize>,
     params: Params,
     _tparam: PhantomData<&'a ()>,
 }
 
 impl<It> ListView<'_, It> {
-    pub fn new(items: It, selected_item: usize, params: Params) -> Self {
+    pub fn new(
+        items: It,
+        skip_offset: usize,
+        selected_item: usize,
+        new_skip: Sender<usize>,
+        params: Params,
+    ) -> Self {
         Self {
             items,
+            skip_offset,
             selected_item,
+            new_skip,
             params,
             _tparam: PhantomData,
         }
@@ -46,15 +57,45 @@ where
     It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
-        let skip = self.selected_item.saturating_sub(3);
         let top_offset = point.y + self.params.margin.top;
         let font_size = f32::from(self.params.font_size);
         let icon_size = f32::from(self.params.icon_size);
         let entry_height = font_size.max(icon_size);
 
-        for (i, item) in self.items.skip(skip).enumerate() {
+        let displayed_items = ((space.height - self.params.margin.top - self.params.margin.bottom
+            + self.params.item_spacing)
+            / (entry_height + self.params.item_spacing)) as usize;
+
+        let max_offset = self.skip_offset + displayed_items;
+        let (selected_item, skip_offset) = if self.selected_item < self.skip_offset {
+            (0, self.selected_item)
+        } else if max_offset <= self.selected_item {
+            (
+                displayed_items - 1,
+                self.skip_offset + (self.selected_item - max_offset) + 1,
+            )
+        } else {
+            (self.selected_item - self.skip_offset, self.skip_offset)
+        };
+
+        self.new_skip.send(skip_offset).unwrap();
+
+        for (i, item) in self
+            .items
+            .skip(skip_offset)
+            .enumerate()
+            .take(displayed_items)
+        {
             let relative_offset = (i as f32) * (entry_height + self.params.item_spacing);
             if relative_offset + self.params.margin.bottom + entry_height > space.height {
+                println!("unexpected break");
+                dbg!(
+                    i,
+                    relative_offset,
+                    self.params.margin.bottom,
+                    entry_height,
+                    space.height
+                );
                 break;
             }
 
@@ -83,7 +124,7 @@ where
             }
 
             let pos = Point::new(x_offset + icon_size + self.params.icon_spacing, y_offset);
-            let color = if i + skip == self.selected_item {
+            let color = if i == selected_item {
                 self.params.selected_font_color
             } else {
                 self.params.font_color

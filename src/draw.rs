@@ -1,3 +1,4 @@
+use oneshot::Sender;
 pub use raqote::{DrawTarget, Point};
 
 pub use background::Params as BgParams;
@@ -31,8 +32,20 @@ impl<'a, It> Widget<'a, It> {
         Self::InputText(input_text::InputText::new(text, params))
     }
 
-    pub fn list_view(items: It, selected_item: usize, params: ListParams) -> Self {
-        Self::ListView(list_view::ListView::new(items, selected_item, params))
+    pub fn list_view(
+        items: It,
+        skip_offset: usize,
+        selected_item: usize,
+        tx: Sender<usize>,
+        params: ListParams,
+    ) -> Self {
+        Self::ListView(list_view::ListView::new(
+            items,
+            skip_offset,
+            selected_item,
+            tx,
+            params,
+        ))
     }
 
     pub fn background(params: BgParams) -> Self {

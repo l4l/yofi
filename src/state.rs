@@ -57,6 +57,7 @@ impl Preprocessed {
 
 pub struct State {
     input_buf: String,
+    skip_offset: usize,
     selected_item: usize,
     preprocessed: Preprocessed,
     inner: Mode,
@@ -66,6 +67,7 @@ impl State {
     pub fn new(inner: Mode) -> Self {
         Self {
             input_buf: String::new(),
+            skip_offset: 0,
             selected_item: 0,
             preprocessed: Preprocessed::unfiltred(inner.entries_len()),
             inner,
@@ -126,6 +128,14 @@ impl State {
 
     pub fn input_buf(&self) -> &str {
         &self.input_buf
+    }
+
+    pub fn skip_offset(&self) -> usize {
+        self.skip_offset
+    }
+
+    pub fn update_skip_offset(&mut self, x: usize) {
+        self.skip_offset = x;
     }
 
     pub fn selected_item(&self) -> usize {

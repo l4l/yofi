@@ -154,11 +154,15 @@ fn main() {
 
             state.process_entries();
 
+            let (tx, rx) = oneshot::channel();
+
             let background = draw::Widget::background(config.param());
             let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
             let list_view_widget = draw::Widget::list_view(
                 state.processed_entries(),
+                state.skip_offset(),
                 state.selected_item(),
+                tx,
                 config.param(),
             );
 
@@ -167,6 +171,8 @@ fn main() {
                     .chain(once(input_widget))
                     .chain(once(list_view_widget)),
             );
+
+            state.update_skip_offset(rx.recv().unwrap());
         }
 
         display.flush().unwrap();
