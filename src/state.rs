@@ -1,14 +1,14 @@
 use either::Either;
-use fuse_rust::{Fuse, SearchResult};
+use fzyr::ScoreResult;
 
 use crate::draw::ListItem;
 use crate::input::KeyPress;
 use crate::mode::Mode;
 
-struct Preprocessed(Either<Vec<SearchResult>, usize>);
+struct Preprocessed(Either<Vec<ScoreResult>, usize>);
 
 impl Preprocessed {
-    fn processed(processed: Vec<SearchResult>) -> Self {
+    fn processed(processed: Vec<ScoreResult>) -> Self {
         Self(Either::Left(processed))
     }
 
@@ -29,7 +29,7 @@ impl Preprocessed {
         }
 
         match self {
-            Self(Either::Left(x)) => x[selected_item].index,
+            Self(Either::Left(x)) => x[selected_item].candidate_index,
             Self(Either::Right(_)) => selected_item,
         }
     }
@@ -37,7 +37,7 @@ impl Preprocessed {
     fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
         match self {
             Self(Either::Left(x)) => Either::Left(x.iter().map(move |r| {
-                let e = mode.entry(r.index);
+                let e = mode.entry(r.candidate_index);
                 ListItem {
                     name: e.name,
                     icon: e.icon,
@@ -140,9 +140,10 @@ impl State {
         self.preprocessed = if self.input_buf.is_empty() {
             Preprocessed::unfiltred(self.inner.entries_len())
         } else {
-            Preprocessed::processed(
-                Fuse::default().search_text_in_iterable(&self.input_buf, self.inner.text_entries()),
-            )
+            Preprocessed::processed(fzyr::search_serial(
+                &self.input_buf,
+                self.inner.text_entries(),
+            ))
         };
 
         self.selected_item = self

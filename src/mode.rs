@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::iter::ExactSizeIterator;
 
 use either::Either;
 use raqote::Image;
@@ -58,7 +59,7 @@ impl Mode {
     delegate!(pub fn entries_len(&self) -> usize);
     delegate!(pub fn entry(&self, idx: usize) -> Entry<'_>);
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + '_ {
+    pub fn text_entries(&self) -> impl Iterator<Item = &str> + ExactSizeIterator + '_ {
         match self {
             Mode::AppsMode(mode) => Either::Left(Either::Right(mode.text_entries())),
             Mode::BinAppsMode(mode) => Either::Left(Either::Left(mode.text_entries())),

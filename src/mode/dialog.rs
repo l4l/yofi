@@ -35,7 +35,7 @@ impl DialogMode {
         }
     }
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> {
+    pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
         self.lines.iter().map(|e| e.as_str())
     }
 }
