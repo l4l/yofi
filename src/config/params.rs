@@ -57,6 +57,8 @@ impl<'a> From<&'a Config> for ListParams {
             selected_font_color: select_conf!(noglob: config, list_items, selected_font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xff, 0xa6, 0xe2, 0x2e)),
+            match_color: select_conf!(noglob: config, list_items, match_color)
+                .map(u32_to_solid_source),
             icon_size: config
                 .icon
                 .as_ref()

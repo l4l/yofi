@@ -40,6 +40,8 @@ padding = "1.7 -4"
 # font = ...
 font_color = 0xf8f8f2ff
 selected_font_color = 0xa6e22eff
+# if specified, search match will be emphasize with this color
+match_color = 0xe69f66ff
 margin = "5 10"
 # Additional spacing between list items.
 # By default there's around 10 pixels spaced,

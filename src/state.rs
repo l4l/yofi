@@ -1,14 +1,14 @@
 use either::Either;
-use fzyr::ScoreResult;
+use fzyr::LocateResult;
 
 use crate::draw::ListItem;
 use crate::input::KeyPress;
 use crate::mode::Mode;
 
-struct Preprocessed(Either<Vec<ScoreResult>, usize>);
+struct Preprocessed(Either<Vec<LocateResult>, usize>);
 
 impl Preprocessed {
-    fn processed(processed: Vec<ScoreResult>) -> Self {
+    fn processed(processed: Vec<LocateResult>) -> Self {
         Self(Either::Left(processed))
     }
 
@@ -41,6 +41,7 @@ impl Preprocessed {
                 ListItem {
                     name: e.name,
                     icon: e.icon,
+                    match_mask: Some(&r.match_mask),
                 }
             })),
             Self(Either::Right(x)) => Either::Right((0..*x).map(move |i| {
@@ -48,6 +49,7 @@ impl Preprocessed {
                 ListItem {
                     name: e.name,
                     icon: e.icon,
+                    match_mask: None,
                 }
             })),
         }
@@ -150,7 +152,7 @@ impl State {
         self.preprocessed = if self.input_buf.is_empty() {
             Preprocessed::unfiltred(self.inner.entries_len())
         } else {
-            Preprocessed::processed(fzyr::search_serial(
+            Preprocessed::processed(fzyr::locate_serial(
                 &self.input_buf,
                 self.inner.text_entries(),
             ))

@@ -1,8 +1,11 @@
 use std::marker::PhantomData;
+use std::ops::Range;
 
+use bit_vec::BitVec;
 use font_kit::loaders::freetype::Font;
+use itertools::Itertools;
 use oneshot::Sender;
-use raqote::{DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
+use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
 use crate::style::Margin;
@@ -12,6 +15,7 @@ pub struct Params {
     pub font_size: u16,
     pub font_color: SolidSource,
     pub selected_font_color: SolidSource,
+    pub match_color: Option<SolidSource>,
     pub icon_size: u16,
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
@@ -22,6 +26,7 @@ pub struct Params {
 pub struct ListItem<'a> {
     pub name: &'a str,
     pub icon: Option<Image<'a>>,
+    pub match_mask: Option<&'a BitVec>,
 }
 
 pub struct ListView<'a, It> {
@@ -129,14 +134,88 @@ where
             } else {
                 self.params.font_color
             };
-            dt.draw_text(
-                &self.params.font,
-                font_size,
-                item.name,
-                pos,
-                &Source::Solid(color),
-                &DrawOptions::new(),
-            );
+
+            let empty = BitVec::new();
+            let match_ranges = item.match_mask.unwrap_or(&empty);
+
+            fn substr<'a, 'b: 'a>(x: &'b str, r: &Range<usize>) -> &'a str {
+                assert!(r.end <= x.chars().count());
+                let start = x
+                    .char_indices()
+                    .nth(r.start)
+                    .map(|x| x.0)
+                    .unwrap_or_else(|| x.len());
+                let end = x
+                    .char_indices()
+                    .nth(r.end - 1)
+                    .map(|l| l.0 + l.1.len_utf8())
+                    .unwrap_or_else(|| x.len());
+                &x[start..end]
+            }
+
+            if let Some(match_color) = self.params.match_color {
+                let font = &self.params.font;
+                macro_rules! draw_substr {
+                    ($range:expr, $pos:expr, $color:expr) => {{
+                        let s = substr(item.name, $range);
+                        let measured = dt
+                            .measure_text(&font, font_size, s, AntialiasMode::None)
+                            .unwrap();
+
+                        dt.draw_text(
+                            &font,
+                            font_size,
+                            s,
+                            $pos,
+                            &Source::Solid($color),
+                            &DrawOptions::new(),
+                        );
+                        if item.name == "Firefox" {
+                            dbg!(measured);
+                        }
+                        Point::new(
+                            $pos.x + (measured.size.width + measured.min_x()) as f32,
+                            $pos.y,
+                        )
+                    }};
+                }
+
+                let (pos, idx) = match_ranges
+                    .iter()
+                    .group_by(|x| *x)
+                    .into_iter()
+                    .enumerate()
+                    .scan(0, |start, (_, group)| {
+                        let count = group.1.count();
+                        let s = *start;
+                        let range = s..s + count;
+                        *start += count;
+                        Some((group.0, range))
+                    })
+                    .fold((pos, 0), |(pos, _), (is_matched, range)| {
+                        let color = if is_matched { match_color } else { color };
+
+                        (draw_substr!(&range, pos, color), range.end)
+                    });
+
+                dt.draw_text(
+                    &self.params.font,
+                    font_size,
+                    substr(item.name, &(idx..item.name.len())),
+                    pos,
+                    &Source::Solid(color),
+                    &DrawOptions::new(),
+                );
+            } else {
+                dt.draw_text(
+                    &self.params.font,
+                    font_size,
+                    item.name,
+                    pos,
+                    &Source::Solid(color),
+                    &DrawOptions::new(),
+                );
+            }
         }
 
         space

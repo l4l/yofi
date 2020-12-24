@@ -48,6 +48,7 @@ struct ListItems {
     font_size: Option<u16>,
     font_color: Option<u32>,
     selected_font_color: Option<u32>,
+    match_color: Option<u32>,
     margin: Option<Margin>,
     item_spacing: Option<f32>,
     icon_spacing: Option<f32>,
