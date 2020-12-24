@@ -19,6 +19,7 @@ height = 512
 # if unset, places window at the center
 # window_offsets = [500, -50] # in format [top_offset, left_offset]
 # font = "DejaVu Sans"
+font_size = 24
 bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
 # font_color = 0xf8f8f2ff
 
