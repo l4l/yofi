@@ -153,14 +153,18 @@ where
                 &x[start..end]
             }
 
+            let antialias = AntialiasMode::Gray;
+            let draw_opts = DrawOptions {
+                antialias,
+                ..DrawOptions::new()
+            };
+
             if let Some(match_color) = self.params.match_color {
                 let font = &self.params.font;
                 macro_rules! draw_substr {
                     ($range:expr, $pos:expr, $color:expr) => {{
                         let s = substr(item.name, $range);
-                        let measured = dt
-                            .measure_text(&font, font_size, s, AntialiasMode::None)
-                            .unwrap();
+                        let measured = dt.measure_text(&font, font_size, s, antialias).unwrap();
 
                         dt.draw_text(
                             &font,
@@ -168,7 +172,7 @@ where
                             s,
                             $pos,
                             &Source::Solid($color),
-                            &DrawOptions::new(),
+                            &draw_opts,
                         );
                         if item.name == "Firefox" {
                             dbg!(measured);
@@ -204,7 +208,7 @@ where
                     substr(item.name, &(idx..item.name.len())),
                     pos,
                     &Source::Solid(color),
-                    &DrawOptions::new(),
+                    &draw_opts,
                 );
             } else {
                 dt.draw_text(
@@ -213,7 +217,7 @@ where
                     item.name,
                     pos,
                     &Source::Solid(color),
-                    &DrawOptions::new(),
+                    &draw_opts,
                 );
             }
         }
