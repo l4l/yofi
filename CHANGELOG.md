@@ -1,5 +1,7 @@
 # Unreleased changes
 
+# 0.1.3 - 2020-12-26
+
 ## Features
 
 - HiDPI scaling support (79cb8dd)
