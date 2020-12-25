@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::convert::TryInto;
 use std::rc::Rc;
 
 use sctk::{
@@ -25,6 +26,7 @@ pub struct Params {
     pub width: u32,
     pub height: u32,
     pub window_offsets: Option<(i32, i32)>,
+    pub scale: Option<u16>,
 }
 
 pub struct Surface {
@@ -32,6 +34,7 @@ pub struct Surface {
     layer_surface: Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>,
     next_render_event: Rc<Cell<Option<RenderEvent>>>,
     pools: DoubleMemPool,
+    scale: u16,
     dimensions: (u32, u32),
 }
 
@@ -51,6 +54,11 @@ impl Surface {
             crate::prog_name!().to_owned(),
         );
 
+        let scale = params.scale.unwrap_or_else(|| {
+            sctk::get_surface_scale_factor(&surface)
+                .try_into()
+                .expect("invalid surface scale factor")
+        });
         let width = params.width;
         let height = params.height;
 
@@ -88,14 +96,20 @@ impl Surface {
 
         // Commit so that the server will send a configure event
         surface.commit();
+        surface.set_buffer_scale(scale.into());
 
         Self {
             surface,
             layer_surface,
             next_render_event,
             pools,
+            scale,
             dimensions: (width, height),
         }
+    }
+
+    pub fn scale(&self) -> u16 {
+        self.scale
     }
 
     /// Handles any events that have occurred since the last call, redrawing if needed.
@@ -121,8 +135,9 @@ impl Surface {
             return;
         };
 
-        let width = self.dimensions.0;
-        let height = self.dimensions.1;
+        let scale = u32::from(self.scale);
+        let width = self.dimensions.0 * scale;
+        let height = self.dimensions.1 * scale;
 
         // First make sure the pool is the right size
         pool.resize((4 * width * height) as usize).unwrap();

@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use std::marker::PhantomData;
+use std::ops::Mul;
 use std::str::FromStr;
 
 use serde::de::{Deserializer, Visitor};
@@ -41,6 +42,19 @@ impl Padding {
     }
 }
 
+impl Mul<f32> for Padding {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self {
+        Self {
+            top: self.top * rhs,
+            bottom: self.bottom * rhs,
+            left: self.left * rhs,
+            right: self.right * rhs,
+        }
+    }
+}
+
 impl Margin {
     pub const fn all(val: f32) -> Self {
         Self {
@@ -57,6 +71,19 @@ impl Margin {
             bottom: vertical,
             left: horizontal,
             right: horizontal,
+        }
+    }
+}
+
+impl Mul<f32> for Margin {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self {
+        Self {
+            top: self.top * rhs,
+            bottom: self.bottom * rhs,
+            left: self.left * rhs,
+            right: self.right * rhs,
         }
     }
 }

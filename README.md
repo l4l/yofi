@@ -22,6 +22,9 @@ height = 512
 font_size = 24
 bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
 # font_color = 0xf8f8f2ff
+# HiDPI scaling factor; default is requested from compositor but
+# fractional values are truncated, thus need to set it explicitly.
+scale = 3
 
 # ~~Block for input field
 [input_text]

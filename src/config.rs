@@ -13,6 +13,7 @@ mod params;
 pub struct Config {
     width: Option<u32>,
     height: Option<u32>,
+    scale: Option<u16>,
     window_offsets: Option<(i32, i32)>,
     term: Option<String>,
     font: Option<String>,
@@ -29,6 +30,14 @@ pub struct Config {
 impl Config {
     pub fn disable_icons(&mut self) {
         self.icon = None;
+    }
+
+    fn scale(&self) -> u16 {
+        self.scale.unwrap_or(1)
+    }
+
+    pub fn update_scale(&mut self, scale: u16) {
+        self.scale = Some(scale);
     }
 }
 

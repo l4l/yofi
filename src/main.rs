@@ -109,6 +109,7 @@ fn main() {
     let mut event_loop = calloop::EventLoop::<()>::new().unwrap();
 
     let mut surface = surface::Surface::new(&env, config.param());
+    config.update_scale(surface.scale());
 
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
 

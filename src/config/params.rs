@@ -29,7 +29,8 @@ impl<'a> From<&'a Config> for InputTextParams {
             font: select_conf!(config, input_text, font)
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
-            font_size: select_conf!(config, input_text, font_size).unwrap_or(DEFAULT_FONT_SIZE),
+            font_size: select_conf!(config, input_text, font_size).unwrap_or(DEFAULT_FONT_SIZE)
+                * config.scale(),
             bg_color: select_conf!(config, input_text, bg_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xc0, 0x75, 0x71, 0x5e)),
@@ -37,9 +38,11 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
             margin: select_conf!(noglob: config, input_text, margin)
-                .unwrap_or_else(|| Margin::all(5.0)),
+                .unwrap_or_else(|| Margin::all(5.0))
+                * f32::from(config.scale()),
             padding: select_conf!(noglob: config, input_text, padding)
-                .unwrap_or_else(|| Padding::from_pair(1.7, -4.0)),
+                .unwrap_or_else(|| Padding::from_pair(1.7, -4.0))
+                * f32::from(config.scale()),
         }
     }
 }
@@ -50,7 +53,8 @@ impl<'a> From<&'a Config> for ListParams {
             font: select_conf!(config, list_items, font)
                 .map(font_by_name)
                 .unwrap_or_else(default_font),
-            font_size: select_conf!(config, list_items, font_size).unwrap_or(DEFAULT_FONT_SIZE),
+            font_size: select_conf!(config, list_items, font_size).unwrap_or(DEFAULT_FONT_SIZE)
+                * config.scale(),
             font_color: select_conf!(config, list_items, font_color)
                 .map(u32_to_solid_source)
                 .unwrap_or_else(default_font_color),
@@ -63,15 +67,18 @@ impl<'a> From<&'a Config> for ListParams {
                 .icon
                 .as_ref()
                 .map(|c| c.size.unwrap_or(DEFAULT_ICON_SIZE))
-                .unwrap_or(0),
+                .unwrap_or(0)
+                * config.scale(),
             fallback_icon: select_conf!(noglob: config, icon, fallback_icon_path)
                 .map(|path| Icon::load_icon(&path).expect("cannot load fallback icon")),
             margin: select_conf!(noglob: config, list_items, margin).unwrap_or_else(|| Margin {
                 top: 10.0,
                 ..Margin::from_pair(5.0, 15.0)
-            }),
-            item_spacing: select_conf!(noglob: config, list_items, item_spacing).unwrap_or(2.0),
-            icon_spacing: select_conf!(noglob: config, list_items, icon_spacing).unwrap_or(10.0),
+            }) * f32::from(config.scale()),
+            item_spacing: select_conf!(noglob: config, list_items, item_spacing).unwrap_or(2.0)
+                * f32::from(config.scale()),
+            icon_spacing: select_conf!(noglob: config, list_items, icon_spacing).unwrap_or(10.0)
+                * f32::from(config.scale()),
         }
     }
 }
@@ -93,6 +100,7 @@ impl<'a> From<&'a Config> for SurfaceParams {
             width: config.width.unwrap_or(400),
             height: config.height.unwrap_or(512),
             window_offsets: config.window_offsets,
+            scale: config.scale,
         }
     }
 }
@@ -100,7 +108,7 @@ impl<'a> From<&'a Config> for SurfaceParams {
 impl<'a> From<&'a Config> for Option<IconConfig> {
     fn from(config: &'a Config) -> Option<IconConfig> {
         config.icon.as_ref().map(|c| IconConfig {
-            icon_size: c.size.unwrap_or(DEFAULT_ICON_SIZE),
+            icon_size: c.size.unwrap_or(DEFAULT_ICON_SIZE) * config.scale(),
             theme: c
                 .theme
                 .as_ref()
