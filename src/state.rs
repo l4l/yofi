@@ -86,6 +86,7 @@ impl State {
             } => return true,
             KeyPress {
                 keysym: keysyms::XKB_KEY_BackSpace,
+                ctrl: false,
                 ..
             } => {
                 self.input_buf.pop();
@@ -111,6 +112,11 @@ impl State {
             } => self.input_buf.clear(),
             KeyPress {
                 keysym: keysyms::XKB_KEY_w,
+                ctrl: true,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_BackSpace,
                 ctrl: true,
                 ..
             } => {

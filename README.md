@@ -79,4 +79,4 @@ These cannot be configured yet, so the following keys are handled:
 - **Up**/**Down** — select item at the menu;
 - **Return** — launches selected app;
 - **Ctrl+]** — clears the input.
-- **Ctrl+w** — erases a single word (i.e. until first alphanumeric symbol).
+- **Ctrl+w**/**Ctrl+Backspace** — erases a single word (i.e. until first alphanumeric symbol).
