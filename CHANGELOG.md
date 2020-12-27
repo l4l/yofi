@@ -1,5 +1,13 @@
 # Unreleased changes
 
+## Features
+
+- ctrl+backspace is alias for ctrl+w (b3fca99)
+
+## Bug fixes
+
+- With highligting enabled search may crash sometimes (b990057)
+
 # 0.1.3 - 2020-12-26
 
 ## Features
