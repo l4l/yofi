@@ -92,18 +92,6 @@ where
             .take(displayed_items)
         {
             let relative_offset = (i as f32) * (entry_height + self.params.item_spacing);
-            if relative_offset + self.params.margin.bottom + entry_height > space.height {
-                println!("unexpected break");
-                dbg!(
-                    i,
-                    relative_offset,
-                    self.params.margin.bottom,
-                    entry_height,
-                    space.height
-                );
-                break;
-            }
-
             let x_offset = point.x + self.params.margin.left;
             let y_offset = top_offset + relative_offset + entry_height;
 
@@ -174,9 +162,6 @@ where
                             &Source::Solid($color),
                             &draw_opts,
                         );
-                        if item.name == "Firefox" {
-                            dbg!(measured);
-                        }
                         Point::new(
                             $pos.x + (measured.size.width + measured.min_x()) as f32,
                             $pos.y,
