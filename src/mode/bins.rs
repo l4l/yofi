@@ -37,7 +37,15 @@ impl BinsMode {
             })
             .collect();
 
-        bins.sort_by_key(|b| Reverse(usage.entry_count(b.to_str().unwrap())));
+        bins.sort_by(|x, y| {
+            let x_usage_count = usage.entry_count(x.to_str().unwrap());
+            let y_usage_count = usage.entry_count(y.to_str().unwrap());
+
+            Reverse(x_usage_count)
+                .cmp(&Reverse(y_usage_count))
+                .then_with(|| x.cmp(&y))
+        });
+        bins.dedup();
 
         Self { bins, term, usage }
     }
