@@ -1,7 +1,9 @@
 use std::cmp::Reverse;
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::Path;
+use std::rc::Rc;
 
 use super::Entry;
 use crate::usage_cache::Usage;
@@ -9,7 +11,8 @@ use crate::usage_cache::Usage;
 const CACHE_PATH: &str = concat!(crate::prog_name!(), ".bincache");
 
 pub struct BinsMode {
-    bins: Vec<PathBuf>,
+    bins: Vec<Rc<Path>>,
+    entry_name_cache: HashMap<Rc<Path>, String>,
     term: Vec<CString>,
     usage: Usage,
 }
@@ -35,6 +38,7 @@ impl BinsMode {
                     None
                 }
             })
+            .map(Rc::<Path>::from)
             .collect();
 
         bins.sort_by(|x, y| {
@@ -47,7 +51,35 @@ impl BinsMode {
         });
         bins.dedup();
 
-        Self { bins, term, usage }
+        let mut fname_counts = HashMap::<_, u8>::new();
+
+        for b in &bins {
+            let count = fname_counts.entry(b.file_name().unwrap()).or_default();
+            *count = count.saturating_add(1);
+        }
+
+        let mut entry_name_cache = HashMap::new();
+
+        for bin in &bins {
+            let fname = bin.file_name().unwrap();
+            if fname_counts.get(fname).filter(|&&cnt| cnt > 1).is_none() {
+                continue;
+            }
+
+            let fname_str = fname.to_str().unwrap();
+
+            entry_name_cache.insert(
+                Rc::clone(&bin),
+                format!("{} ({})", fname_str, bin.to_str().unwrap()),
+            );
+        }
+
+        Self {
+            bins,
+            entry_name_cache,
+            term,
+            usage,
+        }
     }
 
     pub fn eval(&mut self, idx: usize) -> std::convert::Infallible {
@@ -75,10 +107,16 @@ impl BinsMode {
     }
 
     pub fn entry(&self, idx: usize) -> Entry<'_> {
-        Entry {
-            name: self.bins[idx].file_name().and_then(|s| s.to_str()).unwrap(),
-            icon: None,
-        }
+        let bin = &self.bins[idx];
+        let fname = bin.file_name().unwrap();
+
+        let name = if let Some(name) = self.entry_name_cache.get(bin) {
+            name.as_str()
+        } else {
+            fname.to_str().unwrap()
+        };
+
+        Entry { name, icon: None }
     }
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
