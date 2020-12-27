@@ -139,7 +139,7 @@ where
             let match_ranges = item.match_mask.unwrap_or(&empty);
 
             fn substr<'a, 'b: 'a>(x: &'b str, r: &Range<usize>) -> &'a str {
-                assert!(r.end <= x.chars().count());
+                debug_assert!(r.end <= x.chars().count());
                 let start = x
                     .char_indices()
                     .nth(r.start)
@@ -202,14 +202,9 @@ where
                         (draw_substr!(&range, pos, color), range.end)
                     });
 
-                dt.draw_text(
-                    &self.params.font,
-                    font_size,
-                    substr(item.name, &(idx..item.name.len())),
-                    pos,
-                    &Source::Solid(color),
-                    &draw_opts,
-                );
+                let tail_str = substr(item.name, &(idx..item.name.chars().count()));
+                let color = Source::Solid(color);
+                dt.draw_text(&font, font_size, tail_str, pos, &color, &draw_opts);
             } else {
                 dt.draw_text(
                     &self.params.font,
