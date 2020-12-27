@@ -2,10 +2,12 @@
 
 ## Features
 
+- Display full path for ambiguous binapps (0b47575)
 - ctrl+backspace is alias for ctrl+w (b3fca99)
 
 ## Bug fixes
 
+- Deduplicate binapps entries with the same path (c6b73f2)
 - With highligting enabled search may crash sometimes (b990057)
 
 # 0.1.3 - 2020-12-26
