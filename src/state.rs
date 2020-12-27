@@ -24,6 +24,10 @@ impl Preprocessed {
     }
 
     fn index(&self, selected_item: usize) -> usize {
+        if self.len() == 0 {
+            panic!("Search list is empty, cannot select an item");
+        }
+
         if selected_item >= self.len() {
             panic!("Internal error: selected_item overflow");
         }
