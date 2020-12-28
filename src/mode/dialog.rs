@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader};
 
-use super::Entry;
+use super::{Entry, EvalInfo};
 
 pub struct DialogMode {
     lines: Vec<String>,
@@ -19,7 +19,8 @@ impl DialogMode {
         }
     }
 
-    pub fn eval(&mut self, idx: usize) -> std::convert::Infallible {
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
+        let idx = info.index.expect("invalid index");
         println!("{}", &self.lines[idx]);
         std::process::exit(0);
     }

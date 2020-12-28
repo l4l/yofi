@@ -3,7 +3,7 @@ use fzyr::LocateResult;
 
 use crate::draw::ListItem;
 use crate::input::KeyPress;
-use crate::mode::Mode;
+use crate::mode::{EvalInfo, Mode};
 
 struct Preprocessed(Either<Vec<LocateResult>, usize>);
 
@@ -23,19 +23,19 @@ impl Preprocessed {
         }
     }
 
-    fn index(&self, selected_item: usize) -> usize {
+    fn index(&self, selected_item: usize) -> Option<usize> {
         if self.len() == 0 {
-            panic!("Search list is empty, cannot select an item");
+            return None;
         }
 
         if selected_item >= self.len() {
             panic!("Internal error: selected_item overflow");
         }
 
-        match self {
+        Some(match self {
             Self(Either::Left(x)) => x[selected_item].candidate_index,
             Self(Either::Right(_)) => selected_item,
-        }
+        })
     }
 
     fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
@@ -107,7 +107,32 @@ impl State {
                 keysym: keysyms::XKB_KEY_Return,
                 ..
             } => {
-                self.inner.eval(self.preprocessed.index(self.selected_item));
+                let input_buf = std::mem::replace(&mut self.input_buf, String::new());
+                let info = EvalInfo {
+                    index: self.preprocessed.index(self.selected_item),
+                    input_value: crate::input_parser::parser(&input_buf)
+                        .map(|(left, cmd)| {
+                            if !left.is_empty() {
+                                log::error!(
+                                    "Non-terminating parse, cmd: {:?}, left: {:?}",
+                                    input_buf,
+                                    left
+                                );
+                            }
+                            cmd
+                        })
+                        .unwrap_or_else(|e| {
+                            log::error!("failed to parse command {:?}: {}", input_buf, e);
+                            crate::input_parser::InputValue {
+                                has_exact_prefix: false,
+                                search_string: &input_buf,
+                                args: None,
+                                env_vars: None,
+                                workind_dir: None,
+                            }
+                        }),
+                };
+                self.inner.eval(info);
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_bracketright,

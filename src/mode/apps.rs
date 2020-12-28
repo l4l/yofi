@@ -1,7 +1,7 @@
 use std::cmp::Reverse;
 use std::ffi::CString;
 
-use super::Entry;
+use super::{Entry, EvalInfo};
 use crate::usage_cache::Usage;
 use crate::DesktopEntry;
 
@@ -26,38 +26,24 @@ impl AppsMode {
         }
     }
 
-    pub fn eval(&mut self, idx: usize) -> std::convert::Infallible {
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
+        let idx = info.index.unwrap();
         let entry = &self.entries[idx];
         let args = shlex::split(&entry.exec)
             .unwrap()
             .into_iter()
             .filter(|s| !s.starts_with('%')) // TODO: use placeholders somehow
-            .map(|s| CString::new(s).unwrap())
-            .collect::<Vec<_>>();
-        let (prog, args) = if entry.is_terminal {
-            assert!(
-                !self.term.is_empty(),
-                "Cannot find terminal, specify `term` in config"
-            );
-            self.term.extend(args);
-            (&self.term[0], &self.term[0..])
-        } else {
-            (&args[0], &args[0..])
-        };
+            .map(|s| CString::new(s).unwrap());
 
         self.usage
             .increment_entry_usage(entry.desktop_fname.clone());
         self.usage.try_update_cache(CACHE_PATH);
 
-        log::debug!("executing command: {:?} {:?}", prog, args);
-        nix::unistd::execvp(prog, args).unwrap_or_else(|e| {
-            panic!(
-                "failed to launch desktop file {:?} with command line `{:?} {:?}`: {}",
-                entry.path, prog, args, e
-            )
-        });
-
-        unreachable!()
+        crate::exec::exec(
+            std::mem::replace(&mut self.term, Vec::new()),
+            args,
+            info.input_value,
+        )
     }
 
     pub fn entries_len(&self) -> usize {

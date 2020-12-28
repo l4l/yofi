@@ -4,6 +4,7 @@ use std::iter::ExactSizeIterator;
 use either::Either;
 use raqote::Image;
 
+use crate::input_parser::InputValue;
 use crate::DesktopEntry;
 
 mod apps;
@@ -31,6 +32,19 @@ macro_rules! delegate {
     }
 }
 
+pub struct EvalInfo<'a> {
+    pub index: Option<usize>,
+    pub input_value: InputValue<'a>,
+}
+
+impl<'a> std::ops::Deref for EvalInfo<'a> {
+    type Target = InputValue<'a>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.input_value
+    }
+}
+
 pub enum Mode {
     AppsMode(apps::AppsMode),
     BinAppsMode(bins::BinsMode),
@@ -55,7 +69,7 @@ impl Mode {
         Self::DialogMode(dialog::DialogMode::new())
     }
 
-    delegate!(pub fn eval(&mut self, idx: usize) -> std::convert::Infallible);
+    delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible);
     delegate!(pub fn entries_len(&self) -> usize);
     delegate!(pub fn entry(&self, idx: usize) -> Entry<'_>);
 

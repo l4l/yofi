@@ -5,7 +5,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::rc::Rc;
 
-use super::Entry;
+use super::{Entry, EvalInfo};
 use crate::usage_cache::Usage;
 
 const CACHE_PATH: &str = concat!(crate::prog_name!(), ".bincache");
@@ -82,24 +82,21 @@ impl BinsMode {
         }
     }
 
-    pub fn eval(&mut self, idx: usize) -> std::convert::Infallible {
-        let binary = self.bins[idx].to_str().unwrap();
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
+        let binary = if let Some(idx) = info.index {
+            self.bins[idx].to_str().unwrap()
+        } else {
+            info.search_string
+        };
 
         self.usage.increment_entry_usage(binary.to_string());
         self.usage.try_update_cache(CACHE_PATH);
 
-        self.term.push(CString::new(binary).unwrap());
-        let (prog, args) = (&self.term[0], &self.term[0..]);
-
-        log::debug!("executing command: {:?} {:?}", prog, args);
-        nix::unistd::execvp(prog, args).unwrap_or_else(|e| {
-            panic!(
-                "failed to launch command line `{:?} {:?}`: {}",
-                prog, args, e
-            )
-        });
-
-        unreachable!()
+        crate::exec::exec(
+            std::mem::replace(&mut self.term, Vec::new()),
+            vec![CString::new(binary).expect("invalid binary")],
+            info.input_value,
+        )
     }
 
     pub fn entries_len(&self) -> usize {
