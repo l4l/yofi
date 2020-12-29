@@ -1,5 +1,5 @@
 use nom::{
-    bytes::complete::{tag, take_till},
+    bytes::complete::tag,
     combinator::opt,
     error::{Error, ErrorKind},
     IResult,
@@ -7,6 +7,7 @@ use nom::{
 use once_cell::sync::OnceCell;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct InputValue<'a> {
     pub has_exact_prefix: bool,
     pub search_string: &'a str,
@@ -15,14 +16,10 @@ pub struct InputValue<'a> {
     pub workind_dir: Option<&'a str>,
 }
 
-fn parse_prefix(input: &str) -> IResult<&str, bool> {
+fn parse_exact_prefix(input: &str) -> IResult<&str, bool> {
     let (left, parsed) = opt(tag("@"))(input)?;
-    if parsed.is_none() {
-        return Ok((left, false));
-    }
 
-    let (left, _) = take_till(|c| c == ' ')(input)?;
-    Ok((left, true))
+    Ok((left, parsed.is_some()))
 }
 
 enum NextValueKind {
@@ -58,7 +55,7 @@ fn parse_command_part(input: &str) -> IResult<&str, (&str, Option<NextValueKind>
 }
 
 pub fn parser(input: &str) -> IResult<&str, InputValue<'_>> {
-    let (input, has_exact_prefix) = parse_prefix(input)?;
+    let (input, has_exact_prefix) = parse_exact_prefix(input)?;
     let (mut input, (search_string, mut next_kind)) = parse_command_part(input)?;
     let mut command = InputValue {
         has_exact_prefix,
@@ -82,4 +79,81 @@ pub fn parser(input: &str) -> IResult<&str, InputValue<'_>> {
     }
 
     Ok((input, command))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parser, InputValue};
+
+    use quickcheck_macros::quickcheck;
+    use test_case::test_case;
+
+    impl InputValue<'static> {
+        fn empty() -> Self {
+            InputValue {
+                has_exact_prefix: false,
+                search_string: "",
+                args: None,
+                env_vars: None,
+                workind_dir: None,
+            }
+        }
+    }
+
+    #[test_case("", InputValue::empty(); "empty string")]
+    #[test_case("qwdqwd asd asd", InputValue {
+        search_string: "qwdqwd asd asd",
+        ..InputValue::empty()
+    }; "search string")]
+    #[test_case("@qwdqwd asd asd", InputValue {
+        has_exact_prefix: true,
+        search_string: "qwdqwd asd asd",
+        ..InputValue::empty()
+    }; "exact search string")]
+    #[test_case("qwdqwd asd asd", InputValue {
+        search_string: "qwdqwd asd asd",
+        ..InputValue::empty()
+    }; "search string with exact prefix")]
+    #[test_case("qwdqwd!!asd#dsa", InputValue {
+        search_string: "qwdqwd",
+        args: Some("asd"),
+        env_vars: Some("dsa"),
+        ..InputValue::empty()
+    }; "search string with args then env")]
+    #[test_case("qwdqwd#dsa!!asd", InputValue {
+        search_string: "qwdqwd",
+        args: Some("asd"),
+        env_vars: Some("dsa"),
+        ..InputValue::empty()
+    }; "search string with env then args")]
+    #[test_case("qwdqwd~zx,c#qwe !!asd", InputValue {
+        search_string: "qwdqwd",
+        args: Some("asd"),
+        env_vars: Some("qwe "),
+        workind_dir: Some("zx,c"),
+        ..InputValue::empty()
+    }; "search string with working dir then env then args")]
+    #[test_case("@#qwe~zx,c!!asd", InputValue {
+        has_exact_prefix: true,
+        search_string: "",
+        args: Some("asd"),
+        env_vars: Some("qwe"),
+        workind_dir: Some("zx,c"),
+    }; "all but search string")]
+    #[test_case("@ffx!!--new-instance#MOZ_ENABLE_WAYLAND=1~/run/user/1000", InputValue {
+        has_exact_prefix: true,
+        search_string: "ffx",
+        args: Some("--new-instance"),
+        env_vars: Some("MOZ_ENABLE_WAYLAND=1"),
+        workind_dir: Some("/run/user/1000"),
+    }; "with all params")]
+    fn test_parse(input: &str, input_value: InputValue) {
+        assert_eq!(parser(input), Ok(("", input_value)));
+    }
+
+    #[quickcheck]
+    fn test_parse_all(input: String) {
+        let (left, _) = parser(&input).unwrap();
+        assert_eq!(left, "");
+    }
 }
