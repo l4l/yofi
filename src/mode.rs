@@ -34,14 +34,14 @@ macro_rules! delegate {
 
 pub struct EvalInfo<'a> {
     pub index: Option<usize>,
-    pub input_value: InputValue<'a>,
+    pub input_value: &'a InputValue<'a>,
 }
 
 impl<'a> std::ops::Deref for EvalInfo<'a> {
     type Target = InputValue<'a>;
 
     fn deref(&self) -> &Self::Target {
-        &self.input_value
+        &*self.input_value
     }
 }
 

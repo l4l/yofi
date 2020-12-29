@@ -5,7 +5,7 @@ use crate::input_parser::InputValue;
 pub fn exec(
     mut term: Vec<CString>,
     command_string: impl IntoIterator<Item = impl Into<CString>>,
-    input_value: InputValue,
+    input_value: &InputValue,
 ) -> std::convert::Infallible {
     let InputValue {
         has_exact_prefix: _,

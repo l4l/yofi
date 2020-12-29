@@ -16,6 +16,18 @@ pub struct InputValue<'a> {
     pub workind_dir: Option<&'a str>,
 }
 
+impl InputValue<'static> {
+    pub fn empty() -> Self {
+        InputValue {
+            has_exact_prefix: false,
+            search_string: "",
+            args: None,
+            env_vars: None,
+            workind_dir: None,
+        }
+    }
+}
+
 fn parse_exact_prefix(input: &str) -> IResult<&str, bool> {
     let (left, parsed) = opt(tag("@"))(input)?;
 
@@ -87,18 +99,6 @@ mod tests {
 
     use quickcheck_macros::quickcheck;
     use test_case::test_case;
-
-    impl InputValue<'static> {
-        fn empty() -> Self {
-            InputValue {
-                has_exact_prefix: false,
-                search_string: "",
-                args: None,
-                env_vars: None,
-                workind_dir: None,
-            }
-        }
-    }
 
     #[test_case("", InputValue::empty(); "empty string")]
     #[test_case("qwdqwd asd asd", InputValue {
