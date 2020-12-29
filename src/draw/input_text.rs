@@ -27,16 +27,19 @@ impl<'a> InputText<'a> {
 }
 
 impl<'a> Drawable for InputText<'a> {
-    fn draw(self, dt: &mut DrawTarget, space: Space, point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
-        let font_size = f32::from(self.params.font_size);
+        let font_size = f32::from(self.params.font_size * scale);
 
-        let border_diameter = self.params.padding.top + font_size + self.params.padding.bottom;
+        let padding = self.params.padding * f32::from(scale);
+        let margin = self.params.margin * f32::from(scale);
+
+        let border_diameter = padding.top + font_size + padding.bottom;
         let border_radius = border_diameter / 2.0;
 
-        let left_x_center = point.x + self.params.margin.left + border_radius;
-        let y_center = point.y + self.params.margin.top + border_radius;
+        let left_x_center = point.x + margin.left + border_radius;
+        let y_center = point.y + margin.top + border_radius;
 
         pb.arc(
             left_x_center,
@@ -45,7 +48,7 @@ impl<'a> Drawable for InputText<'a> {
             consts::FRAC_PI_2,
             consts::PI,
         );
-        let right_x_center = (point.x + space.width - border_radius - self.params.margin.right)
+        let right_x_center = (point.x + space.width - border_radius - margin.right)
             .max(left_x_center - border_radius);
         pb.arc(
             right_x_center,
@@ -63,7 +66,7 @@ impl<'a> Drawable for InputText<'a> {
         );
 
         let pos = Point::new(
-            left_x_center + self.params.padding.left,
+            left_x_center + padding.left,
             font_size / /*empirical magic:*/ 3.0 + y_center,
         );
         dt.draw_text(
@@ -78,7 +81,7 @@ impl<'a> Drawable for InputText<'a> {
 
         Space {
             width: space.width,
-            height: point.y + self.params.margin.top + border_diameter + self.params.margin.bottom,
+            height: point.y + margin.top + border_diameter + margin.bottom,
         }
     }
 }

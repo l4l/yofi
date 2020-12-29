@@ -31,14 +31,6 @@ impl Config {
     pub fn disable_icons(&mut self) {
         self.icon = None;
     }
-
-    fn scale(&self) -> u16 {
-        self.scale.unwrap_or(1)
-    }
-
-    pub fn update_scale(&mut self, scale: u16) {
-        self.scale = Some(scale);
-    }
 }
 
 #[derive(Deserialize)]

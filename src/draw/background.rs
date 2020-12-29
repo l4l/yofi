@@ -17,7 +17,7 @@ impl Background {
 }
 
 impl<'a> Drawable for Background {
-    fn draw(self, dt: &mut DrawTarget, _: Space, _: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget, _: u16, _: Space, _: Point) -> Space {
         dt.clear(self.params.color);
 
         Space {

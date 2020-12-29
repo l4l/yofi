@@ -109,7 +109,6 @@ fn main() {
     let mut event_loop = calloop::EventLoop::<()>::new().unwrap();
 
     let mut surface = surface::Surface::new(&env, config.param());
-    config.update_scale(surface.scale());
 
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
 
@@ -151,32 +150,36 @@ fn main() {
         };
 
         if should_redraw {
-            use std::iter::once;
-
-            state.process_entries();
-
-            let (tx, rx) = oneshot::channel();
-
-            let background = draw::Widget::background(config.param());
-            let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
-            let list_view_widget = draw::Widget::list_view(
-                state.processed_entries(),
-                state.skip_offset(),
-                state.selected_item(),
-                tx,
-                config.param(),
-            );
-
-            surface.redraw(
-                once(background)
-                    .chain(once(input_widget))
-                    .chain(once(list_view_widget)),
-            );
-
-            state.update_skip_offset(rx.recv().unwrap());
+            draw(&mut state, &config, &mut surface);
         }
 
         display.flush().unwrap();
         event_loop.dispatch(None, &mut ()).unwrap();
     }
+}
+
+fn draw(state: &mut state::State, config: &config::Config, surface: &mut surface::Surface) {
+    use std::iter::once;
+
+    state.process_entries();
+
+    let (tx, rx) = oneshot::channel();
+
+    let background = draw::Widget::background(config.param());
+    let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
+    let list_view_widget = draw::Widget::list_view(
+        state.processed_entries(),
+        state.skip_offset(),
+        state.selected_item(),
+        tx,
+        config.param(),
+    );
+
+    surface.redraw(
+        once(background)
+            .chain(once(input_widget))
+            .chain(once(list_view_widget)),
+    );
+
+    state.update_skip_offset(rx.recv().unwrap());
 }

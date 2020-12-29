@@ -34,7 +34,7 @@ pub struct Surface {
     layer_surface: Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>,
     next_render_event: Rc<Cell<Option<RenderEvent>>>,
     pools: DoubleMemPool,
-    scale: u16,
+    scale: Option<u16>,
     dimensions: (u32, u32),
 }
 
@@ -54,11 +54,7 @@ impl Surface {
             crate::prog_name!().to_owned(),
         );
 
-        let scale = params.scale.unwrap_or_else(|| {
-            sctk::get_surface_scale_factor(&surface)
-                .try_into()
-                .expect("invalid surface scale factor")
-        });
+        let scale = params.scale;
         let width = params.width;
         let height = params.height;
 
@@ -96,7 +92,6 @@ impl Surface {
 
         // Commit so that the server will send a configure event
         surface.commit();
-        surface.set_buffer_scale(scale.into());
 
         Self {
             surface,
@@ -106,10 +101,6 @@ impl Surface {
             scale,
             dimensions: (width, height),
         }
-    }
-
-    pub fn scale(&self) -> u16 {
-        self.scale
     }
 
     /// Handles any events that have occurred since the last call, redrawing if needed.
@@ -129,15 +120,21 @@ impl Surface {
     where
         D: Drawable,
     {
+        let scale = self.scale.unwrap_or_else(|| {
+            sctk::get_surface_scale_factor(&self.surface)
+                .try_into()
+                .expect("invalid surface scale factor")
+        });
+        self.surface.set_buffer_scale(scale.into());
+
         let pool = if let Some(pool) = self.pools.pool() {
             pool
         } else {
             return;
         };
 
-        let scale = u32::from(self.scale);
-        let width = self.dimensions.0 * scale;
-        let height = self.dimensions.1 * scale;
+        let width = self.dimensions.0 * u32::from(scale);
+        let height = self.dimensions.1 * u32::from(scale);
 
         // First make sure the pool is the right size
         pool.resize((4 * width * height) as usize).unwrap();
@@ -156,7 +153,7 @@ impl Surface {
             let mut point = Point::new(0., 0.);
 
             for d in drawables {
-                let occupied = d.draw(&mut dt, space_left, point);
+                let occupied = d.draw(&mut dt, scale, space_left, point);
                 debug_assert!(
                     occupied.width <= space_left.width && occupied.height <= space_left.height
                 );
