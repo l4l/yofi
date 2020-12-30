@@ -43,14 +43,15 @@ pub fn exec(
     };
 
     if let Some(env_vars) = env_vars {
-        let env_vars = shlex::split(env_vars)
-            .expect("invalid envs")
+        let env_vars = std::env::vars()
             .into_iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .chain(shlex::split(env_vars).expect("invalid envs"))
             .map(|s| CString::new(s).expect("invalid envs"))
             .collect::<Vec<_>>();
 
         let (prog, args) = (&command[0], &command[0..]);
-        log::debug!("execvpe: {:?} {:?}", prog, args);
+        log::debug!("execvpe: {:?} {:?} (envs: {:?})", prog, args, env_vars);
         nix::unistd::execvpe(prog, args, &env_vars).expect("execvpe failed")
     } else {
         let (prog, args) = (&command[0], &command[0..]);
