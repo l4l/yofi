@@ -39,11 +39,13 @@ impl AppsMode {
             .increment_entry_usage(entry.desktop_fname.clone());
         self.usage.try_update_cache(CACHE_PATH);
 
-        crate::exec::exec(
-            std::mem::replace(&mut self.term, Vec::new()),
-            args,
-            info.input_value,
-        )
+        let term = if entry.is_terminal {
+            Some(std::mem::replace(&mut self.term, Vec::new()))
+        } else {
+            None
+        };
+
+        crate::exec::exec(term, args, info.input_value)
     }
 
     pub fn entries_len(&self) -> usize {

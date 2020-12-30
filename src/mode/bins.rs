@@ -93,7 +93,7 @@ impl BinsMode {
         self.usage.try_update_cache(CACHE_PATH);
 
         crate::exec::exec(
-            std::mem::replace(&mut self.term, Vec::new()),
+            Some(std::mem::replace(&mut self.term, Vec::new())),
             vec![CString::new(binary).expect("invalid binary")],
             info.input_value,
         )
