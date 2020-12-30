@@ -34,7 +34,7 @@ pub struct Surface {
     layer_surface: Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>,
     next_render_event: Rc<Cell<Option<RenderEvent>>>,
     pools: DoubleMemPool,
-    scale: u16,
+    scale: Rc<Cell<u16>>,
     dimensions: (u32, u32),
 }
 
@@ -44,7 +44,18 @@ impl Surface {
             .create_double_pool(|_| {})
             .expect("Failed to create a memory pool!");
 
-        let surface = env.create_surface().detach();
+        let next_render_event = Rc::new(Cell::new(None::<RenderEvent>));
+
+        let scale = Rc::new(Cell::new(params.scale.unwrap_or(1)));
+
+        let scale1 = Rc::clone(&scale);
+        let next_render_event_handle = Rc::clone(&next_render_event);
+        let surface = env
+            .create_surface_with_scale_callback(move |scale, _, _| {
+                scale1.set(scale.try_into().expect("invalid surface scale factor"));
+                next_render_event_handle.set(Some(RenderEvent::ScaleUpdate));
+            })
+            .detach();
         let layer_shell = env.require_global::<zwlr_layer_shell_v1::ZwlrLayerShellV1>();
 
         let layer_surface = layer_shell.get_layer_surface(
@@ -54,11 +65,6 @@ impl Surface {
             crate::prog_name!().to_owned(),
         );
 
-        let scale = params.scale.unwrap_or_else(|| {
-            sctk::get_surface_scale_factor(&surface)
-                .try_into()
-                .expect("invalid surface scale factor")
-        });
         let width = params.width;
         let height = params.height;
 
@@ -71,9 +77,7 @@ impl Surface {
         layer_surface.set_size(width, height);
         layer_surface.set_keyboard_interactivity(1);
 
-        let next_render_event = Rc::new(Cell::new(None::<RenderEvent>));
         let next_render_event_handle = Rc::clone(&next_render_event);
-
         layer_surface.quick_assign(move |layer_surface, event, _| {
             if matches!(event, zwlr_layer_surface_v1::Event::Closed) {
                 next_render_event_handle.set(Some(RenderEvent::Closed));
@@ -87,7 +91,7 @@ impl Surface {
             } = event
             {
                 if !matches!(next_render_event_handle.get(), Some(RenderEvent::Closed)) {
-                    next_render_event_handle.set(Some(RenderEvent::Configure { width, height }));
+                    next_render_event_handle.set(Some(RenderEvent::Resized { width, height }));
                     layer_surface.ack_configure(serial);
                     return;
                 }
@@ -96,7 +100,6 @@ impl Surface {
 
         // Commit so that the server will send a configure event
         surface.commit();
-        surface.set_buffer_scale(scale.into());
 
         Self {
             surface,
@@ -108,19 +111,16 @@ impl Surface {
         }
     }
 
-    pub fn scale(&self) -> u16 {
-        self.scale
-    }
-
     /// Handles any events that have occurred since the last call, redrawing if needed.
     /// Returns true if the surface should be dropped.
     pub fn handle_events(&mut self) -> EventStatus {
         match self.next_render_event.take() {
             Some(RenderEvent::Closed) => EventStatus::Finished,
-            Some(RenderEvent::Configure { width, height }) => {
+            Some(RenderEvent::Resized { width, height }) => {
                 self.dimensions = (width, height);
                 EventStatus::ShouldRedraw
             }
+            Some(RenderEvent::ScaleUpdate) => EventStatus::ShouldRedraw,
             None => EventStatus::Idle,
         }
     }
@@ -129,15 +129,17 @@ impl Surface {
     where
         D: Drawable,
     {
+        let scale = self.scale.get();
+        self.surface.set_buffer_scale(scale.into());
+
         let pool = if let Some(pool) = self.pools.pool() {
             pool
         } else {
             return;
         };
 
-        let scale = u32::from(self.scale);
-        let width = self.dimensions.0 * scale;
-        let height = self.dimensions.1 * scale;
+        let width = self.dimensions.0 * u32::from(scale);
+        let height = self.dimensions.1 * u32::from(scale);
 
         // First make sure the pool is the right size
         pool.resize((4 * width * height) as usize).unwrap();
@@ -156,7 +158,7 @@ impl Surface {
             let mut point = Point::new(0., 0.);
 
             for d in drawables {
-                let occupied = d.draw(&mut dt, space_left, point);
+                let occupied = d.draw(&mut dt, scale, space_left, point);
                 debug_assert!(
                     occupied.width <= space_left.width && occupied.height <= space_left.height
                 );
@@ -194,6 +196,7 @@ impl Drop for Surface {
 
 #[derive(PartialEq, Copy, Clone)]
 enum RenderEvent {
-    Configure { width: u32, height: u32 },
+    Resized { width: u32, height: u32 },
+    ScaleUpdate,
     Closed,
 }
