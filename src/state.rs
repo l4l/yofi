@@ -3,7 +3,8 @@ use fzyr::LocateResult;
 
 use crate::draw::ListItem;
 use crate::input::KeyPress;
-use crate::mode::Mode;
+use crate::input_parser::InputValue;
+use crate::mode::{EvalInfo, Mode};
 
 struct Preprocessed(Either<Vec<LocateResult>, usize>);
 
@@ -23,19 +24,19 @@ impl Preprocessed {
         }
     }
 
-    fn index(&self, selected_item: usize) -> usize {
+    fn index(&self, selected_item: usize) -> Option<usize> {
         if self.len() == 0 {
-            panic!("Search list is empty, cannot select an item");
+            return None;
         }
 
         if selected_item >= self.len() {
             panic!("Internal error: selected_item overflow");
         }
 
-        match self {
+        Some(match self {
             Self(Either::Left(x)) => x[selected_item].candidate_index,
             Self(Either::Right(_)) => selected_item,
-        }
+        })
     }
 
     fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
@@ -61,8 +62,66 @@ impl Preprocessed {
     }
 }
 
+struct InputBuffer {
+    raw_input: String,
+    parsed_input: InputValue<'static>,
+}
+
+impl InputBuffer {
+    pub fn new() -> Self {
+        Self {
+            raw_input: String::new(),
+            parsed_input: InputValue::empty(),
+        }
+    }
+
+    pub fn update_input(&mut self, f: impl FnOnce(&mut String)) {
+        f(&mut self.raw_input);
+
+        let parsed = crate::input_parser::parser(&self.raw_input)
+            .map(|(left, cmd)| {
+                if !left.is_empty() {
+                    log::error!(
+                        "Non-terminating parse, cmd: {:?}, left: {:?}",
+                        self.raw_input,
+                        left
+                    );
+                }
+                cmd
+            })
+            .unwrap_or_else(|e| {
+                log::error!("failed to parse command {:?}: {}", self.raw_input, e);
+                crate::input_parser::InputValue {
+                    search_string: &self.raw_input,
+                    args: None,
+                    env_vars: None,
+                    workind_dir: None,
+                }
+            });
+
+        // This transmute is needed for extending `raw_input` lifetime
+        // to a static one thus making it possible to cache parsed result.
+        // Safety: this is safe, because it's internal structure invariant
+        // that `parsed_input` never outlives `raw_input`, nor used after
+        // its update.
+        self.parsed_input = unsafe { std::mem::transmute(parsed) };
+    }
+
+    pub fn raw_input(&self) -> &str {
+        self.raw_input.as_str()
+    }
+
+    pub fn parsed_input<'a>(&self) -> &InputValue<'a> {
+        &self.parsed_input
+    }
+
+    pub fn search_string(&self) -> &str {
+        self.parsed_input.search_string
+    }
+}
+
 pub struct State {
-    input_buf: String,
+    input_buffer: InputBuffer,
     skip_offset: usize,
     selected_item: usize,
     preprocessed: Preprocessed,
@@ -72,7 +131,7 @@ pub struct State {
 impl State {
     pub fn new(inner: Mode) -> Self {
         Self {
-            input_buf: String::new(),
+            input_buffer: InputBuffer::new(),
             skip_offset: 0,
             selected_item: 0,
             preprocessed: Preprocessed::unfiltred(inner.entries_len()),
@@ -92,9 +151,9 @@ impl State {
                 keysym: keysyms::XKB_KEY_BackSpace,
                 ctrl: false,
                 ..
-            } => {
-                self.input_buf.pop();
-            }
+            } => self.input_buffer.update_input(|input| {
+                input.pop();
+            }),
             KeyPress {
                 keysym: keysyms::XKB_KEY_Up,
                 ..
@@ -107,13 +166,17 @@ impl State {
                 keysym: keysyms::XKB_KEY_Return,
                 ..
             } => {
-                self.inner.eval(self.preprocessed.index(self.selected_item));
+                let info = EvalInfo {
+                    index: self.preprocessed.index(self.selected_item),
+                    input_value: self.input_buffer.parsed_input(),
+                };
+                self.inner.eval(info);
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_bracketright,
                 ctrl: true,
                 ..
-            } => self.input_buf.clear(),
+            } => self.input_buffer.update_input(|input| input.clear()),
             KeyPress {
                 keysym: keysyms::XKB_KEY_w,
                 ctrl: true,
@@ -123,23 +186,25 @@ impl State {
                 keysym: keysyms::XKB_KEY_BackSpace,
                 ctrl: true,
                 ..
-            } => {
-                if let Some(pos) = self.input_buf.rfind(|x: char| !x.is_alphanumeric()) {
-                    self.input_buf.truncate(pos);
+            } => self.input_buffer.update_input(|input| {
+                if let Some(pos) = input.rfind(|x: char| !x.is_alphanumeric()) {
+                    input.truncate(pos);
                 } else {
-                    self.input_buf.clear();
+                    input.clear();
                 }
-            }
+            }),
             KeyPress { sym: Some(sym), .. } if !sym.is_control() && !event.ctrl => {
-                self.input_buf.push(sym)
+                self.input_buffer.update_input(|input| {
+                    input.push(sym);
+                })
             }
             _ => log::debug!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl),
         }
         false
     }
 
-    pub fn input_buf(&self) -> &str {
-        &self.input_buf
+    pub fn raw_input(&self) -> &str {
+        self.input_buffer.raw_input()
     }
 
     pub fn skip_offset(&self) -> usize {
@@ -159,11 +224,11 @@ impl State {
     }
 
     pub fn process_entries(&mut self) {
-        self.preprocessed = if self.input_buf.is_empty() {
+        self.preprocessed = if self.input_buffer.search_string().is_empty() {
             Preprocessed::unfiltred(self.inner.entries_len())
         } else {
             Preprocessed::processed(fzyr::locate_serial(
-                &self.input_buf,
+                self.input_buffer.search_string(),
                 self.inner.text_entries(),
             ))
         };

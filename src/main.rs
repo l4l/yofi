@@ -16,8 +16,10 @@ pub use desktop::Entry as DesktopEntry;
 mod config;
 mod desktop;
 mod draw;
+mod exec;
 mod icon;
 mod input;
+mod input_parser;
 mod mode;
 mod state;
 mod style;
@@ -166,7 +168,7 @@ fn draw(state: &mut state::State, config: &config::Config, surface: &mut surface
     let (tx, rx) = oneshot::channel();
 
     let background = draw::Widget::background(config.param());
-    let input_widget = draw::Widget::input_text(&state.input_buf(), config.param());
+    let input_widget = draw::Widget::input_text(&state.raw_input(), config.param());
     let list_view_widget = draw::Widget::list_view(
         state.processed_entries(),
         state.skip_offset(),
