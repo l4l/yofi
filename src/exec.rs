@@ -25,8 +25,8 @@ pub fn exec(
             v.extend(item.into_bytes());
             v
         });
-        command.push(b' ');
         if let Some(args) = args {
+            command.push(b' ');
             command.extend(args.as_bytes());
         }
 
