@@ -13,6 +13,7 @@ pub struct Entry {
     pub desktop_fname: String,
     pub path: PathBuf,
     pub exec: String,
+    pub name_with_keywords: String,
     pub is_terminal: bool,
     pub icon: Option<Icon>,
 }
@@ -95,6 +96,9 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
                     .to_owned(),
                 path: dir_entry_path,
                 exec: e.to_owned(),
+                // TODO: use `attr_with_param` with locale first
+                name_with_keywords: n.to_owned()
+                    + main_section.attr("Keywords").unwrap_or_default(),
                 is_terminal: main_section
                     .attr("Terminal")
                     .map(|s| s == "true")

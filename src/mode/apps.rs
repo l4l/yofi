@@ -62,6 +62,6 @@ impl AppsMode {
     }
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
-        self.entries.iter().map(|e| e.name.as_str())
+        self.entries.iter().map(|e| e.name_with_keywords.as_str())
     }
 }
