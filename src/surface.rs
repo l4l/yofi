@@ -1,6 +1,7 @@
 use std::cell::Cell;
 use std::convert::TryInto;
 use std::rc::Rc;
+use either::Either;
 
 use sctk::{
     environment::Environment,
@@ -30,7 +31,7 @@ pub struct Params {
 }
 
 pub struct Surface {
-    surface: wl_surface::WlSurface,
+    surface: Either<Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>, wl_surface::WlSurface>,
     layer_surface: Main<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1>,
     next_render_event: Rc<Cell<Option<RenderEvent>>>,
     pools: DoubleMemPool,
@@ -52,13 +53,27 @@ impl Surface {
         let next_render_event_handle = Rc::clone(&next_render_event);
         let surface = env
             .create_surface_with_scale_callback(move |scale, _, _| {
-                scale1.set(scale.try_into().expect("invalid surface scale factor"));
+                scale1.set(scale.try_into().,expect("invalid surface scale factor"));
                 next_render_event_handle.set(Some(RenderEvent::ScaleUpdate));
             })
             .detach();
-        let layer_shell = env.require_global::<zwlr_layer_shell_v1::ZwlrLayerShellV1>();
+        let layer_shell = env.get_global::<zwlr_layer_shell_v1::ZwlrLayerShellV1>();
 
-        let layer_surface = layer_shell.get_layer_surface(
+        let a = match layer_shell {
+            Some(layer_shell) => layer_shell,
+            None => {
+                env.create_window::<ConceptFrame, _>(
+                    surface,
+                    None,
+                    surface.dimensions,
+                    move |evt, mut dispatch_data| {
+                        
+                    }
+                )
+            }
+        };
+        
+        let layer_surface = a.get_layer_surface(
             &surface,
             None,
             zwlr_layer_shell_v1::Layer::Top,
