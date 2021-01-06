@@ -1,7 +1,9 @@
+use either::Either;
 use std::cell::Cell;
 use std::convert::TryInto;
 use std::rc::Rc;
-use either::Either;
+
+use sctk::window::{ConceptFrame, Event as WEvent};
 
 use sctk::{
     environment::Environment,
@@ -53,7 +55,7 @@ impl Surface {
         let next_render_event_handle = Rc::clone(&next_render_event);
         let surface = env
             .create_surface_with_scale_callback(move |scale, _, _| {
-                scale1.set(scale.try_into().,expect("invalid surface scale factor"));
+                scale1.set(scale.try_into().expect("invalid surface scale factor"));
                 next_render_event_handle.set(Some(RenderEvent::ScaleUpdate));
             })
             .detach();
@@ -61,18 +63,14 @@ impl Surface {
 
         let a = match layer_shell {
             Some(layer_shell) => layer_shell,
-            None => {
-                env.create_window::<ConceptFrame, _>(
-                    surface,
-                    None,
-                    surface.dimensions,
-                    move |evt, mut dispatch_data| {
-                        
-                    }
-                )
-            }
+            None => env.create_window::<ConceptFrame, _>(
+                surface,
+                None,
+                (params.height, params.width),
+                move |evt, mut dispatch_data| {},
+            ),
         };
-        
+
         let layer_surface = a.get_layer_surface(
             &surface,
             None,
