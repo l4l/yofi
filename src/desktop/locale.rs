@@ -3,10 +3,29 @@ use std::ffi::CStr;
 use once_cell::sync::OnceCell;
 use regex::Regex;
 
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub struct Locale<'a> {
     lang: Option<&'a str>,
     country: Option<&'a str>,
     modifier: Option<&'a str>,
+}
+
+const LOCALE_REGEX: &str = r#"(?x)
+                             ^
+                             ([[:alpha:]]+) # lang
+                             (?:_([[:alpha:]]+))? # country
+                             (?:\.[^@]*)? # encoding
+                             (?:@(.*))? # modifier
+                             $"#;
+
+impl<'a> Locale<'a> {
+    fn from_caputres(s: &'a str, captures: regex::Captures<'_>) -> Self {
+        Self {
+            lang: captures.get(1).map(|m| &s[m.range()]),
+            country: captures.get(2).map(|m| &s[m.range()]),
+            modifier: captures.get(3).map(|m| &s[m.range()]),
+        }
+    }
 }
 
 impl Locale<'static> {
@@ -24,24 +43,11 @@ impl Locale<'static> {
                 .to_str()
                 .ok()?;
 
-                let re = Regex::new(
-                    r#"(?x)
-                      ^
-                      ([[:alpha:]]+) # lang
-                      (?:_([[:alpha:]]+))? # country
-                      (?:\.[^@]*)? # encoding
-                      (?:@(.*))? # modifier
-                      $"#,
-                )
-                .unwrap();
+                let re = Regex::new(LOCALE_REGEX).unwrap();
 
                 let c = re.captures(s)?;
 
-                Some(Self {
-                    lang: c.get(1).map(|m| &s[m.range()]),
-                    country: c.get(2).map(|m| &s[m.range()]),
-                    modifier: c.get(3).map(|m| &s[m.range()]),
-                })
+                Some(Self::from_caputres(s, c))
             })
             .as_ref()
             .unwrap_or(&Self {
@@ -73,5 +79,57 @@ impl Locale<'static> {
             })
             .clone()
             .into_iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use test_case::test_case;
+
+    #[test]
+    fn regex_compiles() {
+        let _ = Regex::new(LOCALE_REGEX).unwrap();
+    }
+
+    #[test]
+    fn regex_doesnt_match_empty() {
+        let re = Regex::new(LOCALE_REGEX).unwrap();
+        assert!(re.captures("").is_none());
+    }
+
+    impl Locale<'static> {
+        fn new(
+            lang: impl Into<Option<&'static str>>,
+            country: impl Into<Option<&'static str>>,
+            modifier: impl Into<Option<&'static str>>,
+        ) -> Self {
+            Self {
+                lang: lang.into(),
+                country: country.into(),
+                modifier: modifier.into(),
+            }
+        }
+    }
+
+    #[test_case("qw", Locale::new("qw", None, None); "lang")]
+    #[test_case("qw_ER", Locale::new("qw", "ER", None); "lang, country")]
+    #[test_case("qw_ER.ty", Locale::new("qw", "ER", None); "lang, country, encoding")]
+    #[test_case(
+        "qw_ER.ty@ui",
+        Locale::new("qw", "ER", "ui");
+        "lang, country, encoding, modifier"
+    )]
+    #[test_case("qw@ui", Locale::new("qw", None, "ui"); "lang, modifier")]
+    fn regex_compiles(s: &str, x: Locale<'static>) {
+        let re = Regex::new(LOCALE_REGEX).unwrap();
+        let c = re.captures(s).unwrap();
+
+        let m = c.get(0).unwrap();
+        assert_eq!(m.start(), 0);
+        assert_eq!(m.end(), s.len());
+
+        assert_eq!(Locale::from_caputres(s, c), x);
     }
 }
