@@ -34,6 +34,7 @@ itertools = "0.9.0"
 euclid = "0.22.1"
 nom = { version = "6.0.1", default-features = false, features = ["std", "regexp"] }
 regex = "1.4.2"
+libc = "0.2.81"
 
 [profile.release]
 lto = true

@@ -6,6 +6,8 @@ use xdg::BaseDirectories;
 
 use crate::icon::Icon;
 
+mod locale;
+
 pub static XDG_DIRS: OnceCell<BaseDirectories> = OnceCell::new();
 
 pub struct Entry {
@@ -83,8 +85,19 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
             return;
         }
     };
+
     let main_section = entry.section("Desktop Entry");
-    match (main_section.attr("Name"), main_section.attr("Exec")) {
+    let locale = locale::Locale::current();
+
+    let localized_entry = |attr_name: &str| {
+        locale
+            .keys()
+            .filter_map(|key| main_section.attr_with_param(attr_name, key))
+            .next()
+            .or_else(|| main_section.attr(attr_name))
+    };
+
+    match (localized_entry("Name"), main_section.attr("Exec")) {
         (Some(n), Some(e)) => {
             entries.push(Entry {
                 name: n.to_owned(),
@@ -96,14 +109,12 @@ fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
                     .to_owned(),
                 path: dir_entry_path,
                 exec: e.to_owned(),
-                // TODO: use `attr_with_param` with locale first
-                name_with_keywords: n.to_owned()
-                    + main_section.attr("Keywords").unwrap_or_default(),
+                name_with_keywords: n.to_owned() + localized_entry("Keywords").unwrap_or_default(),
                 is_terminal: main_section
                     .attr("Terminal")
                     .map(|s| s == "true")
                     .unwrap_or(false),
-                icon: main_section.attr("Icon").and_then(|name| {
+                icon: localized_entry("Icon").and_then(|name| {
                     let icon_path = Path::new(name);
 
                     if icon_path.is_absolute() {
