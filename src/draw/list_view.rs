@@ -131,17 +131,19 @@ where
             let match_ranges = item.match_mask.unwrap_or(&empty);
 
             fn substr<'a, 'b: 'a>(x: &'b str, r: &Range<usize>) -> &'a str {
-                debug_assert!(r.end <= x.chars().count());
+                let chars_count = x.chars().count();
                 let start = x
                     .char_indices()
                     .nth(r.start)
                     .map(|x| x.0)
-                    .unwrap_or_else(|| x.len());
+                    .unwrap_or_else(|| x.len())
+                    .min(chars_count);
                 let end = x
                     .char_indices()
                     .nth(r.end - 1)
                     .map(|l| l.0 + l.1.len_utf8())
-                    .unwrap_or_else(|| x.len());
+                    .unwrap_or_else(|| x.len())
+                    .min(chars_count);
                 &x[start..end]
             }
 

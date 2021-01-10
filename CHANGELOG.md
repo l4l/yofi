@@ -2,6 +2,7 @@
 
 ## Features
 
+- Search by keywords in apps mode (#20)
 - Magic separators support: `!!` for args, `#` for envs and `~` for workdir (#19)
 - Display full path for ambiguous binapps (0b47575)
 - ctrl+backspace is alias for ctrl+w (b3fca99)
