@@ -53,8 +53,8 @@ impl BinsMode {
 
         let mut fname_counts = HashMap::<_, u8>::new();
 
-        for b in &bins {
-            let count = fname_counts.entry(b.file_name().unwrap()).or_default();
+        for bin in &bins {
+            let count = fname_counts.entry(bin.file_name().unwrap()).or_default();
             *count = count.saturating_add(1);
         }
 
