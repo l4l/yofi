@@ -146,6 +146,11 @@ impl State {
             KeyPress {
                 keysym: keysyms::XKB_KEY_Escape,
                 ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_c,
+                ctrl: true,
+                ..
             } => return true,
             KeyPress {
                 keysym: keysyms::XKB_KEY_BackSpace,
@@ -157,9 +162,19 @@ impl State {
             KeyPress {
                 keysym: keysyms::XKB_KEY_Up,
                 ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_k,
+                ctrl: true,
+                ..
             } => self.selected_item = self.selected_item.saturating_sub(1),
             KeyPress {
                 keysym: keysyms::XKB_KEY_Down,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_j,
+                ctrl: true,
                 ..
             } => self.selected_item = self.inner.entries_len().min(self.selected_item + 1),
             KeyPress {
