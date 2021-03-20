@@ -81,5 +81,5 @@ These cannot be configured yet, so the following keys are handled:
 | Up Arrow            | Ctrl + k            | Select previous item                         |
 | Down Arrow          | Ctrl + j            | Select next item                             |
 | Return              | N/A                 | Execute selected item                        |
-| Ctrl + ]            | Ctrl + ]            | Clear input                                  |
+| Ctrl + ]            | N/A                 | Clear input                                  |
 | Ctrl + w            | Ctrl + backspace    | Delete single word                           |
