@@ -75,8 +75,11 @@ cargo run --release
 
 These cannot be configured yet, so the following keys are handled:
 
-- **Esc** — closes the menu;
-- **Up**/**Down** — select item at the menu;
-- **Return** — launches selected app;
-- **Ctrl+]** — clears the input.
-- **Ctrl+w**/**Ctrl+Backspace** — erases a single word (i.e. until first alphanumeric symbol).
+|         Key         |     Alternative     |                   Binding                    |
+|---------------------|---------------------|----------------------------------------------|
+| Esc                 | Ctrl + c            | Close menu                                   |
+| Up Arrow            | Ctrl + k            | Select previous item                         |
+| Down Arrow          | Ctrl + j            | Select next item                             |
+| Return              | N/A                 | Execute selected item                        |
+| Ctrl + ]            | N/A                 | Clear input                                  |
+| Ctrl + w            | Ctrl + backspace    | Delete single word                           |
