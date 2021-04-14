@@ -7,7 +7,7 @@ use itertools::Itertools;
 use oneshot::Sender;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
 
-use super::{Drawable, Space};
+use super::{draw_text, Drawable, Space};
 use crate::style::Margin;
 
 pub struct Params {
@@ -61,7 +61,7 @@ impl<'a, It> Drawable for ListView<'a, It>
 where
     It: Iterator<Item = ListItem<'a>>,
 {
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, mut dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let margin = self.params.margin * f32::from(scale);
         let item_spacing = self.params.item_spacing * f32::from(scale);
         let icon_size = self.params.icon_size * scale;
@@ -156,15 +156,9 @@ where
                     ($range:expr, $pos:expr, $color:expr) => {{
                         let s = substr(item.name, $range);
                         let measured = dt.measure_text(&font, font_size, s, antialias).unwrap();
+                        let color = Source::Solid($color);
 
-                        dt.draw_text(
-                            &font,
-                            font_size,
-                            s,
-                            $pos,
-                            &Source::Solid($color),
-                            &draw_opts,
-                        );
+                        draw_text(&mut dt, s, &font, font_size, $pos, color, &draw_opts);
                         Point::new(
                             $pos.x + (measured.size.width + measured.min_x()) as f32,
                             $pos.y,
@@ -192,14 +186,15 @@ where
 
                 let tail_str = substr(item.name, &(idx..item.name.chars().count()));
                 let color = Source::Solid(color);
-                dt.draw_text(&font, font_size, tail_str, pos, &color, &draw_opts);
+                draw_text(&mut dt, tail_str, &font, font_size, pos, color, &draw_opts);
             } else {
-                dt.draw_text(
+                draw_text(
+                    &mut dt,
+                    item.name,
                     &self.params.font,
                     font_size,
-                    item.name,
                     pos,
-                    &Source::Solid(color),
+                    Source::Solid(color),
                     &draw_opts,
                 );
             }

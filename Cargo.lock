@@ -1580,6 +1580,7 @@ dependencies = [
  "nom 6.0.1",
  "once_cell",
  "oneshot",
+ "pathfinder_geometry",
  "png",
  "quickcheck",
  "quickcheck_macros",
