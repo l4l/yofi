@@ -3,7 +3,7 @@ use std::f32::consts;
 use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
-use super::{Drawable, Space};
+use super::{draw_text, Drawable, Space};
 use crate::style::{Margin, Padding};
 
 pub struct Params {
@@ -69,14 +69,16 @@ impl<'a> Drawable for InputText<'a> {
             left_x_center + padding.left,
             font_size / /*empirical magic:*/ 3.0 + y_center,
         );
-        dt.draw_text(
+        draw_text(
+            dt,
+            self.text,
             &self.params.font,
             font_size,
-            self.text,
             pos,
-            &Source::Solid(self.params.font_color),
+            Source::Solid(self.params.font_color),
             &DrawOptions::new(),
         );
+
         // TODO: use padding.right for text wrapping/clipping
 
         Space {
