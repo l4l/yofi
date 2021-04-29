@@ -27,6 +27,7 @@ mod surface;
 mod usage_cache;
 
 sctk::default_environment!(Env,
+    desktop,
     fields = [
         layer_shell: SimpleGlobal<ZwlrLayerShellV1>,
     ],
@@ -106,17 +107,13 @@ fn main() {
     );
 
     let (env, display, queue) =
-        sctk::new_default_environment!(Env, fields = [layer_shell: SimpleGlobal::new()])
+        sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
             .expect("Initial roundtrip failed!");
     let mut event_loop = calloop::EventLoop::<()>::new().unwrap();
 
     let mut surface = surface::Surface::new(&env, config.param());
 
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
-
-    WaylandSource::new(queue)
-        .quick_insert(event_loop.handle())
-        .unwrap();
 
     let cmd = match args.mode.take().unwrap_or_default() {
         ModeArg::Apps => {
@@ -134,6 +131,14 @@ fn main() {
     };
 
     let mut state = state::State::new(cmd);
+
+    if !env.get_shell().unwrap().needs_configure() {
+        draw(&mut state, &config, &mut surface);
+    }
+
+    WaylandSource::new(queue)
+        .quick_insert(event_loop.handle())
+        .unwrap();
 
     loop {
         let mut should_redraw = false;

@@ -13,8 +13,9 @@ mod params;
 pub struct Config {
     width: Option<u32>,
     height: Option<u32>,
-    scale: Option<u16>,
+    force_window: Option<bool>,
     window_offsets: Option<(i32, i32)>,
+    scale: Option<u16>,
     term: Option<String>,
     font: Option<String>,
     font_size: Option<u16>,

@@ -16,6 +16,8 @@ Sample configuration:
 # ~~Global values, used as fallback if needed
 width = 400
 height = 512
+# If set forces usage of common window instead of Layer Shell protocol
+force_window = false
 # if unset, places window at the center
 # window_offsets = [500, -50] # in format [top_offset, left_offset]
 # font = "DejaVu Sans"
