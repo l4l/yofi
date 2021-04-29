@@ -2,6 +2,7 @@
 
 ## Features
 
+- Support environments without layer-shell protocol (#42)
 - Support localization (#33)
 - Search by keywords in apps mode (#20)
 - Magic separators support: `!!` for args, `#` for envs and `~` for workdir (#19)
