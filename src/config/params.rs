@@ -92,6 +92,7 @@ impl<'a> From<&'a Config> for SurfaceParams {
         SurfaceParams {
             width: config.width.unwrap_or(400),
             height: config.height.unwrap_or(512),
+            force_window: config.force_window.unwrap_or(false),
             window_offsets: config.window_offsets,
             scale: config.scale,
         }
