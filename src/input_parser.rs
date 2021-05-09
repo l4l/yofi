@@ -7,6 +7,7 @@ use once_cell::sync::OnceCell;
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub struct InputValue<'a> {
+    pub source: &'a str,
     pub search_string: &'a str,
     pub args: Option<&'a str>,
     pub env_vars: Option<&'a str>,
@@ -16,6 +17,7 @@ pub struct InputValue<'a> {
 impl InputValue<'static> {
     pub fn empty() -> Self {
         InputValue {
+            source: "",
             search_string: "",
             args: None,
             env_vars: None,
@@ -56,9 +58,10 @@ fn parse_command_part(input: &str) -> IResult<&str, (&str, Option<NextValueKind>
     Ok(res)
 }
 
-pub fn parser(input: &str) -> IResult<&str, InputValue<'_>> {
-    let (mut input, (search_string, mut next_kind)) = parse_command_part(input)?;
+pub fn parser(source: &str) -> IResult<&str, InputValue<'_>> {
+    let (mut input, (search_string, mut next_kind)) = parse_command_part(source)?;
     let mut command = InputValue {
+        source,
         search_string,
         args: None,
         env_vars: None,
@@ -114,21 +117,33 @@ mod tests {
         args: Some("asd"),
         env_vars: Some("qwe "),
         workind_dir: Some("zx,c"),
+        ..InputValue::empty()
     }; "search string with working dir then env then args")]
     #[test_case("#qwe~zx,c!!asd", InputValue {
         search_string: "",
         args: Some("asd"),
         env_vars: Some("qwe"),
         workind_dir: Some("zx,c"),
+        ..InputValue::empty()
     }; "all but search string")]
     #[test_case("ffx!!--new-instance#MOZ_ENABLE_WAYLAND=1~/run/user/1000", InputValue {
         search_string: "ffx",
         args: Some("--new-instance"),
         env_vars: Some("MOZ_ENABLE_WAYLAND=1"),
         workind_dir: Some("/run/user/1000"),
+        ..InputValue::empty()
     }; "with all params")]
     fn test_parse(input: &str, input_value: InputValue) {
-        assert_eq!(parser(input), Ok(("", input_value)));
+        assert_eq!(
+            parser(input),
+            Ok((
+                "",
+                InputValue {
+                    source: input,
+                    ..input_value
+                }
+            ))
+        );
     }
 
     #[quickcheck]

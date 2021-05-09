@@ -92,6 +92,7 @@ impl InputBuffer {
             .unwrap_or_else(|e| {
                 log::error!("failed to parse command {:?}: {}", self.raw_input, e);
                 crate::input_parser::InputValue {
+                    source: &self.raw_input,
                     search_string: &self.raw_input,
                     args: None,
                     env_vars: None,

@@ -138,7 +138,7 @@ where
                     .unwrap_or_else(|| x.len());
                 let end = x
                     .char_indices()
-                    .nth(r.end - 1)
+                    .nth(r.end.saturating_sub(1))
                     .map(|l| l.0 + l.1.len_utf8())
                     .unwrap_or_else(|| x.len());
                 &x[start..end]

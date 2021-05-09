@@ -20,8 +20,11 @@ impl DialogMode {
     }
 
     pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
-        let idx = info.index.expect("invalid index");
-        println!("{}", &self.lines[idx]);
+        let value = info
+            .index
+            .and_then(|idx| Some(self.lines.get(idx)?.as_str()))
+            .unwrap_or(info.input_value.source);
+        println!("{}", value);
         std::process::exit(0);
     }
 
