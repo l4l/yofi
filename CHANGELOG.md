@@ -4,6 +4,15 @@
 
 - Fallback to input at dialog overflow (#43)
 - Support environments without layer-shell protocol (#42)
+
+## Bug fixes
+
+- Handle missing glyphs (#40)
+
+# 0.1.4 - 2021-01-10
+
+## Features
+
 - Support localization (#33)
 - Search by keywords in apps mode (#20)
 - Magic separators support: `!!` for args, `#` for envs and `~` for workdir (#19)
@@ -12,7 +21,6 @@
 
 ## Bug fixes
 
-- Handle missing glyphs (#40)
 - Update HiDPI scale on each draw (#20)
 - Deduplicate binapps entries with the same path (c6b73f2)
 - With highligting enabled search may crash sometimes (b990057)
