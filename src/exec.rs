@@ -8,6 +8,7 @@ pub fn exec(
     input_value: &InputValue,
 ) -> std::convert::Infallible {
     let InputValue {
+        source: _,
         search_string: _,
         args,
         env_vars,

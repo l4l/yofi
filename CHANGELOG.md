@@ -2,6 +2,7 @@
 
 ## Features
 
+- Fallback to input at dialog overflow (#43)
 - Support environments without layer-shell protocol (#42)
 - Support localization (#33)
 - Search by keywords in apps mode (#20)
