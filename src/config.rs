@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::ffi::CString;
 use std::path::PathBuf;
 
@@ -9,6 +10,70 @@ const DEFAULT_CONFIG_PATH: &str = concat!(crate::prog_name!(), ".config");
 
 mod params;
 
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub struct Color(#[serde(deserialize_with = "deserialize_color")] u32);
+
+impl std::ops::Deref for Color {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+fn deserialize_color<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    struct ColorDeHelper;
+
+    impl<'de> serde::de::Visitor<'de> for ColorDeHelper {
+        type Value = u32;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                formatter,
+                "invalid color value, must be either numerical or css-like hex value with # prefix"
+            )
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            value.try_into().map_err(serde::de::Error::custom)
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            let part = match value.chars().next() {
+                None => return Err(serde::de::Error::custom("color cannot be empty")),
+                Some('#') => value.split_at(1).1,
+                Some(_) => {
+                    return Err(serde::de::Error::custom(
+                        "color can be either decimal or hex number prefixed with '#'",
+                    ))
+                }
+            };
+
+            let decoded = u32::from_str_radix(part, 16).map_err(serde::de::Error::custom);
+            match part.len() {
+                3 => {
+                    let decoded = decoded?;
+                    let (r, g, b) = ((decoded & 0xf00) >> 8, (decoded & 0xf0) >> 4, decoded & 0xf);
+                    Ok((r << 4 | r) << 24 | (g << 4 | g) << 16 | (b << 4 | b) << 8 | 0xff)
+                }
+                6 => decoded.map(|d| d << 8 | 0xff),
+                8 => decoded,
+                _ => Err(serde::de::Error::custom(
+                    "hex color can only be specified in #RGB, #RRGGBB, or #RRGGBBAA format",
+                )),
+            }
+        }
+    }
+
+    d.deserialize_any(ColorDeHelper)
+}
+
 #[derive(Default, Deserialize)]
 pub struct Config {
     width: Option<u32>,
@@ -19,8 +84,8 @@ pub struct Config {
     term: Option<String>,
     font: Option<String>,
     font_size: Option<u16>,
-    bg_color: Option<u32>,
-    font_color: Option<u32>,
+    bg_color: Option<Color>,
+    font_color: Option<Color>,
 
     icon: Option<Icon>,
 
@@ -38,8 +103,8 @@ impl Config {
 struct InputText {
     font: Option<String>,
     font_size: Option<u16>,
-    bg_color: Option<u32>,
-    font_color: Option<u32>,
+    bg_color: Option<Color>,
+    font_color: Option<Color>,
     margin: Option<Margin>,
     padding: Option<Padding>,
 }
@@ -48,9 +113,9 @@ struct InputText {
 struct ListItems {
     font: Option<String>,
     font_size: Option<u16>,
-    font_color: Option<u32>,
-    selected_font_color: Option<u32>,
-    match_color: Option<u32>,
+    font_color: Option<Color>,
+    selected_font_color: Option<Color>,
+    match_color: Option<Color>,
     margin: Option<Margin>,
     item_spacing: Option<f32>,
     icon_spacing: Option<f32>,
