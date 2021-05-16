@@ -4,7 +4,7 @@ use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
 use raqote::SolidSource;
 
-use super::Config;
+use super::{Color, Config};
 use crate::desktop::{IconConfig, DEFAULT_THEME};
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::icon::Icon;
@@ -31,10 +31,10 @@ impl<'a> From<&'a Config> for InputTextParams {
                 .unwrap_or_else(default_font),
             font_size: select_conf!(config, input_text, font_size).unwrap_or(DEFAULT_FONT_SIZE),
             bg_color: select_conf!(config, input_text, bg_color)
-                .map(u32_to_solid_source)
+                .map(color_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xc0, 0x75, 0x71, 0x5e)),
             font_color: select_conf!(config, input_text, font_color)
-                .map(u32_to_solid_source)
+                .map(color_to_solid_source)
                 .unwrap_or_else(default_font_color),
             margin: select_conf!(noglob: config, input_text, margin)
                 .unwrap_or_else(|| Margin::all(5.0)),
@@ -52,13 +52,13 @@ impl<'a> From<&'a Config> for ListParams {
                 .unwrap_or_else(default_font),
             font_size: select_conf!(config, list_items, font_size).unwrap_or(DEFAULT_FONT_SIZE),
             font_color: select_conf!(config, list_items, font_color)
-                .map(u32_to_solid_source)
+                .map(color_to_solid_source)
                 .unwrap_or_else(default_font_color),
             selected_font_color: select_conf!(noglob: config, list_items, selected_font_color)
-                .map(u32_to_solid_source)
+                .map(color_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xff, 0xa6, 0xe2, 0x2e)),
             match_color: select_conf!(noglob: config, list_items, match_color)
-                .map(u32_to_solid_source),
+                .map(color_to_solid_source),
             icon_size: config
                 .icon
                 .as_ref()
@@ -81,7 +81,7 @@ impl<'a> From<&'a Config> for BgParams {
         BgParams {
             color: config
                 .bg_color
-                .map(u32_to_solid_source)
+                .map(color_to_solid_source)
                 .unwrap_or_else(|| SolidSource::from_unpremultiplied_argb(0xee, 0x27, 0x28, 0x22)),
         }
     }
@@ -136,7 +136,7 @@ fn font_by_name(name: String) -> Font {
         .unwrap()
 }
 
-fn u32_to_solid_source(x: u32) -> SolidSource {
+fn color_to_solid_source(x: Color) -> SolidSource {
     let bytes = x.to_be_bytes();
     SolidSource::from_unpremultiplied_argb(bytes[3], bytes[0], bytes[1], bytes[2])
 }
