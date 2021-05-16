@@ -138,7 +138,9 @@ fn config_path() -> PathBuf {
 impl Config {
     pub fn load(path: Option<PathBuf>) -> Self {
         std::fs::read_to_string(path.unwrap_or_else(config_path))
-            .map(|config_content| toml::from_str(&config_content).expect("invalid config"))
+            .map(|config_content| {
+                toml::from_str(&config_content).unwrap_or_else(|e| panic!("Invalid config: {}", e))
+            })
             .unwrap_or_default()
     }
 
