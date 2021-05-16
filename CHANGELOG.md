@@ -2,6 +2,7 @@
 
 ## Features
 
+- Specify colors in css-like hex (#47)
 - Fallback to input at dialog overflow (#43)
 - Support environments without layer-shell protocol (#42)
 
