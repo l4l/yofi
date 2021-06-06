@@ -1,6 +1,4 @@
-use font_kit::loaders::freetype::Font;
 use oneshot::Sender;
-use raqote::{DrawOptions, Source};
 pub use raqote::{DrawTarget, Point};
 
 pub use background::Params as BgParams;
@@ -66,51 +64,4 @@ where
             Self::Background(w) => w.draw(dt, scale, space, start_point),
         }
     }
-}
-
-fn draw_text(
-    dt: &mut DrawTarget,
-    text: &str,
-    font: &Font,
-    point_size: f32,
-    start: Point,
-    source: Source,
-    opts: &DrawOptions,
-) {
-    let start = pathfinder_geometry::vector::vec2f(start.x, start.y);
-    let (_, ids, positions) = text
-        .chars()
-        .filter_map(|c| {
-            let id = font.glyph_for_char(c);
-
-            let id = if let Some(id) = id {
-                id
-            } else {
-                log::warn!("cannot find glyph for {:?}", c);
-                return None;
-            };
-
-            let advance = match font.advance(id) {
-                Ok(x) => x,
-                Err(err) => {
-                    log::warn!("cannot advance font for {:?}: {}", c, err);
-                    return None;
-                }
-            };
-
-            Some((id, advance))
-        })
-        .fold(
-            (start, vec![], vec![]),
-            |(start, mut ids, mut positions), (id, advance)| {
-                ids.push(id);
-                positions.push(Point::new(start.x(), start.y()));
-
-                let delta = advance * point_size / 24. / 96.;
-
-                (start + delta, ids, positions)
-            },
-        );
-
-    dt.draw_glyphs(font, point_size, &ids, &positions, &source, &opts);
 }

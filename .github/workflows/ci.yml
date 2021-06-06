@@ -20,10 +20,16 @@ jobs:
       with:
         components: rustfmt, clippy
     - name: Build
-      run: cargo build --verbose
+      run: |
+        cargo build --verbose
+        cargo build --no-default-features --features font-fontkit --verbose
     - name: Check format
       run: cargo fmt -- --check
     - name: Lint
-      run: cargo clippy -- -D warnings
+      run: |
+        cargo clippy -- -D warnings
+        cargo clippy --no-default-features --features font-fontkit -- -D warnings
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+        cargo test --verbose
+        cargo test --no-default-features --features font-fontkit --verbose
