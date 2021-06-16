@@ -10,12 +10,14 @@ use sctk::{
 
 pub struct ModifierState {
     pub ctrl: bool,
+    pub shift: bool,
 }
 
 pub struct KeyPress {
     pub keysym: u32,
     pub sym: Option<char>,
     pub ctrl: bool,
+    pub shift: bool,
 }
 
 #[derive(Default)]
@@ -41,6 +43,7 @@ fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) 
                 keysym,
                 sym: utf8.and_then(|s| s.chars().next()),
                 ctrl: state.ctrl,
+                shift: state.shift,
             })
             .expect("key handling failed");
         }
@@ -53,6 +56,7 @@ fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) 
         KbEvent::Modifiers { modifiers } => {
             log::trace!("modifiers changed to {:?}", modifiers);
             state.ctrl = modifiers.ctrl;
+            state.shift = modifiers.shift;
         }
         KbEvent::Repeat { keysym, utf8, .. } => {
             log::trace!("key repeat {:x} (text: {:?})", keysym, utf8);
@@ -60,6 +64,7 @@ fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) 
                 keysym,
                 sym: utf8.and_then(|s| s.chars().next()),
                 ctrl: state.ctrl,
+                shift: state.shift,
             })
             .expect("key handling failed");
         }
@@ -82,7 +87,10 @@ impl InputHandler {
 
         let loop_handle = event_loop.handle();
         let mut seat_handler = move |seat, seat_data: &SeatData| {
-            let mut state = ModifierState { ctrl: false };
+            let mut state = ModifierState {
+                ctrl: false,
+                shift: false,
+            };
             let tx = tx.clone();
             let data = seats.entry(seat_data.name.clone()).or_default();
             if seat_data.has_keyboard && !seat_data.defunct {

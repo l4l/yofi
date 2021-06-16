@@ -77,11 +77,11 @@ cargo run --release
 
 These cannot be configured yet, so the following keys are handled:
 
-|         Key         |     Alternative     |                   Binding                    |
-|---------------------|---------------------|----------------------------------------------|
-| Esc                 | Ctrl + c            | Close menu                                   |
-| Up Arrow            | Ctrl + k            | Select previous item                         |
-| Down Arrow          | Ctrl + j            | Select next item                             |
-| Return              | N/A                 | Execute selected item                        |
-| Ctrl + ]            | N/A                 | Clear input                                  |
-| Ctrl + w            | Ctrl + backspace    | Delete single word                           |
+|         Key         |     Alternative        |                   Binding                    |
+|---------------------|------------------------|----------------------------------------------|
+| Esc                 | Ctrl + c               | Close menu                                   |
+| Up Arrow            | Ctrl + k / Shift + Tab | Select previous item                         |
+| Down Arrow          | Ctrl + j / Tab         | Select next item                             |
+| Return              | N/A                    | Execute selected item                        |
+| Ctrl + ]            | N/A                    | Clear input                                  |
+| Ctrl + w            | Ctrl + backspace       | Delete single word                           |

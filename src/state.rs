@@ -168,6 +168,21 @@ impl State {
                 keysym: keysyms::XKB_KEY_k,
                 ctrl: true,
                 ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_Tab,
+                shift: true,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_ISO_Left_Tab,
+                shift: true,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_KP_Tab,
+                shift: true,
+                ..
             } => self.selected_item = self.selected_item.saturating_sub(1),
             KeyPress {
                 keysym: keysyms::XKB_KEY_Down,
@@ -176,6 +191,18 @@ impl State {
             | KeyPress {
                 keysym: keysyms::XKB_KEY_j,
                 ctrl: true,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_Tab,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_ISO_Left_Tab,
+                ..
+            }
+            | KeyPress {
+                keysym: keysyms::XKB_KEY_KP_Tab,
                 ..
             } => self.selected_item = self.inner.entries_len().min(self.selected_item + 1),
             KeyPress {
