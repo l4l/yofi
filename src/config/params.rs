@@ -1,12 +1,9 @@
-use font_kit::family_name::FamilyName;
-use font_kit::loaders::freetype::Font;
-use font_kit::properties::Properties;
-use font_kit::source::SystemSource;
 use raqote::SolidSource;
 
 use super::{Color, Config};
 use crate::desktop::{IconConfig, DEFAULT_THEME};
 use crate::draw::{BgParams, InputTextParams, ListParams};
+use crate::font::{Font, FontBackend};
 use crate::icon::Icon;
 use crate::style::{Margin, Padding};
 use crate::surface::Params as SurfaceParams;
@@ -112,16 +109,13 @@ impl<'a> From<&'a Config> for Option<IconConfig> {
     }
 }
 
-std::thread_local! {
-    static FONT: Font = SystemSource::new()
-        .select_best_match(&[FamilyName::SansSerif], &Properties::new())
-        .unwrap()
-        .load()
-        .unwrap();
-}
-
 fn default_font() -> Font {
-    FONT.with(Clone::clone)
+    use once_cell::unsync::OnceCell;
+    std::thread_local! {
+        static FONT: OnceCell<Font> = OnceCell::new();
+    }
+
+    Font::default()
 }
 
 fn default_font_color() -> SolidSource {
@@ -129,11 +123,7 @@ fn default_font_color() -> SolidSource {
 }
 
 fn font_by_name(name: String) -> Font {
-    SystemSource::new()
-        .select_best_match(&[FamilyName::Title(name)], &Properties::new())
-        .unwrap()
-        .load()
-        .unwrap()
+    Font::font_by_name(name.as_str()).unwrap_or_else(|e| panic!("cannot find font {}: {}", name, e))
 }
 
 fn color_to_solid_source(x: Color) -> SolidSource {

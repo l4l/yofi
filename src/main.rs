@@ -17,6 +17,7 @@ mod config;
 mod desktop;
 mod draw;
 mod exec;
+mod font;
 mod icon;
 mod input;
 mod input_parser;
