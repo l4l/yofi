@@ -27,11 +27,10 @@ pub fn xdg_dirs<'a>() -> &'a BaseDirectories {
 pub fn find_entries() -> Vec<Entry> {
     let xdg_dirs = xdg_dirs();
 
-    let mut dirs = xdg_dirs.get_data_dirs();
-    dirs.push(xdg_dirs.get_data_home());
-    let mut entries = vec![];
-    traverse_dirs(&mut entries, dirs);
-    entries.sort_unstable_by(|x, y| x.name.cmp(&y.name));
+    let dirs = std::iter::once(xdg_dirs.get_data_home());
+    let dirs = dirs.chain(xdg_dirs.get_data_dirs());
+    let mut entries = traverse_dirs(dirs);
+    entries.sort_by(|x, y| x.name.cmp(&y.name));
     entries.dedup_by(|x, y| x.name == y.name);
     entries
 }
@@ -50,7 +49,8 @@ fn read_dir(path: &Path) -> impl Iterator<Item = DirEntry> {
         })
 }
 
-fn traverse_dirs(mut entries: &mut Vec<Entry>, paths: impl IntoIterator<Item = PathBuf>) {
+fn traverse_dirs(paths: impl IntoIterator<Item = PathBuf>) -> Vec<Entry> {
+    let mut entries = vec![];
     for path in paths.into_iter() {
         let apps_dir = path.join("applications");
         if !apps_dir.exists() {
@@ -61,6 +61,7 @@ fn traverse_dirs(mut entries: &mut Vec<Entry>, paths: impl IntoIterator<Item = P
             traverse_dir_entry(&mut entries, dir_entry);
         }
     }
+    entries
 }
 
 fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
