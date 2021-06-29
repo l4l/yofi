@@ -76,8 +76,8 @@ fn deserialize_color<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::E
 
 #[derive(Default, Deserialize)]
 pub struct Config {
-    width: Option<u32>,
-    height: Option<u32>,
+    width: Option<String>,
+    height: Option<String>,
     force_window: Option<bool>,
     window_offsets: Option<(i32, i32)>,
     scale: Option<u16>,

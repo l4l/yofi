@@ -90,8 +90,8 @@ impl<'a> From<&'a Config> for BgParams {
 impl<'a> From<&'a Config> for SurfaceParams {
     fn from(config: &'a Config) -> SurfaceParams {
         SurfaceParams {
-            width: config.width.unwrap_or(400),
-            height: config.height.unwrap_or(512),
+            width: parse_cent(config.width.as_ref(), 400),
+            height: parse_cent(config.height.as_ref(), 512),
             force_window: config.force_window.unwrap_or(false),
             window_offsets: config.window_offsets,
             scale: config.scale,
@@ -139,4 +139,18 @@ fn font_by_name(name: String) -> Font {
 fn color_to_solid_source(x: Color) -> SolidSource {
     let bytes = x.to_be_bytes();
     SolidSource::from_unpremultiplied_argb(bytes[3], bytes[0], bytes[1], bytes[2])
+}
+
+fn parse_cent(input: Option<&String>, default: u32) -> u32 {
+    let input: String = match input {
+        Some(a) => a.split_whitespace().collect(),
+        None => return default,
+    };
+    if input.contains('%') {
+        return match input.trim().strip_suffix('%').unwrap().parse::<u32>() {
+            Ok(a) => (a * default) / 100,
+            Err(_) => default,
+        };
+    }
+    input.trim().parse::<u32>().unwrap_or(default)
 }
