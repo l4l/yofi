@@ -8,6 +8,7 @@
 
 ## Bug fixes
 
+- Prioritize the local desktop files over global
 - Handle missing glyphs (#40)
 
 # 0.1.4 - 2021-01-10
