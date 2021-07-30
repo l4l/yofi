@@ -40,7 +40,7 @@ impl AppsMode {
         self.usage.try_update_cache(CACHE_PATH);
 
         let term = if entry.is_terminal {
-            Some(std::mem::replace(&mut self.term, Vec::new()))
+            Some(std::mem::take(&mut self.term))
         } else {
             None
         };

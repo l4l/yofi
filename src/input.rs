@@ -124,7 +124,7 @@ impl InputHandler {
         }
 
         let _seat_listener =
-            env.listen_for_seats(move |seat, seat_data, _| seat_handler(seat, &seat_data));
+            env.listen_for_seats(move |seat, seat_data, _| seat_handler(seat, seat_data));
 
         (Self { _seat_listener }, rx)
     }

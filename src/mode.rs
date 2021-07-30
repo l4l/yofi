@@ -24,9 +24,9 @@ macro_rules! delegate {
     (pub fn $name:ident ( & $([$m:ident])? self, $($ident:ident : $tp:ty),* ) -> $ret:ty $(, wrap_with ($wrap:path))?) => {
         pub fn $name ( & $($m)? self, $($ident : $tp),* ) -> $ret {
             match self {
-                Mode::AppsMode(mode) => $($wrap)?(mode.$name($($ident),*)),
-                Mode::BinAppsMode(mode) => $($wrap)?(mode.$name($($ident),*)),
-                Mode::DialogMode(mode) => $($wrap)?(mode.$name($($ident),*)),
+                Mode::Apps(mode) => $($wrap)?(mode.$name($($ident),*)),
+                Mode::BinApps(mode) => $($wrap)?(mode.$name($($ident),*)),
+                Mode::Dialog(mode) => $($wrap)?(mode.$name($($ident),*)),
             }
         }
     }
@@ -46,9 +46,9 @@ impl<'a> std::ops::Deref for EvalInfo<'a> {
 }
 
 pub enum Mode {
-    AppsMode(apps::AppsMode),
-    BinAppsMode(bins::BinsMode),
-    DialogMode(dialog::DialogMode),
+    Apps(apps::AppsMode),
+    BinApps(bins::BinsMode),
+    Dialog(dialog::DialogMode),
 }
 
 pub struct Entry<'a> {
@@ -58,15 +58,15 @@ pub struct Entry<'a> {
 
 impl Mode {
     pub fn apps(entries: Vec<DesktopEntry>, term: Vec<CString>) -> Self {
-        Self::AppsMode(apps::AppsMode::new(entries, term))
+        Self::Apps(apps::AppsMode::new(entries, term))
     }
 
     pub fn bins(term: Vec<CString>) -> Self {
-        Self::BinAppsMode(bins::BinsMode::new(term))
+        Self::BinApps(bins::BinsMode::new(term))
     }
 
     pub fn dialog() -> Self {
-        Self::DialogMode(dialog::DialogMode::new())
+        Self::Dialog(dialog::DialogMode::new())
     }
 
     delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible);
@@ -75,9 +75,9 @@ impl Mode {
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + ExactSizeIterator + '_ {
         match self {
-            Mode::AppsMode(mode) => Either::Left(Either::Right(mode.text_entries())),
-            Mode::BinAppsMode(mode) => Either::Left(Either::Left(mode.text_entries())),
-            Mode::DialogMode(mode) => Either::Right(mode.text_entries()),
+            Mode::Apps(mode) => Either::Left(Either::Right(mode.text_entries())),
+            Mode::BinApps(mode) => Either::Left(Either::Left(mode.text_entries())),
+            Mode::Dialog(mode) => Either::Right(mode.text_entries()),
         }
         .into_iter()
     }

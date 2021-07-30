@@ -47,7 +47,7 @@ impl BinsMode {
 
             Reverse(x_usage_count)
                 .cmp(&Reverse(y_usage_count))
-                .then_with(|| x.cmp(&y))
+                .then_with(|| x.cmp(y))
         });
         bins.dedup();
 
@@ -69,7 +69,7 @@ impl BinsMode {
             let fname_str = fname.to_str().unwrap();
 
             entry_name_cache.insert(
-                Rc::clone(&bin),
+                Rc::clone(bin),
                 format!("{} ({})", fname_str, bin.to_str().unwrap()),
             );
         }
@@ -93,7 +93,7 @@ impl BinsMode {
         self.usage.try_update_cache(CACHE_PATH);
 
         crate::exec::exec(
-            Some(std::mem::replace(&mut self.term, Vec::new())),
+            Some(std::mem::take(&mut self.term)),
             vec![CString::new(binary).expect("invalid binary")],
             info.input_value,
         )
