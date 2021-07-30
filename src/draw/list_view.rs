@@ -105,7 +105,7 @@ where
                     dt.draw_image_at(
                         x_offset,
                         y_offset - icon_size_f32,
-                        &icon,
+                        icon,
                         &DrawOptions::default(),
                     );
                 } else {
@@ -114,7 +114,7 @@ where
                         icon_size_f32,
                         x_offset,
                         y_offset - icon_size_f32,
-                        &icon,
+                        icon,
                         &DrawOptions::default(),
                     );
                 }
@@ -186,7 +186,7 @@ where
 
                 let tail_str = substr(item.name, &(idx..item.name.chars().count()));
                 let color = Source::Solid(color);
-                draw_text(&mut dt, tail_str, &font, font_size, pos, color, &draw_opts);
+                draw_text(&mut dt, tail_str, font, font_size, pos, color, &draw_opts);
             } else {
                 draw_text(
                     &mut dt,

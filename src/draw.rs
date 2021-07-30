@@ -112,5 +112,5 @@ fn draw_text(
             },
         );
 
-    dt.draw_glyphs(font, point_size, &ids, &positions, &source, &opts);
+    dt.draw_glyphs(font, point_size, &ids, &positions, &source, opts);
 }

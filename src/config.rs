@@ -153,7 +153,7 @@ impl Config {
 
     pub fn terminal_command(&self) -> Vec<CString> {
         if let Some(cmd) = self.term.as_ref() {
-            shlex::split(&cmd)
+            shlex::split(cmd)
                 .unwrap()
                 .into_iter()
                 .map(|s| CString::new(s).unwrap())
