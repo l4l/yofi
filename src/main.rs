@@ -43,8 +43,6 @@ macro_rules! prog_name {
     };
 }
 
-const DEFAULT_LOG_PATH: &str = concat!(concat!("/tmp/", prog_name!()), ".log");
-
 fn setup_logger(level: LevelFilter, log_file: impl AsRef<Path>) {
     fern::Dispatch::new()
         .format(|out, message, record| {
@@ -97,14 +95,18 @@ fn main() {
 
     let mut config = config::Config::load(args.config_file.take());
 
-    setup_logger(
-        match (args.verbose, args.quiet) {
-            (true, _) => LevelFilter::Debug,
-            (_, true) => LevelFilter::Warn,
-            _ => LevelFilter::Info,
-        },
-        args.log_file.unwrap_or_else(|| DEFAULT_LOG_PATH.into()),
-    );
+    let log_level = match (args.verbose, args.quiet) {
+        (true, _) => LevelFilter::Debug,
+        (_, true) => LevelFilter::Warn,
+        _ => LevelFilter::Info,
+    };
+    if let Some(log_file) = args.log_file {
+        setup_logger(log_level, log_file);
+    } else {
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
+        systemd_journal_logger::init_with_extra_fields(vec![("VERSION", VERSION)]).unwrap();
+        log::set_max_level(LevelFilter::Info);
+    }
 
     let (env, display, queue) =
         sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])

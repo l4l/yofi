@@ -37,6 +37,7 @@ regex = "1.4.2"
 libc = "0.2.81"
 pathfinder_geometry = "0.5"
 tiny-skia = "0.5.1"
+systemd-journal-logger = "0.3.0"
 
 [profile.release]
 lto = true
