@@ -109,7 +109,7 @@ fn main() {
     let (env, display, queue) =
         sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
             .expect("Initial roundtrip failed!");
-    let mut event_loop = calloop::EventLoop::<()>::new().unwrap();
+    let mut event_loop = calloop::EventLoop::try_new().unwrap();
 
     let mut surface = surface::Surface::new(&env, config.param());
 

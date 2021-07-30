@@ -9,11 +9,13 @@ use sctk::{
         client::Main,
         protocols::wlr::unstable::layer_shell::v1::client::{
             zwlr_layer_shell_v1,
-            zwlr_layer_surface_v1::{Anchor, Event as ZEvent, ZwlrLayerSurfaceV1},
+            zwlr_layer_surface_v1::{
+                Anchor, Event as ZEvent, KeyboardInteractivity, ZwlrLayerSurfaceV1,
+            },
         },
     },
     shm::DoubleMemPool,
-    window::{ConceptFrame, Event as WEvent, Window},
+    window::{Event as WEvent, FallbackFrame, Window},
 };
 
 use crate::draw::{DrawTarget, Drawable, Point, Space};
@@ -37,7 +39,7 @@ enum RenderSurface {
         surface: WlSurface,
         layer_surface: Main<ZwlrLayerSurfaceV1>,
     },
-    Window(Window<ConceptFrame>),
+    Window(Window<FallbackFrame>),
 }
 
 impl Drop for RenderSurface {
@@ -115,7 +117,7 @@ impl Surface {
                 layer_surface.set_margin(top_offset, 0, 0, left_offset);
             }
             layer_surface.set_size(width, height);
-            layer_surface.set_keyboard_interactivity(1);
+            layer_surface.set_keyboard_interactivity(KeyboardInteractivity::Exclusive);
 
             layer_surface.quick_assign(move |layer_surface, event, _| match event {
                 ZEvent::Closed => next_render_event_handle.set(Some(RenderEvent::Closed)),

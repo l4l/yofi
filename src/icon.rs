@@ -1,7 +1,7 @@
 use std::io::BufReader;
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 
 pub struct Icon {
     width: u32,
@@ -61,16 +61,21 @@ impl Icon {
 
     fn from_svg_path(path: impl AsRef<Path>) -> Result<Self> {
         let opt = Default::default();
+        let data = std::fs::read(path.as_ref())
+            .with_context(|| format!("failed to open svg file: {:?}", path.as_ref()))?;
         let tree =
-            usvg::Tree::from_file(path, &opt).map_err(|e| anyhow!("svg open error: {}", e))?;
+            usvg::Tree::from_data(&data, &opt).map_err(|e| anyhow!("svg open error: {}", e))?;
 
-        let rendered = resvg::render(&tree, usvg::FitTo::Original, None)
+        let width = tree.svg_node().size.width().ceil() as u32;
+        let height = tree.svg_node().size.height().ceil() as u32;
+        let mut buf = tiny_skia::Pixmap::new(width, height).context("invalid pixmap size")?;
+        resvg::render(&tree, usvg::FitTo::Original, buf.as_mut())
             .ok_or_else(|| anyhow!("cannot render svg"))?;
 
         Ok(Self {
-            width: rendered.width(),
-            height: rendered.height(),
-            data: rgba_to_argb(rendered.data()),
+            width,
+            height,
+            data: rgba_to_argb(buf.data()),
         })
     }
 
