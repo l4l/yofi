@@ -4,7 +4,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use sctk::{
     environment::Environment,
     reexports::{calloop, client::protocol::wl_keyboard},
-    seat::keyboard::{map_keyboard_repeat, Event as KbEvent, KeyState, RepeatKind, RepeatSource},
+    seat::keyboard::{map_keyboard_repeat, Event as KbEvent, KeyState, RepeatKind},
     seat::{with_seat_data, SeatData, SeatListener},
 };
 
@@ -22,7 +22,7 @@ pub struct KeyPress {
 
 #[derive(Default)]
 struct SeatInfo {
-    keyboard: Option<(wl_keyboard::WlKeyboard, calloop::Source<RepeatSource>)>,
+    keyboard: Option<(wl_keyboard::WlKeyboard, calloop::RegistrationToken)>,
 }
 
 fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) {
@@ -79,7 +79,7 @@ pub struct InputHandler {
 impl InputHandler {
     pub fn new(
         env: &Environment<super::Env>,
-        event_loop: &calloop::EventLoop<()>,
+        event_loop: &calloop::EventLoop<'static, ()>,
     ) -> (Self, Receiver<KeyPress>) {
         let (tx, rx) = mpsc::channel();
 
