@@ -50,7 +50,50 @@ impl Icon {
                 data
             }
             png::ColorType::Rgba => rgba_to_argb(buf.as_slice()),
-            color_type => anyhow::bail!("unsupported icon color type {:?}", color_type),
+            png::ColorType::GrayscaleAlpha => {
+                let mut data = vec![];
+
+                for chunk in buf.chunks(2) {
+                    let x = u32::from(chunk[0]);
+                    let a = u32::from(chunk[1]) << 24;
+
+                    data.push(a | (x << 16) | (x << 8) | x);
+                }
+
+                data
+            }
+            png::ColorType::Grayscale => {
+                let mut data = vec![];
+
+                for x in buf.iter().copied().map(u32::from) {
+                    let a = 0xffu32 << 24;
+                    let r = x << 16;
+                    let g = x << 8;
+                    let b = x;
+
+                    data.push(a | r | g | b);
+                }
+
+                data
+            }
+            png::ColorType::Indexed => {
+                let palette = info.palette.as_ref().ok_or_else(|| {
+                    anyhow::anyhow!("invalid image: palette is missing for indexed color type")
+                })?;
+                let mut data = vec![];
+
+                for idx in buf {
+                    let chunk = &palette[3 * usize::from(idx)..];
+                    let a = 0xffu32 << 24;
+                    let r = u32::from(chunk[0]) << 16;
+                    let g = u32::from(chunk[1]) << 8;
+                    let b = u32::from(chunk[2]);
+
+                    data.push(a | r | g | b);
+                }
+
+                data
+            }
         };
 
         Ok(Self {
