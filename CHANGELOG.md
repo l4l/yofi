@@ -2,7 +2,7 @@
 
 ## Features
 
-- Support grayscale app icons
+- Support grayscale/indexed png icons (#61)
 - Redirect logs by default to systemd
 - Specify colors in css-like hex (#47)
 - Fallback to input at dialog overflow (#43)

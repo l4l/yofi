@@ -76,7 +76,24 @@ impl Icon {
 
                 data
             }
-            color_type => anyhow::bail!("unsupported icon color type {:?}", color_type),
+            png::ColorType::Indexed => {
+                let palette = info.palette.as_ref().ok_or_else(|| {
+                    anyhow::anyhow!("invalid image: palette is missing for indexed color type")
+                })?;
+                let mut data = vec![];
+
+                for idx in buf {
+                    let chunk = &palette[3 * usize::from(idx)..];
+                    let a = 0xffu32 << 24;
+                    let r = u32::from(chunk[0]) << 16;
+                    let g = u32::from(chunk[1]) << 8;
+                    let b = u32::from(chunk[2]);
+
+                    data.push(a | r | g | b);
+                }
+
+                data
+            }
         };
 
         Ok(Self {
