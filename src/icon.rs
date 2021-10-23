@@ -50,6 +50,32 @@ impl Icon {
                 data
             }
             png::ColorType::Rgba => rgba_to_argb(buf.as_slice()),
+            png::ColorType::GrayscaleAlpha => {
+                let mut data = vec![];
+
+                for chunk in buf.chunks(2) {
+                    let x = u32::from(chunk[0]);
+                    let a = u32::from(chunk[1]) << 24;
+
+                    data.push(a | (x << 16) | (x << 8) | x);
+                }
+
+                data
+            }
+            png::ColorType::Grayscale => {
+                let mut data = vec![];
+
+                for x in buf.iter().copied().map(u32::from) {
+                    let a = 0xffu32 << 24;
+                    let r = x << 16;
+                    let g = x << 8;
+                    let b = x;
+
+                    data.push(a | r | g | b);
+                }
+
+                data
+            }
             color_type => anyhow::bail!("unsupported icon color type {:?}", color_type),
         };
 
