@@ -25,16 +25,17 @@ impl Icon {
 
     fn from_png_path(path: impl AsRef<Path>) -> Result<Self> {
         let decoder = png::Decoder::new(BufReader::new(std::fs::File::open(path)?));
-        let (info, mut reader) = decoder
+        let mut reader = decoder
             .read_info()
             .map_err(|e| anyhow!("failed to read png info: {}", e))?;
-        let mut buf = vec![0; info.buffer_size()];
+        let mut buf = vec![0; reader.output_buffer_size()];
         reader
             .next_frame(&mut buf)
             .map_err(|e| anyhow!("failed to read png frame: {}", e))?;
 
+        let info = reader.info();
         let data = match info.color_type {
-            png::ColorType::RGB => {
+            png::ColorType::Rgb => {
                 let mut data = vec![];
 
                 for chunk in buf.chunks(3) {
@@ -48,7 +49,7 @@ impl Icon {
 
                 data
             }
-            png::ColorType::RGBA => rgba_to_argb(buf.as_slice()),
+            png::ColorType::Rgba => rgba_to_argb(buf.as_slice()),
             color_type => anyhow::bail!("unsupported icon color type {:?}", color_type),
         };
 
@@ -60,11 +61,11 @@ impl Icon {
     }
 
     fn from_svg_path(path: impl AsRef<Path>) -> Result<Self> {
-        let opt = Default::default();
+        let opt = usvg::Options::default();
         let data = std::fs::read(path.as_ref())
             .with_context(|| format!("failed to open svg file: {:?}", path.as_ref()))?;
-        let tree =
-            usvg::Tree::from_data(&data, &opt).map_err(|e| anyhow!("svg open error: {}", e))?;
+        let tree = usvg::Tree::from_data(&data, &opt.to_ref())
+            .map_err(|e| anyhow!("svg open error: {}", e))?;
 
         let width = tree.svg_node().size.width().ceil() as u32;
         let height = tree.svg_node().size.height().ceil() as u32;
