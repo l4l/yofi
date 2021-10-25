@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use log::LevelFilter;
@@ -79,14 +80,23 @@ struct Args {
 
 #[derive(StructOpt)]
 enum ModeArg {
-    Apps,
+    Apps {
+        /// Optional path to ignored desktop files.
+        blacklist: Option<PathBuf>,
+    },
     Binapps,
     Dialog,
 }
 
 impl Default for ModeArg {
     fn default() -> Self {
-        ModeArg::Apps
+        let file = xdg::BaseDirectories::with_prefix(prog_name!())
+            .expect("failed to get xdg dirs")
+            .place_config_file("blacklist")
+            .expect("failed to crate default blacklist");
+        ModeArg::Apps {
+            blacklist: Some(file),
+        }
     }
 }
 
@@ -118,12 +128,28 @@ fn main() {
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
 
     let cmd = match args.mode.take().unwrap_or_default() {
-        ModeArg::Apps => {
+        ModeArg::Apps { blacklist } => {
             if let Some(icon_config) = config.param() {
                 desktop::find_icon_paths(icon_config).expect("called only once");
             }
 
-            mode::Mode::apps(desktop::find_entries(), config.terminal_command())
+            let blacklist_filter = blacklist
+                .and_then(|file| {
+                    let entries = std::fs::read_to_string(&file)
+                        .map_err(|e| log::warn!("cannot read blacklist file {:?}: {}", file, e))
+                        .ok()?
+                        .lines()
+                        .map(std::ffi::OsString::from)
+                        .collect::<HashSet<_>>();
+
+                    Some(Box::new(move |e: &_| !entries.contains(e)) as Box<dyn Fn(&_) -> bool>)
+                })
+                .unwrap_or_else(|| Box::new(|_| true));
+
+            mode::Mode::apps(
+                desktop::find_entries(blacklist_filter),
+                config.terminal_command(),
+            )
         }
         ModeArg::Binapps => {
             config.disable_icons();

@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs::{self, DirEntry};
 use std::path::{Path, PathBuf};
 
@@ -24,12 +25,15 @@ pub fn xdg_dirs<'a>() -> &'a BaseDirectories {
     XDG_DIRS.get_or_init(|| BaseDirectories::new().expect("failed to get xdg dirs"))
 }
 
-pub fn find_entries() -> Vec<Entry> {
+pub fn find_entries<F>(filter: F) -> Vec<Entry>
+where
+    F: Fn(&OsStr) -> bool,
+{
     let xdg_dirs = xdg_dirs();
 
     let dirs = std::iter::once(xdg_dirs.get_data_home());
     let dirs = dirs.chain(xdg_dirs.get_data_dirs());
-    let mut entries = traverse_dirs(dirs);
+    let mut entries = traverse_dirs(dirs, &filter);
     entries.sort_by(|x, y| x.name.cmp(&y.name));
     entries.dedup_by(|x, y| x.name == y.name);
     entries
@@ -49,7 +53,10 @@ fn read_dir(path: &Path) -> impl Iterator<Item = DirEntry> {
         })
 }
 
-fn traverse_dirs(paths: impl IntoIterator<Item = PathBuf>) -> Vec<Entry> {
+fn traverse_dirs<F>(paths: impl IntoIterator<Item = PathBuf>, filter: &F) -> Vec<Entry>
+where
+    F: Fn(&OsStr) -> bool,
+{
     let mut entries = vec![];
     for path in paths.into_iter() {
         let apps_dir = path.join("applications");
@@ -57,21 +64,24 @@ fn traverse_dirs(paths: impl IntoIterator<Item = PathBuf>) -> Vec<Entry> {
             continue;
         }
 
-        for dir_entry in read_dir(&apps_dir) {
-            traverse_dir_entry(&mut entries, dir_entry);
+        for dir_entry in read_dir(&apps_dir).filter(|e| filter(&e.file_name())) {
+            traverse_dir_entry(&mut entries, dir_entry, filter);
         }
     }
     entries
 }
 
-fn traverse_dir_entry(mut entries: &mut Vec<Entry>, dir_entry: DirEntry) {
+fn traverse_dir_entry<F>(mut entries: &mut Vec<Entry>, dir_entry: DirEntry, filter: &F)
+where
+    F: Fn(&OsStr) -> bool,
+{
     let dir_entry_path = dir_entry.path();
 
     match dir_entry.file_type() {
         Err(err) => log::warn!("failed to get `{:?}` file type: {}", dir_entry_path, err),
         Ok(tp) if tp.is_dir() => {
-            for dir_entry in read_dir(&dir_entry_path) {
-                traverse_dir_entry(&mut entries, dir_entry);
+            for dir_entry in read_dir(&dir_entry_path).filter(|e| filter(&e.file_name())) {
+                traverse_dir_entry(&mut entries, dir_entry, filter);
             }
 
             return;
