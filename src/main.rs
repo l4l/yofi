@@ -83,6 +83,9 @@ enum ModeArg {
     Apps {
         /// Optional path to ignored desktop files.
         blacklist: Option<PathBuf>,
+        /// Flag for listing desktop files for entries names.
+        #[structopt(short, long)]
+        list: bool,
     },
     Binapps,
     Dialog,
@@ -96,6 +99,7 @@ impl Default for ModeArg {
             .expect("failed to crate default blacklist");
         ModeArg::Apps {
             blacklist: Some(file),
+            list: false,
         }
     }
 }
@@ -128,7 +132,7 @@ fn main() {
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
 
     let cmd = match args.mode.take().unwrap_or_default() {
-        ModeArg::Apps { blacklist } => {
+        ModeArg::Apps { blacklist, list } => {
             if let Some(icon_config) = config.param() {
                 desktop::find_icon_paths(icon_config).expect("called only once");
             }
@@ -146,10 +150,16 @@ fn main() {
                 })
                 .unwrap_or_else(|| Box::new(|_| true));
 
-            mode::Mode::apps(
-                desktop::find_entries(blacklist_filter),
-                config.terminal_command(),
-            )
+            let entries = desktop::find_entries(blacklist_filter);
+
+            if list {
+                for e in entries {
+                    println!("{}: {}", e.name, e.desktop_fname);
+                }
+                return;
+            }
+
+            mode::Mode::apps(entries, config.terminal_command())
         }
         ModeArg::Binapps => {
             config.disable_icons();
