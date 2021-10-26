@@ -1,9 +1,9 @@
 use std::f32::consts;
 
-use font_kit::loaders::freetype::Font;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
-use super::{draw_text, Drawable, Space};
+use super::{Drawable, Space};
+use crate::font::{Font, FontBackend};
 use crate::style::{Margin, Padding};
 
 pub struct Params {
@@ -27,7 +27,7 @@ impl<'a> InputText<'a> {
 }
 
 impl<'a> Drawable for InputText<'a> {
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, mut dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
         let font_size = f32::from(self.params.font_size * scale);
@@ -65,17 +65,13 @@ impl<'a> Drawable for InputText<'a> {
             &DrawOptions::new(),
         );
 
-        let pos = Point::new(
-            left_x_center + padding.left,
-            font_size / /*empirical magic:*/ 3.0 + y_center,
-        );
-        draw_text(
-            dt,
+        let pos = Point::new(left_x_center + padding.left, point.y + margin.top);
+        self.params.font.draw(
+            &mut dt,
             self.text,
-            &self.params.font,
             font_size,
             pos,
-            Source::Solid(self.params.font_color),
+            self.params.font_color,
             &DrawOptions::new(),
         );
 
