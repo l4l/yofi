@@ -7,11 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+font-kit = { version = "0.10", optional = true }
+pathfinder_geometry = { version = "0.5", optional = true }
+fontdue = { version = "0.6.2", optional = true }
+rust-fontconfig = { version = "0.1.5", optional = true }
+
 anyhow = "1.0.34"
 wayland-protocols = { version = "0.29.1", default-features = false, features = ["unstable_protocols", "client"] }
 sctk = { version = "0.15.1", package = "smithay-client-toolkit", features = ["calloop"] }
-raqote = { git = "https://github.com/l4l/raqote.git", rev = "27cfc13", default-features = false, features = ["text"] }
-font-kit = "0.10"
+raqote = { git = "https://github.com/l4l/raqote.git", rev = "27cfc13", default-features = false }
 xdg = "2.2.0"
 fep = { package = "freedesktop_entry_parser", git = "https://github.com/l4l/freedesktop_entry_parser.git", branch = "nom6" }
 shlex = "1"
@@ -35,13 +39,17 @@ euclid = "0.22.1"
 nom = { version = "6.2", default-features = false, features = ["std", "regexp"] }
 regex = "1.4.2"
 libc = "0.2.81"
-pathfinder_geometry = "0.5"
 tiny-skia = "0.6.1"
 # FIXME: switchback after https://github.com/lunaryorn/systemd-journal-logger.rs/pull/8
 systemd-journal-logger = { git = "https://github.com/l4l/systemd-journal-logger.rs.git", branch = "nix_22" }
 
 [profile.release]
 lto = true
+
+[features]
+default = ["font-fontdue"]
+font-fontdue = ["fontdue", "rust-fontconfig"]
+font-fontkit = ["font-kit", "pathfinder_geometry", "raqote/text"]
 
 [dev-dependencies]
 test-case = "1.2.0"

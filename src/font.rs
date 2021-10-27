@@ -1,8 +1,18 @@
 use anyhow::Result;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 
+#[cfg(all(feature = "font-fontkit", feature = "font-fontdue"))]
+std::compile_error!("Multiple font backends are not supported. Choose only a single backend");
+
+#[cfg(feature = "font-fontkit")]
 mod fontkit;
+#[cfg(feature = "font-fontkit")]
 pub type Font = fontkit::Font;
+
+#[cfg(feature = "font-fontdue")]
+mod fdue;
+#[cfg(feature = "font-fontdue")]
+pub type Font = fdue::Font;
 
 pub trait FontBackend: Sized {
     fn default() -> Self {

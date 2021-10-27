@@ -102,13 +102,18 @@ where
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
                 if icon.width == icon.height && icon.height == i32::from(icon_size) {
-                    dt.draw_image_at(x_offset, y_offset, icon, &DrawOptions::default());
+                    dt.draw_image_at(
+                        x_offset,
+                        y_offset + icon_size_f32 / 2.,
+                        icon,
+                        &DrawOptions::default(),
+                    );
                 } else {
                     dt.draw_image_with_size_at(
                         icon_size_f32,
                         icon_size_f32,
                         x_offset,
-                        y_offset,
+                        y_offset + icon_size_f32 / 2.,
                         icon,
                         &DrawOptions::default(),
                     );
