@@ -2,12 +2,12 @@ use std::marker::PhantomData;
 use std::ops::Range;
 
 use bit_vec::BitVec;
-use font_kit::loaders::freetype::Font;
 use itertools::Itertools;
 use oneshot::Sender;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource, Source};
+use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource};
 
-use super::{draw_text, Drawable, Space};
+use super::{Drawable, Space};
+use crate::font::{Font, FontBackend};
 use crate::style::Margin;
 
 pub struct Params {
@@ -97,14 +97,14 @@ where
         {
             let relative_offset = (i as f32) * (entry_height + item_spacing);
             let x_offset = point.x + margin.left;
-            let y_offset = top_offset + relative_offset + entry_height;
+            let y_offset = top_offset + relative_offset;
 
             let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
                 if icon.width == icon.height && icon.height == i32::from(icon_size) {
                     dt.draw_image_at(
                         x_offset,
-                        y_offset - icon_size_f32,
+                        y_offset + icon_size_f32 / 2.,
                         icon,
                         &DrawOptions::default(),
                     );
@@ -113,7 +113,7 @@ where
                         icon_size_f32,
                         icon_size_f32,
                         x_offset,
-                        y_offset - icon_size_f32,
+                        y_offset + icon_size_f32 / 2.,
                         icon,
                         &DrawOptions::default(),
                     );
@@ -155,14 +155,10 @@ where
                 macro_rules! draw_substr {
                     ($range:expr, $pos:expr, $color:expr) => {{
                         let s = substr(item.name, $range);
-                        let measured = dt.measure_text(&font, font_size, s, antialias).unwrap();
-                        let color = Source::Solid($color);
+                        let width = font.measure_text_width(&dt, font_size, s, antialias);
 
-                        draw_text(&mut dt, s, &font, font_size, $pos, color, &draw_opts);
-                        Point::new(
-                            $pos.x + (measured.size.width + measured.min_x()) as f32,
-                            $pos.y,
-                        )
+                        font.draw(&mut dt, s, font_size, $pos, $color, &draw_opts);
+                        Point::new($pos.x + width, $pos.y)
                     }};
                 }
 
@@ -185,18 +181,11 @@ where
                     });
 
                 let tail_str = substr(item.name, &(idx..item.name.chars().count()));
-                let color = Source::Solid(color);
-                draw_text(&mut dt, tail_str, font, font_size, pos, color, &draw_opts);
+                font.draw(&mut dt, tail_str, font_size, pos, color, &draw_opts);
             } else {
-                draw_text(
-                    &mut dt,
-                    item.name,
-                    &self.params.font,
-                    font_size,
-                    pos,
-                    Source::Solid(color),
-                    &draw_opts,
-                );
+                self.params
+                    .font
+                    .draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
             }
         }
 
