@@ -110,14 +110,16 @@ where
 
     match (localized_entry("Name"), main_section.attr("Exec")) {
         (Some(n), Some(e)) => {
+            let filename = dir_entry_path.file_name().unwrap();
+            let desktop_fname = if let Some(f) = filename.to_str() {
+                f.to_owned()
+            } else {
+                log::error!("found non-UTF8 desktop file: {:?}, skipping", filename);
+                return;
+            };
             entries.push(Entry {
                 name: n.to_owned(),
-                desktop_fname: dir_entry_path
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .expect("desktop file name is not in utf-8")
-                    .to_owned(),
+                desktop_fname,
                 path: dir_entry_path,
                 exec: e.to_owned(),
                 name_with_keywords: n.to_owned() + localized_entry("Keywords").unwrap_or_default(),
