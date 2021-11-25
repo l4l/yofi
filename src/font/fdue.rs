@@ -1,19 +1,41 @@
 use std::cell::RefCell;
 
 use anyhow::Context;
+use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern, PatternMatch};
 
 use super::{FontBackend, Result};
 
-static FONTCONFIG: Lazy<FcFontCache> = Lazy::new(FcFontCache::build);
+static FONTCONFIG: Lazy<FontConfig> = Lazy::new(FontConfig::new);
 const BUF_SIZE: usize = 256 * 256;
 
 pub struct Font {
     inner: fontdue::Font,
-    buffer: RefCell<[u32; BUF_SIZE]>,
 }
+
+// Because Font is re-created on every `draw` call method we cached dynamic allocations
+struct FontConfig {
+    cache: FcFontCache,
+    // Layout in fontdue uses allocations, so we're reusing it for reduce memory allocations
+    layout: RefCell<Layout>,
+    // Move buffer to heap, because it is very big for stack; only one allocation happens
+    buffer: RefCell<Vec<u32>>,
+}
+
+impl FontConfig {
+    fn new() -> Self {
+        Self {
+            cache: FcFontCache::build(),
+            layout: RefCell::new(Layout::new(CoordinateSystem::PositiveYDown)),
+            buffer: RefCell::new(vec![0; BUF_SIZE]),
+        }
+    }
+}
+
+//SAFETY: We do not use multiple threads, so it never happens that the & is posted to another thread
+unsafe impl Sync for FontConfig {}
 
 impl Font {
     fn from_fc_path(font_search: &FcFontPath) -> Result<Self> {
@@ -27,16 +49,14 @@ impl Font {
         )
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-        Ok(Font {
-            inner,
-            buffer: RefCell::new([0; BUF_SIZE]),
-        })
+        Ok(Font { inner })
     }
 }
 
 impl FontBackend for Font {
     fn default() -> Self {
         FONTCONFIG
+            .cache
             .query(&FcPattern {
                 monospace: PatternMatch::True,
                 ..Default::default()
@@ -48,6 +68,7 @@ impl FontBackend for Font {
 
     fn font_by_name(name: &str) -> Result<Self> {
         FONTCONFIG
+            .cache
             .query(&FcPattern {
                 name: Some(name.to_string()),
                 ..Default::default()
@@ -65,13 +86,23 @@ impl FontBackend for Font {
         color: SolidSource,
         opts: &DrawOptions,
     ) {
-        let mut buf = self.buffer.borrow_mut();
-        let (mut x, y) = (start_pos.x, start_pos.y);
-        for c in text.chars() {
-            let (m, b) = self.inner.rasterize(c, font_size);
-            assert!(m.width * m.height <= BUF_SIZE);
-            let width = m.width as i32;
-            let height = m.height as i32;
+        let mut buf = FONTCONFIG.buffer.borrow_mut();
+        let mut layout = FONTCONFIG.layout.borrow_mut();
+
+        layout.reset(&LayoutSettings {
+            x: start_pos.x,
+            y: start_pos.y,
+            ..LayoutSettings::default()
+        });
+
+        layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
+
+        for g in layout.glyphs() {
+            let (_, b) = self.inner.rasterize_config(g.key);
+
+            assert!(g.width * g.height <= BUF_SIZE);
+            let width = g.width as i32;
+            let height = g.height as i32;
 
             for (i, x) in b.into_iter().enumerate() {
                 let src = SolidSource::from_unpremultiplied_argb(
@@ -92,16 +123,7 @@ impl FontBackend for Font {
                 data: &buf[..],
             };
 
-            dt.draw_image_with_size_at(
-                m.width as f32,
-                m.height as f32,
-                x + m.xmin as f32,
-                y + font_size - m.bounds.height - m.ymin as f32,
-                &img,
-                opts,
-            );
-
-            x += m.advance_width;
+            dt.draw_image_with_size_at(g.width as f32, g.height as f32, g.x, g.y, &img, opts);
         }
     }
 
