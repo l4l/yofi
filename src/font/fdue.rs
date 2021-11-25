@@ -123,14 +123,7 @@ impl FontBackend for Font {
                 data: &buf[..],
             };
 
-            dt.draw_image_with_size_at(
-                g.width as f32,
-                g.height as f32,
-                g.x,
-                g.y as f32,
-                &img,
-                opts,
-            );
+            dt.draw_image_with_size_at(g.width as f32, g.height as f32, g.x, g.y, &img, opts);
         }
     }
 
