@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use anyhow::Context;
-use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
+use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern, PatternMatch};
@@ -92,6 +92,8 @@ impl FontBackend for Font {
         layout.reset(&LayoutSettings {
             x: start_pos.x,
             y: start_pos.y,
+            max_height: Some(font_size),
+            vertical_align: VerticalAlign::Middle,
             ..LayoutSettings::default()
         });
 
@@ -122,7 +124,7 @@ impl FontBackend for Font {
                 height,
                 data: &buf[..],
             };
-
+            
             dt.draw_image_with_size_at(g.width as f32, g.height as f32, g.x, g.y, &img, opts);
         }
     }
