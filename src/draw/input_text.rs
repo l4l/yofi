@@ -32,7 +32,11 @@ impl<'a> Drawable for InputText<'a> {
 
         let font_size = f32::from(self.params.font_size * scale);
 
-        let padding = self.params.padding * f32::from(scale);
+        let mut padding = self.params.padding * f32::from(scale);
+        const PADDING_TOP: f32 = 2.0;
+        const PADDING_BOTTOM: f32 = 5.0;
+        padding.top += PADDING_TOP;
+        padding.bottom += PADDING_BOTTOM;
         let margin = self.params.margin * f32::from(scale);
 
         let border_diameter = padding.top + font_size + padding.bottom;
@@ -65,7 +69,11 @@ impl<'a> Drawable for InputText<'a> {
             &DrawOptions::new(),
         );
 
-        let pos = Point::new(left_x_center + padding.left, point.y + margin.top);
+        let pos = Point::new(
+            left_x_center + padding.left,
+            point.y + margin.top + padding.top,
+        );
+
         self.params.font.draw(
             &mut dt,
             self.text,
