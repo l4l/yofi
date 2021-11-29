@@ -69,7 +69,10 @@ impl<'a> Drawable for InputText<'a> {
             &DrawOptions::new(),
         );
 
-        let pos = Point::new(left_x_center + padding.left, point.y + margin.top + padding.top);
+        let pos = Point::new(
+            left_x_center + padding.left,
+            point.y + margin.top + padding.top
+        );
 
         self.params.font.draw(
             &mut dt,
