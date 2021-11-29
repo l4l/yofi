@@ -71,7 +71,7 @@ impl<'a> Drawable for InputText<'a> {
 
         let pos = Point::new(
             left_x_center + padding.left,
-            point.y + margin.top + padding.top
+            point.y + margin.top + padding.top,
         );
 
         self.params.font.draw(
