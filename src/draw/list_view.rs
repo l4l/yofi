@@ -69,7 +69,7 @@ where
 
         let icon_size_f32 = f32::from(icon_size);
         let font_size = f32::from(self.params.font_size * scale);
-        let top_offset = point.y + margin.top + f32::abs(f32::min(font_size - icon_size_f32, 0.)) / 2.;
+        let top_offset = point.y + margin.top + (icon_size_f32 - font_size).max(0.) / 2.;
         let entry_height = font_size.max(icon_size_f32);
 
         let displayed_items = ((space.height - margin.top - margin.bottom + item_spacing)
