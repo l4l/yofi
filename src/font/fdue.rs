@@ -99,7 +99,7 @@ impl FontBackend for Font {
 
         layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
 
-        for (n, g) in layout.glyphs().into_iter().enumerate() {
+        for (n, g) in layout.glyphs().iter().enumerate() {
             let (_, b) = self.inner.rasterize_config(g.key);
 
             assert!(g.width * g.height <= BUF_SIZE);
