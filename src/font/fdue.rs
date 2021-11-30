@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern, PatternMatch};
 
-use super::{FontBackend, Result};
+use super::{FontBackend, FontColor, Result};
 
 static FONTCONFIG: Lazy<FontConfig> = Lazy::new(FontConfig::new);
 const BUF_SIZE: usize = 256 * 256;
@@ -83,7 +83,7 @@ impl FontBackend for Font {
         text: &str,
         font_size: f32,
         start_pos: Point,
-        color: SolidSource,
+        color: FontColor,
         opts: &DrawOptions,
     ) {
         let mut buf = FONTCONFIG.buffer.borrow_mut();
@@ -99,12 +99,17 @@ impl FontBackend for Font {
 
         layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
 
-        for g in layout.glyphs() {
+        for (n, g) in layout.glyphs().into_iter().enumerate() {
             let (_, b) = self.inner.rasterize_config(g.key);
 
             assert!(g.width * g.height <= BUF_SIZE);
             let width = g.width as i32;
             let height = g.height as i32;
+
+            let color = match color {
+                FontColor::SingleColor(color) => color,
+                FontColor::MultipleColor(ref colors) => colors[n],
+            };
 
             for (i, x) in b.into_iter().enumerate() {
                 let src = SolidSource::from_unpremultiplied_argb(

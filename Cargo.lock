@@ -1985,6 +1985,7 @@ dependencies = [
  "test-case",
  "tiny-skia",
  "toml",
+ "unicode-segmentation",
  "usvg",
  "wayland-protocols",
  "xdg",

@@ -3,7 +3,7 @@ use std::f32::consts;
 use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
 
 use super::{Drawable, Space};
-use crate::font::{Font, FontBackend};
+use crate::font::{Font, FontBackend, FontColor};
 use crate::style::{Margin, Padding};
 
 pub struct Params {
@@ -79,7 +79,7 @@ impl<'a> Drawable for InputText<'a> {
             self.text,
             font_size,
             pos,
-            self.params.font_color,
+            FontColor::SingleColor(self.params.font_color),
             &DrawOptions::new(),
         );
 
