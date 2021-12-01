@@ -79,7 +79,7 @@ impl<'a> Drawable for InputText<'a> {
             self.text,
             font_size,
             pos,
-            FontColor::SingleColor(self.params.font_color),
+            FontColor::Single(self.params.font_color),
             &DrawOptions::new(),
         );
 

@@ -2,7 +2,7 @@ use font_kit::family_name::FamilyName;
 pub use font_kit::loaders::freetype::Font;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource, Source};
+use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, Source};
 
 use super::{FontBackend, FontColor, Result};
 
@@ -67,10 +67,10 @@ impl FontBackend for Font {
             );
 
         let color = match color {
-            FontColor::SingleColor(color) => color,
+            FontColor::Single(color) => color,
             // Take just 1st color in vector, fontkit have a lot of problems in rasterize, so it is not a big deal
             // May be delete this font?
-            FontColor::MultipleColor(ref colors) => colors[0],
+            FontColor::Multiple(ref colors) => colors[0],
         };
 
         dt.draw_glyphs(

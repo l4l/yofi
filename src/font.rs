@@ -15,8 +15,8 @@ mod fdue;
 pub type Font = fdue::Font;
 
 pub enum FontColor {
-    MultipleColor(Vec<SolidSource>),
-    SingleColor(SolidSource),
+    Multiple(Vec<SolidSource>),
+    Single(SolidSource),
 }
 
 pub trait FontBackend: Sized {

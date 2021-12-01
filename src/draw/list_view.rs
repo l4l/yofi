@@ -140,16 +140,7 @@ where
                 let mut special_color =
                     vec![color; UnicodeSegmentation::graphemes(item.name, true).count()];
 
-                macro_rules! draw_substr {
-                    ($range:expr, $color:expr) => {{
-                        for i in $range {
-                            if i >= special_color.len() {
-                                break;
-                            }
-                            special_color[i] = $color;
-                        }
-                    }};
-                }
+                let special_len = special_color.len();
 
                 match_ranges
                     .iter()
@@ -166,12 +157,14 @@ where
                     .for_each(|(is_matched, range)| {
                         let color = if is_matched { match_color } else { color };
 
-                        draw_substr!(range, color);
+                        if range.start < special_len {
+                            special_color[range.start..range.end.min(special_len)].fill(color);
+                        }
                     });
 
-                FontColor::MultipleColor(special_color)
+                FontColor::Multiple(special_color)
             } else {
-                FontColor::SingleColor(color)
+                FontColor::Single(color)
             };
 
             let font = &self.params.font;

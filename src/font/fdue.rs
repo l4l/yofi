@@ -107,8 +107,8 @@ impl FontBackend for Font {
             let height = g.height as i32;
 
             let color = match color {
-                FontColor::SingleColor(color) => color,
-                FontColor::MultipleColor(ref colors) => colors[n],
+                FontColor::Single(color) => color,
+                FontColor::Multiple(ref colors) => colors[n],
             };
 
             for (i, x) in b.into_iter().enumerate() {
