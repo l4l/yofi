@@ -14,6 +14,11 @@ mod fdue;
 #[cfg(feature = "font-fontdue")]
 pub type Font = fdue::Font;
 
+pub enum FontColor {
+    Multiple(Vec<SolidSource>),
+    Single(SolidSource),
+}
+
 pub trait FontBackend: Sized {
     fn default() -> Self {
         const DEFAULT_FONT: &str = "DejaVu Sans Mono";
@@ -29,7 +34,7 @@ pub trait FontBackend: Sized {
         text: &str,
         font_size: f32,
         start_pos: Point,
-        color: SolidSource,
+        color: FontColor,
         opts: &DrawOptions,
     );
 

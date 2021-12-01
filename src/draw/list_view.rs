@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::ops::Range;
 
 use bit_vec::BitVec;
 use itertools::Itertools;
@@ -7,8 +6,9 @@ use oneshot::Sender;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource};
 
 use super::{Drawable, Space};
-use crate::font::{Font, FontBackend};
+use crate::font::{Font, FontBackend, FontColor};
 use crate::style::Margin;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Params {
     pub font: Font,
@@ -130,39 +130,19 @@ where
             let empty = BitVec::new();
             let match_ranges = item.match_mask.unwrap_or(&empty);
 
-            fn substr<'a, 'b: 'a>(x: &'b str, r: &Range<usize>) -> &'a str {
-                let start = x
-                    .char_indices()
-                    .nth(r.start)
-                    .map(|x| x.0)
-                    .unwrap_or_else(|| x.len());
-                let end = x
-                    .char_indices()
-                    .nth(r.end.saturating_sub(1))
-                    .map(|l| l.0 + l.1.len_utf8())
-                    .unwrap_or_else(|| x.len());
-                &x[start..end]
-            }
-
             let antialias = AntialiasMode::Gray;
             let draw_opts = DrawOptions {
                 antialias,
                 ..DrawOptions::new()
             };
 
-            if let Some(match_color) = self.params.match_color {
-                let font = &self.params.font;
-                macro_rules! draw_substr {
-                    ($range:expr, $pos:expr, $color:expr) => {{
-                        let s = substr(item.name, $range);
-                        let width = font.measure_text_width(&dt, font_size, s, antialias);
+            let color = if let Some(match_color) = self.params.match_color {
+                let mut special_color =
+                    vec![color; UnicodeSegmentation::graphemes(item.name, true).count()];
 
-                        font.draw(&mut dt, s, font_size, $pos, $color, &draw_opts);
-                        Point::new($pos.x + width, $pos.y)
-                    }};
-                }
+                let special_len = special_color.len();
 
-                let (pos, idx) = match_ranges
+                match_ranges
                     .iter()
                     .group_by(|x| *x)
                     .into_iter()
@@ -174,19 +154,21 @@ where
                         *start += count;
                         Some((group.0, range))
                     })
-                    .fold((pos, 0), |(pos, _), (is_matched, range)| {
+                    .for_each(|(is_matched, range)| {
                         let color = if is_matched { match_color } else { color };
 
-                        (draw_substr!(&range, pos, color), range.end)
+                        if range.start < special_len {
+                            special_color[range.start..range.end.min(special_len)].fill(color);
+                        }
                     });
 
-                let tail_str = substr(item.name, &(idx..item.name.chars().count()));
-                font.draw(&mut dt, tail_str, font_size, pos, color, &draw_opts);
+                FontColor::Multiple(special_color)
             } else {
-                self.params
-                    .font
-                    .draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
-            }
+                FontColor::Single(color)
+            };
+
+            let font = &self.params.font;
+            font.draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
         }
 
         space

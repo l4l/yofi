@@ -2,9 +2,9 @@ use font_kit::family_name::FamilyName;
 pub use font_kit::loaders::freetype::Font;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource, Source};
+use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, Source};
 
-use super::{FontBackend, Result};
+use super::{FontBackend, FontColor, Result};
 
 impl FontBackend for Font {
     fn default() -> Self {
@@ -28,7 +28,7 @@ impl FontBackend for Font {
         text: &str,
         font_size: f32,
         start_pos: Point,
-        color: SolidSource,
+        color: FontColor,
         opts: &DrawOptions,
     ) {
         let start = pathfinder_geometry::vector::vec2f(start_pos.x, start_pos.y + font_size);
@@ -65,6 +65,13 @@ impl FontBackend for Font {
                     (start + delta, ids, positions)
                 },
             );
+
+        let color = match color {
+            FontColor::Single(color) => color,
+            // Take just 1st color in vector, fontkit have a lot of problems in rasterize, so it is not a big deal
+            // May be delete this font?
+            FontColor::Multiple(ref colors) => colors[0],
+        };
 
         dt.draw_glyphs(
             self,
