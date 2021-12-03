@@ -66,21 +66,26 @@ impl FontBackend for Font {
                 },
             );
 
-        let color = match color {
-            FontColor::Single(color) => color,
-            // Take just 1st color in vector, fontkit have a lot of problems in rasterize, so it is not a big deal
-            // May be delete this font?
-            FontColor::Multiple(ref colors) => colors[0],
+        let mut draw_glyphs = |ids: &[_], positions: &[_], color| {
+            dt.draw_glyphs(
+                &self,
+                font_size,
+                ids,
+                positions,
+                &Source::Solid(color),
+                opts,
+            );
         };
-
-        dt.draw_glyphs(
-            self,
-            font_size,
-            &ids,
-            &positions,
-            &Source::Solid(color),
-            opts,
-        );
+        match color {
+            FontColor::Single(color) => {
+                draw_glyphs(&ids, &positions, color);
+            }
+            FontColor::Multiple(colors) => {
+                for ((id, position), color) in ids.into_iter().zip(positions).zip(colors) {
+                    draw_glyphs(&[id], &[position], color);
+                }
+            }
+        };
     }
 
     fn measure_text_width(
