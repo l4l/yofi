@@ -4,7 +4,7 @@ use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
-use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern, PatternMatch};
+use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
 
 use super::{FontBackend, FontColor, Result};
 
@@ -57,10 +57,7 @@ impl FontBackend for Font {
     fn default() -> Self {
         FONTCONFIG
             .cache
-            .query(&FcPattern {
-                monospace: PatternMatch::True,
-                ..Default::default()
-            })
+            .query(&FcPattern::default())
             .map(Font::from_fc_path)
             .unwrap()
             .unwrap()
