@@ -43,6 +43,7 @@ tiny-skia = "0.6.1"
 # FIXME: switchback after https://github.com/lunaryorn/systemd-journal-logger.rs/pull/8
 systemd-journal-logger = { git = "https://github.com/l4l/systemd-journal-logger.rs.git", branch = "nix_22" }
 unicode-segmentation = "1.8.0"
+sublime_fuzzy = "0.7.0"
 
 [profile.release]
 lto = true

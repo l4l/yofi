@@ -1552,6 +1552,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "sublime_fuzzy"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa7986063f7c0ab374407e586d7048a3d5aac94f103f751088bf398e07cd5400"
+
+[[package]]
 name = "subtle"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1981,6 +1987,7 @@ dependencies = [
  "shlex",
  "smithay-client-toolkit",
  "structopt",
+ "sublime_fuzzy",
  "systemd-journal-logger",
  "test-case",
  "tiny-skia",

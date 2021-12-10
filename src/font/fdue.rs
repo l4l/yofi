@@ -5,6 +5,8 @@ use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, Verti
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
+use std::collections::BinaryHeap;
+use sublime_fuzzy::{best_match, format_simple, Match};
 
 use super::{FontBackend, FontColor, Result};
 
@@ -37,6 +39,30 @@ impl FontConfig {
 //SAFETY: We do not use multiple threads, so it never happens that the & is posted to another thread
 unsafe impl Sync for FontConfig {}
 
+#[derive(Eq)]
+struct FuzzyResult<'a> {
+    text: &'a str,
+    match_: Match,
+}
+
+impl<'a> PartialEq for FuzzyResult<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.match_.score() == other.match_.score()
+    }
+}
+
+impl<'a> Ord for FuzzyResult<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.match_.score().cmp(&other.match_.score())
+    }
+}
+
+impl<'a> PartialOrd for FuzzyResult<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.match_.score().partial_cmp(&other.match_.score())
+    }
+}
+
 impl Font {
     fn from_fc_path(font_search: &FcFontPath) -> Result<Self> {
         let bytes = std::fs::read(font_search.path.as_str()).context("font read")?;
@@ -50,6 +76,33 @@ impl Font {
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
         Ok(Font { inner })
+    }
+
+    fn try_find_best_font(name: &str) -> Vec<String> {
+        const COUNT_MATCHES: usize = 5;
+
+        FONTCONFIG
+            .cache
+            .list()
+            .keys()
+            .filter(|v| v.name.is_some())
+            .map(|font| {
+                let current = font.name.as_ref().unwrap().as_str();
+                if let Some(matching) = best_match(name, current) {
+                    return Some(FuzzyResult {
+                        text: current,
+                        match_: matching,
+                    });
+                }
+                None
+            })
+            .filter(|v| v.is_some())
+            .map(|v| v.unwrap())
+            .collect::<BinaryHeap<FuzzyResult>>()
+            .into_iter()
+            .take(COUNT_MATCHES)
+            .map(|v| format_simple(&v.match_, v.text, "\x1b[1m", "\x1b[0m"))
+            .collect()
     }
 }
 
@@ -71,7 +124,16 @@ impl FontBackend for Font {
                 ..Default::default()
             })
             .map(Font::from_fc_path)
-            .ok_or_else(|| anyhow::anyhow!("cannot find font"))?
+            .ok_or_else(|| {
+                let matching = Font::try_find_best_font(name);
+                println!("The font could not be found.");
+                if matching.len() > 0 {
+                    println!("Best matches:\n");
+                    matching.into_iter().for_each(|res| println!("{}", res));
+                    println!();
+                }
+                anyhow::anyhow!("cannot find font")
+            })?
     }
 
     fn draw(
