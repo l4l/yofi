@@ -96,8 +96,7 @@ impl Font {
                 }
                 None
             })
-            .filter(|v| v.is_some())
-            .map(|v| v.unwrap())
+            .flatten()
             .collect::<BinaryHeap<FuzzyResult>>()
             .into_iter()
             .take(COUNT_MATCHES)
@@ -127,7 +126,7 @@ impl FontBackend for Font {
             .ok_or_else(|| {
                 let matching = Font::try_find_best_font(name);
                 println!("The font could not be found.");
-                if matching.len() > 0 {
+                if !matching.is_empty() {
                     println!("Best matches:\n");
                     matching.into_iter().for_each(|res| println!("{}", res));
                     println!();
