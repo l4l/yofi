@@ -45,8 +45,10 @@ macro_rules! prog_name {
     };
 }
 
-fn setup_logger(level: LevelFilter, log_file: impl AsRef<Path>) {
-    fern::Dispatch::new()
+fn setup_logger(level: LevelFilter, log_file: Option<impl AsRef<Path>>) {
+    use log::Log;
+
+    let dispatcher = fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
                 "{}[{}][{}] {}",
@@ -57,9 +59,18 @@ fn setup_logger(level: LevelFilter, log_file: impl AsRef<Path>) {
             ))
         })
         .level(level)
-        .chain(fern::log_file(log_file).unwrap())
-        .apply()
-        .unwrap();
+        .chain(std::io::stdout());
+
+    let dispatcher = if let Some(log_file) = log_file {
+        dispatcher.chain(fern::log_file(log_file).unwrap())
+    } else {
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
+        let systemd_logger =
+            systemd_journal_logger::JournalLog::with_extra_fields(vec![("VERSION", VERSION)]);
+        dispatcher.chain(fern::Output::call(move |record| systemd_logger.log(record)))
+    };
+
+    dispatcher.apply().unwrap();
 }
 
 #[derive(StructOpt)]
@@ -115,13 +126,8 @@ fn main() {
         (_, true) => LevelFilter::Warn,
         _ => LevelFilter::Info,
     };
-    if let Some(log_file) = args.log_file {
-        setup_logger(log_level, log_file);
-    } else {
-        const VERSION: &str = env!("CARGO_PKG_VERSION");
-        systemd_journal_logger::init_with_extra_fields(vec![("VERSION", VERSION)]).unwrap();
-        log::set_max_level(LevelFilter::Info);
-    }
+
+    setup_logger(log_level, args.log_file);
 
     let (env, display, queue) =
         sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
