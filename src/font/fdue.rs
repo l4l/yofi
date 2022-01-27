@@ -1,7 +1,9 @@
 use std::cell::RefCell;
+use std::collections::BinaryHeap;
 
 use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
+use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
@@ -37,6 +39,30 @@ impl FontConfig {
 //SAFETY: We do not use multiple threads, so it never happens that the & is posted to another thread
 unsafe impl Sync for FontConfig {}
 
+#[derive(Eq)]
+struct FuzzyResult<'a> {
+    text: &'a str,
+    distance: usize,
+}
+
+impl<'a> PartialEq for FuzzyResult<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance == other.distance
+    }
+}
+
+impl<'a> Ord for FuzzyResult<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.distance.cmp(&other.distance)
+    }
+}
+
+impl<'a> PartialOrd for FuzzyResult<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.distance.partial_cmp(&other.distance)
+    }
+}
+
 impl Font {
     fn from_fc_path(font_search: &FcFontPath) -> Result<Self> {
         let bytes = std::fs::read(font_search.path.as_str()).context("font read")?;
@@ -50,6 +76,28 @@ impl Font {
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
         Ok(Font { inner })
+    }
+
+    fn try_find_best_font(name: &str) -> Vec<String> {
+        const COUNT_MATCHES: usize = 5;
+
+        FONTCONFIG
+            .cache
+            .list()
+            .keys()
+            .filter_map(|font| {
+                let text = font.name.as_ref()?.as_str();
+                Some(FuzzyResult {
+                    text,
+                    distance: levenshtein(name, text),
+                })
+            })
+            .collect::<BinaryHeap<FuzzyResult>>()
+            .into_sorted_vec()
+            .into_iter()
+            .take(COUNT_MATCHES)
+            .map(|v| v.text.to_owned())
+            .collect()
     }
 }
 
@@ -71,7 +119,15 @@ impl FontBackend for Font {
                 ..Default::default()
             })
             .map(Font::from_fc_path)
-            .ok_or_else(|| anyhow::anyhow!("cannot find font"))?
+            .ok_or_else(|| {
+                let matching = Font::try_find_best_font(name);
+                log::info!("The font {} could not be found.", name);
+                if !matching.is_empty() {
+                    use itertools::Itertools;
+                    log::info!("Best matches:\n\t{}\n", matching.into_iter().format("\n\t"));
+                }
+                anyhow::anyhow!("cannot find font")
+            })?
     }
 
     fn draw(
