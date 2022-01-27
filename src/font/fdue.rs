@@ -1,12 +1,12 @@
 use std::cell::RefCell;
+use std::collections::BinaryHeap;
 
 use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
+use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
-use std::collections::BinaryHeap;
-use sublime_fuzzy::{best_match, format_simple, Match};
 
 use super::{FontBackend, FontColor, Result};
 
@@ -42,24 +42,24 @@ unsafe impl Sync for FontConfig {}
 #[derive(Eq)]
 struct FuzzyResult<'a> {
     text: &'a str,
-    match_: Match,
+    distance: usize,
 }
 
 impl<'a> PartialEq for FuzzyResult<'a> {
     fn eq(&self, other: &Self) -> bool {
-        self.match_.score() == other.match_.score()
+        self.distance == other.distance
     }
 }
 
 impl<'a> Ord for FuzzyResult<'a> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.match_.score().cmp(&other.match_.score())
+        self.distance.cmp(&other.distance)
     }
 }
 
 impl<'a> PartialOrd for FuzzyResult<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.match_.score().partial_cmp(&other.match_.score())
+        self.distance.partial_cmp(&other.distance)
     }
 }
 
@@ -85,22 +85,18 @@ impl Font {
             .cache
             .list()
             .keys()
-            .filter(|v| v.name.is_some())
-            .map(|font| {
-                let current = font.name.as_ref().unwrap().as_str();
-                if let Some(matching) = best_match(name, current) {
-                    return Some(FuzzyResult {
-                        text: current,
-                        match_: matching,
-                    });
-                }
-                None
+            .filter_map(|font| {
+                let text = font.name.as_ref()?.as_str();
+                Some(FuzzyResult {
+                    text,
+                    distance: levenshtein(name, text),
+                })
             })
-            .flatten()
             .collect::<BinaryHeap<FuzzyResult>>()
+            .into_sorted_vec()
             .into_iter()
             .take(COUNT_MATCHES)
-            .map(|v| format_simple(&v.match_, v.text, "\x1b[1m", "\x1b[0m"))
+            .map(|v| v.text.to_owned())
             .collect()
     }
 }
@@ -125,11 +121,10 @@ impl FontBackend for Font {
             .map(Font::from_fc_path)
             .ok_or_else(|| {
                 let matching = Font::try_find_best_font(name);
-                println!("The font could not be found.");
+                log::info!("The font {} could not be found.", name);
                 if !matching.is_empty() {
-                    println!("Best matches:\n");
-                    matching.into_iter().for_each(|res| println!("{}", res));
-                    println!();
+                    use itertools::Itertools;
+                    log::info!("Best matches:\n\t{}\n", matching.into_iter().format("\n\t"));
                 }
                 anyhow::anyhow!("cannot find font")
             })?
