@@ -4,66 +4,25 @@
 
 .. is a minimalistic menu for Wayland-based compositors.
 
-**The project still in the early development stage, use with caution.**
+## Installation
 
-## Configuring
+Make sure you have a setup wayland environment, in particularly `WAYLAND_DISPLAY`
+env var must be set. `wlr_layer_shell` protocol is not necessary but preferred.
+There are several installation options:
 
-Sample configuration:
+- Pre-built release binaries are published at the [Release page](https://github.com/l4l/yofi/releases).
+Although these are built in Ubuntu environment it should also work for other Linux distributions.
+- \[for Archlinux\] there are [yofi-bin](https://aur.archlinux.org/packages/yofi-bin/) and
+[yofi-git](https://aur.archlinux.org/packages/yofi-git/) AUR packages for binary and from-source builds.
+- Or you can [build from sources](#running).
 
-```toml
-# This file should be placed at ~/.config/yofi/yofi.config
+# User documentation
 
-# ~~Global values, used as fallback if needed
-width = 400
-height = 512
-# If set forces usage of common window instead of Layer Shell protocol
-force_window = false
-# if unset, places window at the center
-# window_offsets = [500, -50] # in format [top_offset, left_offset]
-# font = "DejaVu Sans"
-font_size = 24
-bg_color = 0x272822ee # ~~colors are specified in 0xRRGGBBAA format
-# font_color = 0xf8f8f2ff
-# HiDPI scaling factor; default is requested from compositor but
-# fractional values are truncated, thus need to set it explicitly.
-scale = 3
+User documentation is located at [Wiki pages](https://github.com/l4l/yofi/wiki).
+Feel free to [open an issue](https://github.com/l4l/yofi/issues/new) if something
+is unclear, missing or outdated.
 
-# ~~Block for input field
-[input_text]
-# font = ...
-font_color = 0xf8f8f2ff
-bg_color = 0x75715eff
-# Margin/padding values are specified as in CSS
-# i.e. either a signle for all directions
-# or two values, the first for top/bottom and the second for left/right
-# or finally four values for top, right, bottom and left directions.
-margin = "5"
-padding = "1.7 -4"
-
-# ~~Block for a list with search results
-[list_items]
-# font = ...
-font_color = 0xf8f8f2ff
-selected_font_color = 0xa6e22eff
-# if specified, search match will be emphasize with this color
-match_color = 0xe69f66ff
-margin = "5 10"
-# Additional spacing between list items.
-# By default there's around 10 pixels spaced,
-# the amount can be reduced by specifying a negative value
-item_spacing = 2
-# Spacing between an icon and a text.
-icon_spacing = 5
-
-# When section presents, icons are displayed
-[icon]
-size = 16 # no scaling is performed, so need to choose exact size
-theme = "Adwaita"
-# if no icon found for an app, this on will be used instead
-fallback_icon_path = "/usr/share/icons/Adwaita/16x16/categories/applications-engineering-symbolic.symbolic.png"
-```
-
-## Running
+## Building
 
 For building the project you need rust compiler and cargo package manager
 (usually distributed via [rustup](https://rustup.rs/)). Once installed, for
@@ -73,15 +32,11 @@ launch, you may build & run project with the following command:
 cargo run --release
 ```
 
-## Hotkeys
+## Contributing
 
-These cannot be configured yet, so the following keys are handled:
+Contributions are welcome, but make sure that:
 
-|         Key         |     Alternative        |                   Binding                    |
-|---------------------|------------------------|----------------------------------------------|
-| Esc                 | Ctrl + c               | Close menu                                   |
-| Up Arrow            | Ctrl + k / Shift + Tab | Select previous item                         |
-| Down Arrow          | Ctrl + j / Tab         | Select next item                             |
-| Return              | N/A                    | Execute selected item                        |
-| Ctrl + ]            | N/A                    | Clear input                                  |
-| Ctrl + w            | Ctrl + backspace       | Delete single word                           |
+- \[If that's a new feature or it changes the existing behavior\] you've discussed it in the issue page before the implementation.
+- Your patch is not a refactoring.
+- rustfmt and clippy are checked.
+- \[optionally\] Added docs if necessary and an entry in CHANGELOG.md.
