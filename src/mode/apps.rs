@@ -29,7 +29,13 @@ impl AppsMode {
     pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
         let idx = info.index.unwrap();
         let entry = &self.entries[idx];
-        let args = shlex::split(&entry.exec)
+        let exec = if info.subindex == 0 {
+            &entry.entry.exec
+        } else {
+            &entry.actions[info.subindex - 1].exec
+        };
+
+        let args = shlex::split(exec)
             .unwrap()
             .into_iter()
             .filter(|s| !s.starts_with('%')) // TODO: use placeholders somehow
@@ -52,12 +58,17 @@ impl AppsMode {
         self.entries.len()
     }
 
-    pub fn entry(&self, idx: usize) -> Entry<'_> {
+    pub fn subentries_len(&self, idx: usize) -> usize {
+        self.entries.get(idx).map(|e| e.actions.len()).unwrap_or(0)
+    }
+
+    pub fn entry(&self, idx: usize, subidx: usize) -> Entry<'_> {
         let entry = &self.entries[idx];
 
         Entry {
-            name: entry.name.as_str(),
-            icon: entry.icon.as_ref().map(|i| i.as_image()),
+            name: entry.entry.name.as_ref(),
+            subname: Some(entry.subname(subidx).unwrap_or("Default Action")),
+            icon: entry.icon(subidx).map(|i| i.as_image()),
         }
     }
 

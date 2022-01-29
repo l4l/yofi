@@ -161,7 +161,7 @@ fn main() {
 
             if list {
                 for e in entries {
-                    println!("{}: {}", e.name, e.desktop_fname);
+                    println!("{}: {}", e.entry.name, e.desktop_fname);
                 }
                 return;
             }

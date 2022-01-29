@@ -34,6 +34,7 @@ macro_rules! delegate {
 
 pub struct EvalInfo<'a> {
     pub index: Option<usize>,
+    pub subindex: usize,
     pub input_value: &'a InputValue<'a>,
 }
 
@@ -53,6 +54,7 @@ pub enum Mode {
 
 pub struct Entry<'a> {
     pub name: &'a str,
+    pub subname: Option<&'a str>,
     pub icon: Option<Image<'a>>,
 }
 
@@ -71,7 +73,8 @@ impl Mode {
 
     delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible);
     delegate!(pub fn entries_len(&self) -> usize);
-    delegate!(pub fn entry(&self, idx: usize) -> Entry<'_>);
+    delegate!(pub fn subentries_len(&self, idx: usize) -> usize);
+    delegate!(pub fn entry(&self, idx: usize, subidx: usize) -> Entry<'_>);
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + ExactSizeIterator + '_ {
         match self {

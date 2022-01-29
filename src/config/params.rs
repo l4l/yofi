@@ -67,6 +67,9 @@ impl<'a> From<&'a Config> for ListParams {
                 top: 10.0,
                 ..Margin::from_pair(5.0, 15.0)
             }),
+            hide_actions: select_conf!(noglob: config, list_items, hide_actions).unwrap_or(false),
+            action_left_margin: select_conf!(noglob: config, list_items, action_left_margin)
+                .unwrap_or(60.0),
             item_spacing: select_conf!(noglob: config, list_items, item_spacing).unwrap_or(2.0),
             icon_spacing: select_conf!(noglob: config, list_items, icon_spacing).unwrap_or(10.0),
         }
