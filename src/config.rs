@@ -109,7 +109,7 @@ struct InputText {
     padding: Option<Padding>,
 }
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 struct ListItems {
     font: Option<String>,
     font_size: Option<u16>,
@@ -117,6 +117,7 @@ struct ListItems {
     selected_font_color: Option<Color>,
     match_color: Option<Color>,
     margin: Option<Margin>,
+    hide_actions: Option<bool>,
     action_left_margin: Option<f32>,
     item_spacing: Option<f32>,
     icon_spacing: Option<f32>,

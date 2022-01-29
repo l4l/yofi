@@ -19,6 +19,7 @@ pub struct Params {
     pub icon_size: u16,
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
+    pub hide_actions: bool,
     pub action_left_margin: f32,
     pub item_spacing: f32,
     pub icon_spacing: f32,
@@ -76,8 +77,12 @@ where
 
         let mut iter = self.items.peekable();
 
+        let hide_actions = self.params.hide_actions;
         // For now either all items has subname or none.
-        let has_subname = iter.peek().map(|e| e.subname.is_some()).unwrap_or(false);
+        let has_subname = iter
+            .peek()
+            .map(|e| e.subname.is_some() && !hide_actions)
+            .unwrap_or(false);
 
         let displayed_items = ((space.height - margin.top - margin.bottom + item_spacing)
             / (entry_height + item_spacing)) as usize
@@ -98,8 +103,8 @@ where
         self.new_skip.send(skip_offset).unwrap();
 
         for (i, item) in iter.skip(skip_offset).enumerate().take(displayed_items) {
-            let relative_offset =
-                (i as f32 + (i > selected_item) as i32 as f32) * (entry_height + item_spacing);
+            let relative_offset = (i as f32 + (i > selected_item && has_subname) as i32 as f32)
+                * (entry_height + item_spacing);
             let x_offset = point.x + margin.left;
             let y_offset = top_offset + relative_offset;
 
@@ -173,18 +178,20 @@ where
 
             let font = &self.params.font;
             font.draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
-            if let Some(subname) = item.subname.filter(|_| i == selected_item) {
-                font.draw(
-                    &mut dt,
-                    subname,
-                    font_size,
-                    Point::new(
-                        pos.x + self.params.action_left_margin,
-                        pos.y + entry_height + item_spacing,
-                    ),
-                    FontColor::Single(self.params.font_color),
-                    &draw_opts,
-                );
+            if i == selected_item && has_subname {
+                if let Some(subname) = item.subname {
+                    font.draw(
+                        &mut dt,
+                        subname,
+                        font_size,
+                        Point::new(
+                            pos.x + self.params.action_left_margin,
+                            pos.y + entry_height + item_spacing,
+                        ),
+                        FontColor::Single(self.params.font_color),
+                        &draw_opts,
+                    );
+                }
             }
         }
 
