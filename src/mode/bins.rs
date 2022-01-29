@@ -103,7 +103,11 @@ impl BinsMode {
         self.bins.len()
     }
 
-    pub fn entry(&self, idx: usize) -> Entry<'_> {
+    pub fn subentries_len(&self, _: usize) -> usize {
+        0
+    }
+
+    pub fn entry(&self, idx: usize, _: usize) -> Entry<'_> {
         let bin = &self.bins[idx];
         let fname = bin.file_name().unwrap();
 
@@ -111,7 +115,8 @@ impl BinsMode {
             name.as_str()
         } else {
             fname.to_str().unwrap()
-        };
+        }
+        .to_owned();
 
         Entry { name, icon: None }
     }

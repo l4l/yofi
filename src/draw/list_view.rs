@@ -24,7 +24,7 @@ pub struct Params {
 }
 
 pub struct ListItem<'a> {
-    pub name: &'a str,
+    pub name: String,
     pub icon: Option<Image<'a>>,
     pub match_mask: Option<&'a BitVec>,
 }
@@ -138,7 +138,7 @@ where
 
             let color = if let Some(match_color) = self.params.match_color {
                 let mut special_color =
-                    vec![color; UnicodeSegmentation::graphemes(item.name, true).count()];
+                    vec![color; UnicodeSegmentation::graphemes(item.name.as_str(), true).count()];
 
                 let special_len = special_color.len();
 
@@ -168,7 +168,14 @@ where
             };
 
             let font = &self.params.font;
-            font.draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
+            font.draw(
+                &mut dt,
+                item.name.as_str(),
+                font_size,
+                pos,
+                color,
+                &draw_opts,
+            );
         }
 
         space

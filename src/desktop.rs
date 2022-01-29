@@ -11,14 +11,40 @@ mod locale;
 
 pub static XDG_DIRS: OnceCell<BaseDirectories> = OnceCell::new();
 
-pub struct Entry {
+pub struct ExecEntry {
     pub name: String,
+    pub exec: String,
+    pub icon: Option<Icon>,
+}
+
+pub struct Entry {
+    pub entry: ExecEntry,
+    pub actions: Vec<ExecEntry>,
     pub desktop_fname: String,
     pub path: PathBuf,
-    pub exec: String,
     pub name_with_keywords: String,
     pub is_terminal: bool,
-    pub icon: Option<Icon>,
+}
+
+impl Entry {
+    pub fn name(&self, action: usize) -> String {
+        if action == 0 {
+            self.entry.name.clone()
+        } else {
+            format!("{} [{}]", self.entry.name, self.actions[action - 1].name)
+        }
+    }
+
+    pub fn icon(&self, action: usize) -> Option<&Icon> {
+        if action == 0 {
+            self.entry.icon.as_ref()
+        } else {
+            self.actions[action - 1]
+                .icon
+                .as_ref()
+                .or_else(|| self.entry.icon.as_ref())
+        }
+    }
 }
 
 pub fn xdg_dirs<'a>() -> &'a BaseDirectories {
@@ -34,8 +60,8 @@ where
     let dirs = std::iter::once(xdg_dirs.get_data_home());
     let dirs = dirs.chain(xdg_dirs.get_data_dirs());
     let mut entries = traverse_dirs(dirs, &filter);
-    entries.sort_by(|x, y| x.name.cmp(&y.name));
-    entries.dedup_by(|x, y| x.name == y.name);
+    entries.sort_by(|x, y| x.entry.name.cmp(&y.entry.name));
+    entries.dedup_by(|x, y| x.entry.name == y.entry.name);
     entries
 }
 
@@ -100,12 +126,29 @@ where
     let main_section = entry.section("Desktop Entry");
     let locale = locale::Locale::current();
 
+    if main_section.attr("NoDisplay") == Some("true") {
+        log::trace!("Skipping NoDisplay entry {:?}", dir_entry);
+        return;
+    }
+
     let localized_entry = |attr_name: &str| {
         locale
             .keys()
             .filter_map(|key| main_section.attr_with_param(attr_name, key))
             .next()
             .or_else(|| main_section.attr(attr_name))
+    };
+
+    let get_icon = |name: &str| {
+        let icon_path = Path::new(name);
+
+        if icon_path.is_absolute() {
+            Icon::load_icon(icon_path)
+        } else {
+            icon_paths()
+                .and_then(|p| p.get(name))
+                .and_then(|icons| icons.iter().filter_map(Icon::load_icon).next())
+        }
     };
 
     match (localized_entry("Name"), main_section.attr("Exec")) {
@@ -117,27 +160,39 @@ where
                 log::error!("found non-UTF8 desktop file: {:?}, skipping", filename);
                 return;
             };
-            entries.push(Entry {
+
+            let actions = entry
+                .sections()
+                .filter_map(|s| {
+                    if !s.name().starts_with("Desktop Action ") {
+                        return None;
+                    }
+                    let name = s.attr("Name")?.to_owned();
+                    let exec = s.attr("Exec")?.to_owned();
+                    Some(ExecEntry {
+                        name,
+                        exec,
+                        icon: localized_entry("Icon").and_then(get_icon),
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            let entry = ExecEntry {
                 name: n.to_owned(),
+                exec: e.to_owned(),
+                icon: localized_entry("Icon").and_then(get_icon),
+            };
+
+            entries.push(Entry {
+                entry,
+                actions,
                 desktop_fname,
                 path: dir_entry_path,
-                exec: e.to_owned(),
                 name_with_keywords: n.to_owned() + localized_entry("Keywords").unwrap_or_default(),
                 is_terminal: main_section
                     .attr("Terminal")
                     .map(|s| s == "true")
                     .unwrap_or(false),
-                icon: localized_entry("Icon").and_then(|name| {
-                    let icon_path = Path::new(name);
-
-                    if icon_path.is_absolute() {
-                        Icon::load_icon(icon_path)
-                    } else {
-                        icon_paths()
-                            .and_then(|p| p.get(name))
-                            .and_then(|icons| icons.iter().filter_map(Icon::load_icon).next())
-                    }
-                }),
             });
         }
         (n, e) => {

@@ -39,18 +39,23 @@ impl Preprocessed {
         })
     }
 
-    fn list_items<'s, 'm: 's>(&'s self, mode: &'m Mode) -> impl Iterator<Item = ListItem<'_>> + '_ {
+    fn list_items<'s, 'm: 's>(
+        &'s self,
+        mode: &'m Mode,
+        item: usize,
+        subitem: usize,
+    ) -> impl Iterator<Item = ListItem<'_>> + '_ {
         match self {
-            Self(Either::Left(x)) => Either::Left(x.iter().map(move |r| {
-                let e = mode.entry(r.candidate_index);
+            Self(Either::Left(x)) => Either::Left(x.iter().enumerate().map(move |(idx, r)| {
+                let e = mode.entry(r.candidate_index, if idx == item { subitem } else { 0 });
                 ListItem {
                     name: e.name,
                     icon: e.icon,
                     match_mask: Some(&r.match_mask),
                 }
             })),
-            Self(Either::Right(x)) => Either::Right((0..*x).map(move |i| {
-                let e = mode.entry(i);
+            Self(Either::Right(x)) => Either::Right((0..*x).enumerate().map(move |(idx, i)| {
+                let e = mode.entry(i, if idx == item { subitem } else { 0 });
                 ListItem {
                     name: e.name,
                     icon: e.icon,
@@ -125,6 +130,7 @@ pub struct State {
     input_buffer: InputBuffer,
     skip_offset: usize,
     selected_item: usize,
+    selected_subitem: usize,
     preprocessed: Preprocessed,
     inner: Mode,
 }
@@ -135,6 +141,7 @@ impl State {
             input_buffer: InputBuffer::new(),
             skip_offset: 0,
             selected_item: 0,
+            selected_subitem: 0,
             preprocessed: Preprocessed::unfiltred(inner.entries_len()),
             inner,
         }
@@ -183,7 +190,10 @@ impl State {
                 keysym: keysyms::XKB_KEY_KP_Tab,
                 shift: true,
                 ..
-            } => self.selected_item = self.selected_item.saturating_sub(1),
+            } => {
+                self.selected_subitem = 0;
+                self.selected_item = self.selected_item.saturating_sub(1);
+            }
             KeyPress {
                 keysym: keysyms::XKB_KEY_Down,
                 ..
@@ -204,13 +214,34 @@ impl State {
             | KeyPress {
                 keysym: keysyms::XKB_KEY_KP_Tab,
                 ..
-            } => self.selected_item = self.inner.entries_len().min(self.selected_item + 1),
+            } => {
+                self.selected_subitem = 0;
+                self.selected_item = self
+                    .inner
+                    .entries_len()
+                    .saturating_sub(1)
+                    .min(self.selected_item + 1);
+            }
+            KeyPress {
+                keysym: keysyms::XKB_KEY_Left,
+                ..
+            } => self.selected_subitem = self.selected_subitem.saturating_sub(1),
+            KeyPress {
+                keysym: keysyms::XKB_KEY_Right,
+                ..
+            } => {
+                self.selected_subitem = self
+                    .inner
+                    .subentries_len(self.preprocessed.index(self.selected_item).unwrap_or(0))
+                    .min(self.selected_subitem + 1)
+            }
             KeyPress {
                 keysym: keysyms::XKB_KEY_Return,
                 ..
             } => {
                 let info = EvalInfo {
                     index: self.preprocessed.index(self.selected_item),
+                    subindex: self.selected_subitem,
                     input_value: self.input_buffer.parsed_input(),
                 };
                 self.inner.eval(info);
@@ -243,6 +274,7 @@ impl State {
             }
             _ => log::debug!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl),
         }
+
         false
     }
 
@@ -263,7 +295,8 @@ impl State {
     }
 
     pub fn processed_entries(&self) -> impl Iterator<Item = ListItem<'_>> {
-        self.preprocessed.list_items(&self.inner)
+        self.preprocessed
+            .list_items(&self.inner, self.selected_item, self.selected_subitem)
     }
 
     pub fn process_entries(&mut self) {
