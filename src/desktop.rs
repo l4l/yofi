@@ -27,12 +27,8 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn name(&self, action: usize) -> String {
-        if action == 0 {
-            self.entry.name.clone()
-        } else {
-            format!("{} [{}]", self.entry.name, self.actions[action - 1].name)
-        }
+    pub fn subname(&self, action: usize) -> Option<&str> {
+        self.actions.get(action - 1).map(|a| a.name.as_ref())
     }
 
     pub fn icon(&self, action: usize) -> Option<&Icon> {

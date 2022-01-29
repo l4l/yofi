@@ -117,6 +117,7 @@ struct ListItems {
     selected_font_color: Option<Color>,
     match_color: Option<Color>,
     margin: Option<Margin>,
+    action_left_margin: Option<f32>,
     item_spacing: Option<f32>,
     icon_spacing: Option<f32>,
 }

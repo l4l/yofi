@@ -66,7 +66,8 @@ impl AppsMode {
         let entry = &self.entries[idx];
 
         Entry {
-            name: entry.name(subidx),
+            name: entry.entry.name.as_ref(),
+            subname: Some(entry.subname(subidx).unwrap_or("Default Action")),
             icon: entry.icon(subidx).map(|i| i.as_image()),
         }
     }

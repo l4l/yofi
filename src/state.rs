@@ -50,6 +50,7 @@ impl Preprocessed {
                 let e = mode.entry(r.candidate_index, if idx == item { subitem } else { 0 });
                 ListItem {
                     name: e.name,
+                    subname: e.subname,
                     icon: e.icon,
                     match_mask: Some(&r.match_mask),
                 }
@@ -58,6 +59,7 @@ impl Preprocessed {
                 let e = mode.entry(i, if idx == item { subitem } else { 0 });
                 ListItem {
                     name: e.name,
+                    subname: e.subname,
                     icon: e.icon,
                     match_mask: None,
                 }

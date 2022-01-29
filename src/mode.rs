@@ -53,7 +53,8 @@ pub enum Mode {
 }
 
 pub struct Entry<'a> {
-    pub name: String,
+    pub name: &'a str,
+    pub subname: Option<&'a str>,
     pub icon: Option<Image<'a>>,
 }
 

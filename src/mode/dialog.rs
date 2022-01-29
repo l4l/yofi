@@ -38,7 +38,8 @@ impl DialogMode {
 
     pub fn entry(&self, idx: usize, _: usize) -> Entry<'_> {
         Entry {
-            name: self.lines[idx].clone(),
+            name: self.lines[idx].as_ref(),
+            subname: None,
             icon: None,
         }
     }

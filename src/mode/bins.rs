@@ -115,10 +115,13 @@ impl BinsMode {
             name.as_str()
         } else {
             fname.to_str().unwrap()
-        }
-        .to_owned();
+        };
 
-        Entry { name, icon: None }
+        Entry {
+            name,
+            subname: None,
+            icon: None,
+        }
     }
 
     pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
