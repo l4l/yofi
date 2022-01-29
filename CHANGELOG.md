@@ -2,6 +2,7 @@
 
 ## Features
 
+- Render desktop actions for apps mode (#78)
 - Support grayscale/indexed png icons (#61)
 - Redirect logs by default to systemd
 - Specify colors in css-like hex (#47)
