@@ -22,14 +22,14 @@ pub trait Drawable {
 }
 
 pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
-    InputText(input_text::InputText<'a>),
+    InputText(Box<input_text::InputText<'a>>),
     ListView(list_view::ListView<'a, It>),
     Background(background::Background),
 }
 
 impl<'a, It> Widget<'a, It> {
     pub fn input_text(text: &'a str, params: InputTextParams) -> Self {
-        Self::InputText(input_text::InputText::new(text, params))
+        Self::InputText(Box::new(input_text::InputText::new(text, params)))
     }
 
     pub fn list_view(

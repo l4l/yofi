@@ -216,7 +216,7 @@ impl Surface {
         pool.resize((4 * width * height) as usize).unwrap();
 
         {
-            let buf: &mut [u8] = &mut pool.mmap();
+            let buf: &mut [u8] = pool.mmap();
             let buf_ptr: *mut u32 = buf.as_mut_ptr() as *mut _;
             let buf: &mut [u32] =
                 unsafe { &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, buf.len() / 4) };

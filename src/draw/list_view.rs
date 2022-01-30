@@ -64,7 +64,7 @@ impl<'a, It> Drawable for ListView<'a, It>
 where
     It: Iterator<Item = ListItem<'a>>,
 {
-    fn draw(self, mut dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let margin = self.params.margin * f32::from(scale);
         let item_spacing = self.params.item_spacing * f32::from(scale);
         let icon_size = self.params.icon_size * scale;
@@ -177,11 +177,11 @@ where
             };
 
             let font = &self.params.font;
-            font.draw(&mut dt, item.name, font_size, pos, color, &draw_opts);
+            font.draw(dt, item.name, font_size, pos, color, &draw_opts);
             if i == selected_item && has_subname {
                 if let Some(subname) = item.subname {
                     font.draw(
-                        &mut dt,
+                        dt,
                         subname,
                         font_size,
                         Point::new(

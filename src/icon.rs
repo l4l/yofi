@@ -113,8 +113,13 @@ impl Icon {
         let width = tree.svg_node().size.width().ceil() as u32;
         let height = tree.svg_node().size.height().ceil() as u32;
         let mut buf = tiny_skia::Pixmap::new(width, height).context("invalid pixmap size")?;
-        resvg::render(&tree, usvg::FitTo::Original, buf.as_mut())
-            .ok_or_else(|| anyhow!("cannot render svg"))?;
+        resvg::render(
+            &tree,
+            usvg::FitTo::Original,
+            tiny_skia::Transform::identity(),
+            buf.as_mut(),
+        )
+        .ok_or_else(|| anyhow!("cannot render svg"))?;
 
         Ok(Self {
             width,

@@ -38,7 +38,7 @@ fn parse_command_part(input: &str) -> IResult<&str, (&str, Option<NextValueKind>
     let re = SEPARATOR_REGEX
         .get_or_init(|| regex::Regex::new(r"(.*?)(!!|#|~)").unwrap())
         .clone();
-    let res = match nom::regexp::str::re_capture::<Error<_>>(re)(input) {
+    let res = match nom_regex::str::re_capture::<Error<_>>(re)(input) {
         Ok((left, matches)) => {
             let parsed = matches[1];
             let kind = match matches[2] {
