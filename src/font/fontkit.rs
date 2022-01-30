@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use font_kit::family_name::FamilyName;
 pub use font_kit::loaders::freetype::Font;
 use font_kit::properties::Properties;
@@ -20,6 +22,10 @@ impl FontBackend for Font {
             .select_best_match(&[FamilyName::Title(name.to_string())], &Properties::new())?
             .load()
             .map_err(Into::into)
+    }
+
+    fn font_by_path(path: &Path) -> Result<Self> {
+        Font::from_path(path, 0).map_err(Into::into)
     }
 
     fn draw(
