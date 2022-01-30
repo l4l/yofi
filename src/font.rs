@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::Result;
 use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
 
@@ -27,6 +29,8 @@ pub trait FontBackend: Sized {
     }
 
     fn font_by_name(name: &str) -> Result<Self>;
+
+    fn font_by_path(path: &Path) -> Result<Self>;
 
     fn draw(
         &self,

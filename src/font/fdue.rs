@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BinaryHeap;
+use std::path::Path;
 
 use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
@@ -10,34 +11,26 @@ use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
 
 use super::{FontBackend, FontColor, Result};
 
-static FONTCONFIG: Lazy<FontConfig> = Lazy::new(FontConfig::new);
+static FONTCONFIG_CACHE: Lazy<FcFontCache> = Lazy::new(FcFontCache::build);
 const BUF_SIZE: usize = 256 * 256;
 
 pub struct Font {
     inner: fontdue::Font,
-}
-
-// Because Font is re-created on every `draw` call method we cached dynamic allocations
-struct FontConfig {
-    cache: FcFontCache,
     // Layout in fontdue uses allocations, so we're reusing it for reduce memory allocations
     layout: RefCell<Layout>,
     // Move buffer to heap, because it is very big for stack; only one allocation happens
     buffer: RefCell<Vec<u32>>,
 }
 
-impl FontConfig {
-    fn new() -> Self {
+impl Font {
+    fn with_font(inner: fontdue::Font) -> Self {
         Self {
-            cache: FcFontCache::build(),
+            inner,
             layout: RefCell::new(Layout::new(CoordinateSystem::PositiveYDown)),
             buffer: RefCell::new(vec![0; BUF_SIZE]),
         }
     }
 }
-
-//SAFETY: We do not use multiple threads, so it never happens that the & is posted to another thread
-unsafe impl Sync for FontConfig {}
 
 #[derive(Eq)]
 struct FuzzyResult<'a> {
@@ -75,14 +68,13 @@ impl Font {
         )
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-        Ok(Font { inner })
+        Ok(Font::with_font(inner))
     }
 
     fn try_find_best_font(name: &str) -> Vec<String> {
         const COUNT_MATCHES: usize = 5;
 
-        FONTCONFIG
-            .cache
+        FONTCONFIG_CACHE
             .list()
             .keys()
             .filter_map(|font| {
@@ -103,8 +95,7 @@ impl Font {
 
 impl FontBackend for Font {
     fn default() -> Self {
-        FONTCONFIG
-            .cache
+        FONTCONFIG_CACHE
             .query(&FcPattern::default())
             .map(Font::from_fc_path)
             .unwrap()
@@ -112,8 +103,7 @@ impl FontBackend for Font {
     }
 
     fn font_by_name(name: &str) -> Result<Self> {
-        FONTCONFIG
-            .cache
+        FONTCONFIG_CACHE
             .query(&FcPattern {
                 name: Some(name.to_string()),
                 ..Default::default()
@@ -130,6 +120,16 @@ impl FontBackend for Font {
             })?
     }
 
+    fn font_by_path(path: &Path) -> Result<Self> {
+        Font::from_fc_path(&FcFontPath {
+            path: path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid path"))?
+                .to_owned(),
+            font_index: 0,
+        })
+    }
+
     fn draw(
         &self,
         dt: &mut DrawTarget,
@@ -139,8 +139,8 @@ impl FontBackend for Font {
         color: FontColor,
         opts: &DrawOptions,
     ) {
-        let mut buf = FONTCONFIG.buffer.borrow_mut();
-        let mut layout = FONTCONFIG.layout.borrow_mut();
+        let mut buf = self.buffer.borrow_mut();
+        let mut layout = self.layout.borrow_mut();
 
         layout.reset(&LayoutSettings {
             x: start_pos.x,

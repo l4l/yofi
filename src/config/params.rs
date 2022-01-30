@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use raqote::SolidSource;
 
 use super::{Color, Config};
@@ -126,7 +128,13 @@ fn default_font_color() -> SolidSource {
 }
 
 fn font_by_name(name: String) -> Font {
-    Font::font_by_name(name.as_str()).unwrap_or_else(|e| panic!("cannot find font {}: {}", name, e))
+    let path = Path::new(name.as_str());
+    if path.is_absolute() && path.exists() {
+        Font::font_by_path(path)
+    } else {
+        Font::font_by_name(name.as_str())
+    }
+    .unwrap_or_else(|e| panic!("cannot find font {}: {}", name, e))
 }
 
 fn color_to_solid_source(x: Color) -> SolidSource {
