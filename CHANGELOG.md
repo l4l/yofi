@@ -2,8 +2,13 @@
 
 ## Features
 
+- Font loading by path without fs scans (#79)
+- Render desktop actions for apps mode (#78)
+- Fontdue backend supoorted and used by default (#63, #67, #69)
+- Support of blacklisting entries (#62)
 - Support grayscale/indexed png icons (#61)
-- Redirect logs by default to systemd
+- Redirect logs by default to systemd (#58) and stdout (#75)
+- More hotkeys for naviation (#35, #49)
 - Specify colors in css-like hex (#47)
 - Fallback to input at dialog overflow (#43)
 - Support environments without layer-shell protocol (#42)
