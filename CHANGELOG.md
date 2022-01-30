@@ -1,5 +1,7 @@
 # Unreleased changes
 
+# 0.1.5 - 2022-01-30
+
 ## Features
 
 - Font loading by path without fs scans (#79)
