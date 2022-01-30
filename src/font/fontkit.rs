@@ -73,14 +73,7 @@ impl FontBackend for Font {
             );
 
         let mut draw_glyphs = |ids: &[_], positions: &[_], color| {
-            dt.draw_glyphs(
-                &self,
-                font_size,
-                ids,
-                positions,
-                &Source::Solid(color),
-                opts,
-            );
+            dt.draw_glyphs(self, font_size, ids, positions, &Source::Solid(color), opts);
         };
         match color {
             FontColor::Single(color) => {

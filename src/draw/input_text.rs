@@ -27,7 +27,7 @@ impl<'a> InputText<'a> {
 }
 
 impl<'a> Drawable for InputText<'a> {
-    fn draw(self, mut dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
         let font_size = f32::from(self.params.font_size * scale);
@@ -75,7 +75,7 @@ impl<'a> Drawable for InputText<'a> {
         );
 
         self.params.font.draw(
-            &mut dt,
+            dt,
             self.text,
             font_size,
             pos,

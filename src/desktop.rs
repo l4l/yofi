@@ -93,7 +93,7 @@ where
     entries
 }
 
-fn traverse_dir_entry<F>(mut entries: &mut Vec<Entry>, dir_entry: DirEntry, filter: &F)
+fn traverse_dir_entry<F>(entries: &mut Vec<Entry>, dir_entry: DirEntry, filter: &F)
 where
     F: Fn(&OsStr) -> bool,
 {
@@ -103,7 +103,7 @@ where
         Err(err) => log::warn!("failed to get `{:?}` file type: {}", dir_entry_path, err),
         Ok(tp) if tp.is_dir() => {
             for dir_entry in read_dir(&dir_entry_path).filter(|e| filter(&e.file_name())) {
-                traverse_dir_entry(&mut entries, dir_entry, filter);
+                traverse_dir_entry(entries, dir_entry, filter);
             }
 
             return;
@@ -244,21 +244,21 @@ pub fn icon_paths<'a>() -> Option<&'a IconPaths> {
 fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
     let mut icons = IconPaths::new();
 
-    fn traverse_dir(mut icons: &mut IconPaths, theme: &str, icon_size: u16) {
+    fn traverse_dir(icons: &mut IconPaths, theme: &str, icon_size: u16) {
         for dir in xdg_dirs().get_data_dirs() {
             let theme_dir = dir.join("icons").join(&theme);
 
             let base_path = theme_dir.join(format!("{0}x{0}", icon_size));
             if base_path.exists() {
                 for entry in read_dir(&base_path) {
-                    traverse_icon_dir(&mut icons, entry);
+                    traverse_icon_dir(icons, entry);
                 }
             }
 
             let base_path = theme_dir.join("scalable");
             if base_path.exists() {
                 for entry in read_dir(&base_path) {
-                    traverse_icon_dir(&mut icons, entry);
+                    traverse_icon_dir(icons, entry);
                 }
             }
         }
@@ -279,14 +279,14 @@ fn traverse_icon_dirs(config: IconConfig) -> IconPaths {
     icons
 }
 
-fn traverse_icon_dir(mut icons: &mut IconPaths, entry: DirEntry) {
+fn traverse_icon_dir(icons: &mut IconPaths, entry: DirEntry) {
     let entry_path = entry.path();
 
     match entry.file_type() {
         Err(err) => log::warn!("failed to get `{:?}` file type: {}", entry_path, err),
         Ok(tp) if tp.is_dir() => {
             for entry in read_dir(&entry_path) {
-                traverse_icon_dir(&mut icons, entry);
+                traverse_icon_dir(icons, entry);
             }
 
             return;
