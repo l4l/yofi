@@ -101,6 +101,10 @@ where
 {
     let dir_entry_path = dir_entry.path();
 
+    if dir_entry_path.extension().and_then(|s| s.to_str()) != Some("desktop") {
+        return;
+    }
+
     match dir_entry.file_type() {
         Err(err) => log::warn!("failed to get `{:?}` file type: {}", dir_entry_path, err),
         Ok(tp) if tp.is_dir() => {
