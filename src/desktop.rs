@@ -28,7 +28,9 @@ pub struct Entry {
 
 impl Entry {
     pub fn subname(&self, action: usize) -> Option<&str> {
-        self.actions.get(action - 1).map(|a| a.name.as_ref())
+        self.actions
+            .get(action.checked_sub(1)?)
+            .map(|a| a.name.as_ref())
     }
 
     pub fn icon(&self, action: usize) -> Option<&Icon> {
