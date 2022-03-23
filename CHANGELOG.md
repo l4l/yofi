@@ -1,5 +1,9 @@
 # Unreleased changes
 
+## Bug fixes
+
+- Skip desktop files without appropriate file extension
+
 # 0.1.5 - 2022-01-30
 
 ## Features
