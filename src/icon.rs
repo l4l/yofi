@@ -29,78 +29,75 @@ impl Icon {
             .read_info()
             .map_err(|e| anyhow!("failed to read png info: {}", e))?;
         let mut buf = vec![0; reader.output_buffer_size()];
-        reader
+        let info = reader
             .next_frame(&mut buf)
             .map_err(|e| anyhow!("failed to read png frame: {}", e))?;
 
+        let buf = &buf[..info.buffer_size()];
         let info = reader.info();
+
         let data = match info.color_type {
             png::ColorType::Rgb => {
-                let mut data = vec![];
-
                 ensure!(buf.len() % 3 == 0, "corrupted icon file");
 
-                for chunk in buf.chunks(3) {
-                    let a = 0xffu32 << 24;
-                    let r = u32::from(chunk[0]) << 16;
-                    let g = u32::from(chunk[1]) << 8;
-                    let b = u32::from(chunk[2]);
+                buf.chunks(3)
+                    .map(|chunk| {
+                        let a = 0xffu32 << 24;
+                        let r = u32::from(chunk[0]) << 16;
+                        let g = u32::from(chunk[1]) << 8;
+                        let b = u32::from(chunk[2]);
 
-                    data.push(a | r | g | b);
-                }
-
-                data
+                        a | r | g | b
+                    })
+                    .collect()
             }
-            png::ColorType::Rgba => rgba_to_argb(buf.as_slice())?,
+            png::ColorType::Rgba => rgba_to_argb(buf)?,
             png::ColorType::GrayscaleAlpha => {
-                let mut data = vec![];
-
                 ensure!(buf.len() % 2 == 0, "corrupted icon file");
 
-                for chunk in buf.chunks(2) {
-                    let x = u32::from(chunk[0]);
-                    let a = u32::from(chunk[1]) << 24;
+                buf.chunks(2)
+                    .map(|chunk| {
+                        let x = u32::from(chunk[0]);
+                        let a = u32::from(chunk[1]) << 24;
 
-                    data.push(a | (x << 16) | (x << 8) | x);
-                }
-
-                data
+                        a | (x << 16) | (x << 8) | x
+                    })
+                    .collect()
             }
-            png::ColorType::Grayscale => {
-                let mut data = vec![];
-
-                for x in buf.iter().copied().map(u32::from) {
+            png::ColorType::Grayscale => buf
+                .iter()
+                .copied()
+                .map(u32::from)
+                .map(|chunk| {
                     let a = 0xffu32 << 24;
-                    let r = x << 16;
-                    let g = x << 8;
-                    let b = x;
+                    let r = chunk << 16;
+                    let g = chunk << 8;
+                    let b = chunk;
 
-                    data.push(a | r | g | b);
-                }
-
-                data
-            }
+                    a | r | g | b
+                })
+                .collect(),
             png::ColorType::Indexed => {
                 let palette = info.palette.as_ref().ok_or_else(|| {
                     anyhow!("invalid image: palette is missing for indexed color type")
                 })?;
-                let mut data = vec![];
 
-                for idx in buf {
-                    let start = 3 * usize::from(idx);
-                    let end = start + 3;
-                    let chunk = palette
-                        .get(start..end)
-                        .context("corrupted icon file (palette overflow)")?;
-                    let a = 0xffu32 << 24;
-                    let r = u32::from(chunk[0]) << 16;
-                    let g = u32::from(chunk[1]) << 8;
-                    let b = u32::from(chunk[2]);
+                buf.iter()
+                    .copied()
+                    .map(|idx| {
+                        let start = 3 * usize::from(idx);
+                        let end = start + 3;
+                        let chunk = palette
+                            .get(start..end)
+                            .context("corrupted icon file (palette overflow)")?;
+                        let a = 0xffu32 << 24;
+                        let r = u32::from(chunk[0]) << 16;
+                        let g = u32::from(chunk[1]) << 8;
+                        let b = u32::from(chunk[2]);
 
-                    data.push(a | r | g | b);
-                }
-
-                data
+                        Ok(a | r | g | b)
+                    })
+                    .collect::<Result<_>>()?
             }
         };
 
@@ -146,21 +143,23 @@ impl Icon {
 }
 
 fn rgba_to_argb(buf: &[u8]) -> Result<Vec<u32>> {
-    let mut data = vec![];
-
     ensure!(buf.len() % 4 == 0, "corrupted icon file");
 
-    for chunk in buf.chunks(4) {
-        let src =
-            raqote::SolidSource::from_unpremultiplied_argb(chunk[3], chunk[0], chunk[1], chunk[2]);
+    let data = buf
+        .chunks(4)
+        .map(|chunk| {
+            let src = raqote::SolidSource::from_unpremultiplied_argb(
+                chunk[3], chunk[0], chunk[1], chunk[2],
+            );
 
-        let a = u32::from(src.a) << 24;
-        let r = u32::from(src.r) << 16;
-        let g = u32::from(src.g) << 8;
-        let b = u32::from(src.b);
+            let a = u32::from(src.a) << 24;
+            let r = u32::from(src.r) << 16;
+            let g = u32::from(src.g) << 8;
+            let b = u32::from(src.b);
 
-        data.push(a | r | g | b);
-    }
+            a | r | g | b
+        })
+        .collect();
 
     Ok(data)
 }
