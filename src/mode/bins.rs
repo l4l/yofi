@@ -30,7 +30,7 @@ impl BinsMode {
             .flatten()
             .filter_map(|f| {
                 let meta = f.metadata().ok()?;
-                if meta.is_file() && meta.permissions().mode() & 0o001 > 0 {
+                if f.path().is_file() && meta.permissions().mode() & 0o001 > 0 {
                     let p = f.path();
                     p.file_name()?;
                     Some(p)
