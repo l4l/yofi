@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use log::LevelFilter;
 use sctk::{
@@ -45,9 +45,7 @@ macro_rules! prog_name {
     };
 }
 
-fn setup_logger(level: LevelFilter, log_file: Option<impl AsRef<Path>>) {
-    use log::Log;
-
+fn setup_logger(level: LevelFilter, args: &Args) {
     let dispatcher = fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -61,13 +59,33 @@ fn setup_logger(level: LevelFilter, log_file: Option<impl AsRef<Path>>) {
         .level(level)
         .chain(std::io::stdout());
 
-    let dispatcher = if let Some(log_file) = log_file {
+    let dispatcher = if let Some(log_file) = &args.log_file {
         dispatcher.chain(fern::log_file(log_file).unwrap())
     } else {
-        const VERSION: &str = env!("CARGO_PKG_VERSION");
-        let systemd_logger =
-            systemd_journal_logger::JournalLog::with_extra_fields(vec![("VERSION", VERSION)]);
-        dispatcher.chain(fern::Output::call(move |record| systemd_logger.log(record)))
+        dispatcher
+    };
+
+    let dispatcher = if !args.disable_syslog_logger {
+        use log::Log;
+        let formatter = syslog::Formatter3164 {
+            facility: syslog::Facility::LOG_USER,
+            hostname: None,
+            process: prog_name!().into(),
+            pid: 0,
+        };
+
+        match syslog::unix(formatter) {
+            Err(e) => {
+                eprintln!("cann't connect to syslog: {:?}", e);
+                dispatcher
+            }
+            Ok(writer) => {
+                let syslog_logger = syslog::BasicLogger::new(writer);
+                dispatcher.chain(fern::Output::call(move |record| syslog_logger.log(record)))
+            }
+        }
+    } else {
+        dispatcher
     };
 
     dispatcher.apply().unwrap();
@@ -84,6 +102,8 @@ struct Args {
     quiet: bool,
     #[structopt(long)]
     log_file: Option<PathBuf>,
+    #[structopt(short, long = "disable-logger")]
+    disable_syslog_logger: bool,
     #[structopt(long)]
     config_file: Option<PathBuf>,
     #[structopt(subcommand)]
@@ -127,7 +147,7 @@ fn main() {
         _ => LevelFilter::Info,
     };
 
-    setup_logger(log_level, args.log_file);
+    setup_logger(log_level, &args);
 
     let (env, display, queue) =
         sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
