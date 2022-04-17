@@ -152,7 +152,7 @@ impl State {
     pub fn process_event(&mut self, event: KeyPress) -> bool {
         use sctk::seat::keyboard::keysyms;
 
-        match event {
+        match dbg!(event) {
             KeyPress {
                 keysym: keysyms::XKB_KEY_Escape,
                 ..
@@ -269,12 +269,15 @@ impl State {
                     input.clear();
                 }
             }),
-            KeyPress { sym: Some(sym), .. } if !sym.is_control() && !event.ctrl => {
-                self.input_buffer.update_input(|input| {
-                    input.push(sym);
-                })
-            }
-            _ => log::debug!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl),
+            KeyPress {
+                sym: Some(sym),
+                ctrl,
+                ..
+            } if !sym.is_control() && !ctrl => self.input_buffer.update_input(|input| {
+                println!("add `{sym}`");
+                input.push(sym);
+            }),
+            event => log::debug!("unhandled sym: {:?} (ctrl: {})", event.sym, event.ctrl),
         }
 
         false

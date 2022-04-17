@@ -14,8 +14,8 @@ rust-fontconfig = { version = "0.1.5", optional = true }
 encoding_rs = "=0.8.28"
 
 anyhow = "1.0.51"
-wayland-protocols = { version = "0.29.1", default-features = false, features = ["unstable_protocols", "client"] }
-sctk = { version = "0.15.2", package = "smithay-client-toolkit", features = ["calloop"] }
+# sctk = { version = "0.15.2", package = "smithay-client-toolkit", features = ["calloop"] }
+sctk = { git = "https://github.com/Smithay/client-toolkit", package = "smithay-client-toolkit", branch = "rework-wayland-rs-0.30", features = ["calloop"] }
 raqote = { git = "https://github.com/l4l/raqote.git", rev = "27cfc13", default-features = false }
 xdg = "2.4.0"
 fep = { version = "1.2.0", package = "freedesktop_entry_parser" }

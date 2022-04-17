@@ -1,18 +1,41 @@
+#![allow(unused, unused_imports)]
+
 use std::collections::HashSet;
 use std::path::PathBuf;
 
 use log::LevelFilter;
 use sctk::{
-    environment::SimpleGlobal,
+    compositor::{CompositorHandler, CompositorState},
+    delegate_compositor, delegate_output, delegate_registry, delegate_shm, delegate_xdg_shell,
+    delegate_xdg_window,
+    output::{OutputHandler, OutputState},
     reexports::{
-        calloop,
-        protocols::wlr::unstable::layer_shell::v1::client::zwlr_layer_shell_v1::ZwlrLayerShellV1,
+        client::{
+            protocol::{wl_buffer, wl_keyboard::WlKeyboard, wl_output, wl_shm, wl_surface},
+            Connection, ConnectionHandle, Dispatch, QueueHandle,
+        },
+        protocols::xdg_shell::client::xdg_surface,
     },
-    WaylandSource,
+    registry::{ProvidesRegistryState, RegistryState},
+    seat::SeatState,
+    shell::xdg::{
+        window::{Window, WindowConfigure, WindowHandler, XdgWindowState},
+        XdgShellHandler, XdgShellState,
+    },
+    shm::{pool::raw::RawPool, ShmHandler, ShmState},
 };
+// use sctk::{
+//     environment::SimpleGlobal,
+//     reexports::{
+//         calloop,
+//         protocols::wlr::unstable::layer_shell::v1::client::zwlr_layer_shell_v1::ZwlrLayerShellV1,
+//     },
+//     WaylandSource,
+// };
 use structopt::{clap::ArgGroup, StructOpt};
 
 pub use desktop::Entry as DesktopEntry;
+use win_state::WindowState;
 
 mod config;
 mod desktop;
@@ -27,16 +50,17 @@ mod state;
 mod style;
 mod surface;
 mod usage_cache;
+mod win_state;
 
-sctk::default_environment!(Env,
-    desktop,
-    fields = [
-        layer_shell: SimpleGlobal<ZwlrLayerShellV1>,
-    ],
-    singles = [
-        ZwlrLayerShellV1 => layer_shell
-    ]
-);
+// sctk::default_environment!(Env,
+//     desktop,
+//     fields = [
+//         layer_shell: SimpleGlobal<ZwlrLayerShellV1>,
+//     ],
+//     singles = [
+//         ZwlrLayerShellV1 => layer_shell
+//     ]
+// );
 
 #[macro_export]
 macro_rules! prog_name {
@@ -149,15 +173,6 @@ fn main() {
 
     setup_logger(log_level, &args);
 
-    let (env, display, queue) =
-        sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
-            .expect("Initial roundtrip failed!");
-    let mut event_loop = calloop::EventLoop::try_new().unwrap();
-
-    let mut surface = surface::Surface::new(&env, config.param());
-
-    let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
-
     let cmd = match args.mode.take().unwrap_or_default() {
         ModeArg::Apps { blacklist, list } => {
             if let Some(icon_config) = config.param() {
@@ -195,63 +210,138 @@ fn main() {
         ModeArg::Dialog => mode::Mode::dialog(),
     };
 
-    let mut state = state::State::new(cmd);
+    let state = state::State::new(cmd);
 
-    if !env.get_shell().unwrap().needs_configure() {
-        draw(&mut state, &config, &mut surface);
-    }
+    let conn = Connection::connect_to_env().unwrap_or_else(|err| {
+        log::error!("connect_to_env failed: {}", err);
+        std::process::exit(1);
+    });
+    let mut queue = conn.new_event_queue();
+    let registry = {
+        let display = conn.handle().display();
+        let registry = display
+            .get_registry(&mut conn.handle(), &queue.handle(), ())
+            .map(RegistryState::new)
+            .expect("could not create registry");
+        conn.roundtrip();
+        registry
+    };
 
-    WaylandSource::new(queue)
-        .quick_insert(event_loop.handle())
-        .unwrap();
+    let mut window = WindowState::new(config, state, registry, &conn, &mut queue);
 
-    loop {
-        let mut should_redraw = false;
-        for event in key_stream.try_iter() {
-            should_redraw = true;
+    window.request_redraw(&mut conn.handle(), &queue.handle());
 
-            if state.process_event(event) {
-                return;
-            }
+    while window.running() {
+        if window.need_redraw() {
+            window.draw(&mut conn.handle(), &queue.handle());
         }
 
-        match surface.handle_events() {
-            surface::EventStatus::Finished => break,
-            surface::EventStatus::ShouldRedraw => should_redraw = true,
-            surface::EventStatus::Idle => {}
-        };
-
-        if should_redraw {
-            draw(&mut state, &config, &mut surface);
-        }
-
-        display.flush().unwrap();
-        event_loop.dispatch(None, &mut ()).unwrap();
+        queue.blocking_dispatch(&mut window).unwrap();
     }
+
+    // let (env, display, queue) =
+    //     sctk::new_default_environment!(Env, desktop, fields = [layer_shell: SimpleGlobal::new()])
+    //         .expect("Initial roundtrip failed!");
+    // let mut event_loop = calloop::EventLoop::try_new().unwrap();
+
+    // let mut surface = surface::Surface::new(&env, config.param());
+
+    // let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
+
+    // let cmd = match args.mode.take().unwrap_or_default() {
+    //     ModeArg::Apps { blacklist, list } => {
+    //         if let Some(icon_config) = config.param() {
+    //             desktop::find_icon_paths(icon_config).expect("called only once");
+    //         }
+
+    //         let blacklist_filter = blacklist
+    //             .and_then(|file| {
+    //                 let entries = std::fs::read_to_string(&file)
+    //                     .map_err(|e| log::warn!("cannot read blacklist file {:?}: {}", file, e))
+    //                     .ok()?
+    //                     .lines()
+    //                     .map(std::ffi::OsString::from)
+    //                     .collect::<HashSet<_>>();
+
+    //                 Some(Box::new(move |e: &_| !entries.contains(e)) as Box<dyn Fn(&_) -> bool>)
+    //             })
+    //             .unwrap_or_else(|| Box::new(|_| true));
+
+    //         let entries = desktop::find_entries(blacklist_filter);
+
+    //         if list {
+    //             for e in entries {
+    //                 println!("{}: {}", e.entry.name, e.desktop_fname);
+    //             }
+    //             return;
+    //         }
+
+    //         mode::Mode::apps(entries, config.terminal_command())
+    //     }
+    //     ModeArg::Binapps => {
+    //         config.disable_icons();
+    //         mode::Mode::bins(config.terminal_command())
+    //     }
+    //     ModeArg::Dialog => mode::Mode::dialog(),
+    // };
+
+    // let mut state = state::State::new(cmd);
+
+    // if !env.get_shell().unwrap().needs_configure() {
+    //     draw(&mut state, &config, &mut surface);
+    // }
+
+    // WaylandSource::new(queue)
+    //     .quick_insert(event_loop.handle())
+    //     .unwrap();
+
+    // loop {
+    //     let mut should_redraw = false;
+    //     for event in key_stream.try_iter() {
+    //         should_redraw = true;
+
+    //         if state.process_event(event) {
+    //             return;
+    //         }
+    //     }
+
+    //     match surface.handle_events() {
+    //         surface::EventStatus::Finished => break,
+    //         surface::EventStatus::ShouldRedraw => should_redraw = true,
+    //         surface::EventStatus::Idle => {}
+    //     };
+
+    //     if should_redraw {
+    //         draw(&mut state, &config, &mut surface);
+    //     }
+
+    //     display.flush().unwrap();
+    //     event_loop.dispatch(None, &mut ()).unwrap();
+    // }
 }
 
-fn draw(state: &mut state::State, config: &config::Config, surface: &mut surface::Surface) {
-    use std::iter::once;
+// fn draw(state: &mut state::State, config: &config::Config, surface: &mut surface::Surface) {
+//     use std::iter::once;
 
-    state.process_entries();
+//     state.process_entries();
 
-    let (tx, rx) = oneshot::channel();
+//     let (tx, rx) = oneshot::channel();
 
-    let background = draw::Widget::background(config.param());
-    let input_widget = draw::Widget::input_text(state.raw_input(), config.param());
-    let list_view_widget = draw::Widget::list_view(
-        state.processed_entries(),
-        state.skip_offset(),
-        state.selected_item(),
-        tx,
-        config.param(),
-    );
+//     let background = draw::Widget::background(config.param());
+//     let input_widget = draw::Widget::input_text(state.raw_input(), config.param());
+//     let list_view_widget = draw::Widget::list_view(
+//         state.processed_entries(),
+//         state.skip_offset(),
+//         state.selected_item(),
+//         tx,
+//         config.param(),
+//     );
 
-    surface.redraw(
-        once(background)
-            .chain(once(input_widget))
-            .chain(once(list_view_widget)),
-    );
+//     surface.redraw(
+//         once(background)
+//             .chain(once(input_widget))
+//             .chain(once(list_view_widget)),
+//     );
 
-    state.update_skip_offset(rx.recv().unwrap());
-}
+//     state.update_skip_offset(rx.recv().unwrap());
+// }
