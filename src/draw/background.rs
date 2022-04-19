@@ -1,9 +1,10 @@
-use raqote::{DrawTarget, Point, SolidSource};
+use raqote::{DrawTarget, Point};
 
 use super::{Drawable, Space};
+use crate::Color;
 
 pub struct Params {
-    pub color: SolidSource,
+    pub color: Color,
 }
 
 pub struct Background {
@@ -18,7 +19,7 @@ impl Background {
 
 impl<'a> Drawable for Background {
     fn draw(self, dt: &mut DrawTarget, _: u16, _: Space, _: Point) -> Space {
-        dt.clear(self.params.color);
+        dt.clear(self.params.color.as_source());
 
         Space {
             width: 0.,

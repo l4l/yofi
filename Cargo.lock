@@ -361,6 +361,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "defaults"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40e9553d64f91aa22cb23a558a19108bce0f6854ef99a123b8c0a9b95a9ba267"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "deflate"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2041,6 +2052,7 @@ dependencies = [
  "anyhow",
  "bit-vec",
  "chrono",
+ "defaults",
  "either",
  "encoding_rs",
  "euclid",
