@@ -46,6 +46,10 @@ impl Config {
     pub fn disable_icons(&mut self) {
         self.icon = None;
     }
+
+    pub fn set_prompt(&mut self, prompt: String) {
+        self.input_text.prompt = Some(prompt);
+    }
 }
 
 #[derive(Defaults, Deserialize)]
@@ -55,6 +59,8 @@ struct InputText {
     font_size: Option<u16>,
     bg_color: Option<Color>,
     font_color: Option<Color>,
+    prompt_color: Option<Color>,
+    prompt: Option<String>,
     #[def = "Margin::all(5.0)"]
     margin: Margin,
     #[def = "Padding::from_pair(1.7, -4.0)"]

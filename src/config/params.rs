@@ -19,13 +19,20 @@ macro_rules! select_conf {
 
 impl<'a> From<&'a Config> for InputTextParams {
     fn from(config: &'a Config) -> InputTextParams {
+        let font_color = select_conf!(config, input_text, font_color).unwrap_or(DEFAULT_FONT_COLOR);
+
         InputTextParams {
             font: select_conf!(config, input_text, font)
                 .map(font_by_name)
                 .unwrap_or_else(Font::default),
             font_size: select_conf!(config, input_text, font_size).unwrap_or(DEFAULT_FONT_SIZE),
             bg_color: select_conf!(config, input_text, bg_color).unwrap_or(DEFAULT_INPUT_BG_COLOR),
-            font_color: select_conf!(config, input_text, font_color).unwrap_or(DEFAULT_FONT_COLOR),
+            font_color,
+            prompt_color: config.input_text.prompt_color.unwrap_or_else(|| {
+                let [r, g, b, a] = font_color.to_rgba();
+                Color::from_rgba(r, g, b, (a / 4).wrapping_mul(3))
+            }),
+            prompt: config.input_text.prompt.clone(),
             margin: config.input_text.margin.clone(),
             padding: config.input_text.padding.clone(),
         }

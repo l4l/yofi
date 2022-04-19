@@ -12,6 +12,8 @@ pub struct Params {
     pub font_size: u16,
     pub bg_color: Color,
     pub font_color: Color,
+    pub prompt_color: Color,
+    pub prompt: Option<String>,
     pub margin: Margin,
     pub padding: Padding,
 }
@@ -75,12 +77,21 @@ impl<'a> Drawable for InputText<'a> {
             point.y + margin.top + padding.top,
         );
 
+        let (color, text) = if self.text.is_empty() {
+            (
+                self.params.prompt_color,
+                self.params.prompt.as_deref().unwrap_or_default(),
+            )
+        } else {
+            (self.params.font_color, self.text)
+        };
+
         self.params.font.draw(
             dt,
-            self.text,
+            text,
             font_size,
             pos,
-            FontColor::Single(self.params.font_color.as_source()),
+            FontColor::Single(color.as_source()),
             &DrawOptions::new(),
         );
 
