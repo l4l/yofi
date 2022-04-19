@@ -1,84 +1,33 @@
-use std::convert::TryInto;
 use std::ffi::CString;
 use std::path::PathBuf;
 
+use defaults::Defaults;
 use serde::Deserialize;
 
 use crate::style::{Margin, Padding};
+use crate::Color;
 
-const DEFAULT_CONFIG_PATH: &str = concat!(crate::prog_name!(), ".config");
+const DEFAULT_CONFIG_NAME: &str = concat!(crate::prog_name!(), ".config");
+
+const DEFAULT_ICON_SIZE: u16 = 16;
+const DEFAULT_FONT_SIZE: u16 = 24;
+
+const DEFAULT_FONT_COLOR: Color = Color::from_rgba(0xf8, 0xf8, 0xf2, 0xff);
+const DEFAULT_BG_COLOR: Color = Color::from_rgba(0x27, 0x28, 0x22, 0xee);
+const DEFAULT_INPUT_BG_COLOR: Color = Color::from_rgba(0x75, 0x71, 0x5e, 0xc0);
+const DEFAULT_SELECTED_FONT_COLOR: Color = Color::from_rgba(0xa6, 0xe2, 0x2e, 0xff);
 
 mod params;
 
-#[derive(Deserialize, Debug, Clone, Copy)]
-pub struct Color(#[serde(deserialize_with = "deserialize_color")] u32);
-
-impl std::ops::Deref for Color {
-    type Target = u32;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-fn deserialize_color<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
-    struct ColorDeHelper;
-
-    impl<'de> serde::de::Visitor<'de> for ColorDeHelper {
-        type Value = u32;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(
-                formatter,
-                "invalid color value, must be either numerical or css-like hex value with # prefix"
-            )
-        }
-
-        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            value.try_into().map_err(serde::de::Error::custom)
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            let part = match value.chars().next() {
-                None => return Err(serde::de::Error::custom("color cannot be empty")),
-                Some('#') => value.split_at(1).1,
-                Some(_) => {
-                    return Err(serde::de::Error::custom(
-                        "color can be either decimal or hex number prefixed with '#'",
-                    ))
-                }
-            };
-
-            let decoded = u32::from_str_radix(part, 16).map_err(serde::de::Error::custom);
-            match part.len() {
-                3 => {
-                    let decoded = decoded?;
-                    let (r, g, b) = ((decoded & 0xf00) >> 8, (decoded & 0xf0) >> 4, decoded & 0xf);
-                    Ok((r << 4 | r) << 24 | (g << 4 | g) << 16 | (b << 4 | b) << 8 | 0xff)
-                }
-                6 => decoded.map(|d| d << 8 | 0xff),
-                8 => decoded,
-                _ => Err(serde::de::Error::custom(
-                    "hex color can only be specified in #RGB, #RRGGBB, or #RRGGBBAA format",
-                )),
-            }
-        }
-    }
-
-    d.deserialize_any(ColorDeHelper)
-}
-
-#[derive(Default, Deserialize)]
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
 pub struct Config {
-    width: Option<u32>,
-    height: Option<u32>,
-    force_window: Option<bool>,
+    #[def = "400"]
+    width: u32,
+    #[def = "512"]
+    height: u32,
+    #[def = "false"]
+    force_window: bool,
     window_offsets: Option<(i32, i32)>,
     scale: Option<u16>,
     term: Option<String>,
@@ -89,8 +38,8 @@ pub struct Config {
 
     icon: Option<Icon>,
 
-    input_text: Option<InputText>,
-    list_items: Option<ListItems>,
+    input_text: InputText,
+    list_items: ListItems,
 }
 
 impl Config {
@@ -99,33 +48,44 @@ impl Config {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
 struct InputText {
     font: Option<String>,
     font_size: Option<u16>,
     bg_color: Option<Color>,
     font_color: Option<Color>,
-    margin: Option<Margin>,
-    padding: Option<Padding>,
+    #[def = "Margin::all(5.0)"]
+    margin: Margin,
+    #[def = "Padding::from_pair(1.7, -4.0)"]
+    padding: Padding,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
 struct ListItems {
     font: Option<String>,
     font_size: Option<u16>,
     font_color: Option<Color>,
     selected_font_color: Option<Color>,
     match_color: Option<Color>,
-    margin: Option<Margin>,
-    hide_actions: Option<bool>,
-    action_left_margin: Option<f32>,
-    item_spacing: Option<f32>,
-    icon_spacing: Option<f32>,
+    #[def = "Margin { top: 10.0, ..Margin::from_pair(5.0, 15.0) }"]
+    margin: Margin,
+    #[def = "false"]
+    hide_actions: bool,
+    #[def = "60.0"]
+    action_left_margin: f32,
+    #[def = "2.0"]
+    item_spacing: f32,
+    #[def = "10.0"]
+    icon_spacing: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
 struct Icon {
-    size: Option<u16>,
+    #[def = "DEFAULT_ICON_SIZE"]
+    size: u16,
     theme: Option<String>,
     fallback_icon_path: Option<PathBuf>,
 }
@@ -133,7 +93,7 @@ struct Icon {
 fn config_path() -> PathBuf {
     xdg::BaseDirectories::with_prefix(crate::prog_name!())
         .expect("failed to get xdg dirs")
-        .place_config_file(DEFAULT_CONFIG_PATH)
+        .place_config_file(DEFAULT_CONFIG_NAME)
         .expect("cannot create configuration directory")
 }
 

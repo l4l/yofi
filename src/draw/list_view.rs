@@ -3,20 +3,21 @@ use std::marker::PhantomData;
 use bit_vec::BitVec;
 use itertools::Itertools;
 use oneshot::Sender;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point, SolidSource};
+use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point};
 
 use super::{Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::style::Margin;
+use crate::Color;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Params {
     pub font: Font,
     pub font_size: u16,
-    pub font_color: SolidSource,
-    pub selected_font_color: SolidSource,
-    pub match_color: Option<SolidSource>,
-    pub icon_size: u16,
+    pub font_color: Color,
+    pub selected_font_color: Color,
+    pub match_color: Option<Color>,
+    pub icon_size: Option<u16>,
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
     pub hide_actions: bool,
@@ -67,7 +68,7 @@ where
     fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
         let margin = self.params.margin * f32::from(scale);
         let item_spacing = self.params.item_spacing * f32::from(scale);
-        let icon_size = self.params.icon_size * scale;
+        let icon_size = self.params.icon_size.unwrap_or(0) * scale;
         let icon_spacing = self.params.icon_spacing * f32::from(scale);
 
         let icon_size_f32 = f32::from(icon_size);
@@ -134,7 +135,8 @@ where
                 self.params.selected_font_color
             } else {
                 self.params.font_color
-            };
+            }
+            .as_source();
 
             let empty = BitVec::new();
             let match_ranges = item.match_mask.unwrap_or(&empty);
@@ -164,7 +166,11 @@ where
                         Some((group.0, range))
                     })
                     .for_each(|(is_matched, range)| {
-                        let color = if is_matched { match_color } else { color };
+                        let color = if is_matched {
+                            match_color.as_source()
+                        } else {
+                            color
+                        };
 
                         if range.start < special_len {
                             special_color[range.start..range.end.min(special_len)].fill(color);
@@ -188,7 +194,7 @@ where
                             pos.x + self.params.action_left_margin,
                             pos.y + entry_height + item_spacing,
                         ),
-                        FontColor::Single(self.params.font_color),
+                        FontColor::Single(self.params.font_color.as_source()),
                         &draw_opts,
                     );
                 }

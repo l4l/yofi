@@ -1,16 +1,17 @@
 use std::f32::consts;
 
-use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, SolidSource, Source};
+use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, Source};
 
 use super::{Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::style::{Margin, Padding};
+use crate::Color;
 
 pub struct Params {
     pub font: Font,
     pub font_size: u16,
-    pub bg_color: SolidSource,
-    pub font_color: SolidSource,
+    pub bg_color: Color,
+    pub font_color: Color,
     pub margin: Margin,
     pub padding: Padding,
 }
@@ -65,7 +66,7 @@ impl<'a> Drawable for InputText<'a> {
 
         dt.fill(
             &path,
-            &Source::Solid(self.params.bg_color),
+            &Source::Solid(self.params.bg_color.as_source()),
             &DrawOptions::new(),
         );
 
@@ -79,7 +80,7 @@ impl<'a> Drawable for InputText<'a> {
             self.text,
             font_size,
             pos,
-            FontColor::Single(self.params.font_color),
+            FontColor::Single(self.params.font_color.as_source()),
             &DrawOptions::new(),
         );
 
