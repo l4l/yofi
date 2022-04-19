@@ -11,8 +11,12 @@ impl Color {
         Self(u32::from_be_bytes([r, g, b, a]))
     }
 
+    pub const fn to_rgba(self) -> [u8; 4] {
+        self.0.to_be_bytes()
+    }
+
     pub fn as_source(self) -> SolidSource {
-        let [r, g, b, a] = self.to_be_bytes();
+        let [r, g, b, a] = self.to_rgba();
         SolidSource::from_unpremultiplied_argb(a, r, g, b)
     }
 }

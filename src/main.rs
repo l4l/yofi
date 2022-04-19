@@ -102,6 +102,8 @@ struct Args {
     verbose: bool,
     #[structopt(short, long, group = "verbosity")]
     quiet: bool,
+    #[structopt(short, long)]
+    prompt: Option<String>,
     #[structopt(long)]
     log_file: Option<PathBuf>,
     #[structopt(short, long = "disable-logger")]
@@ -159,6 +161,10 @@ fn main() {
     let mut surface = surface::Surface::new(&env, config.param());
 
     let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
+
+    if let Some(prompt) = args.prompt.take() {
+        config.set_prompt(prompt);
+    }
 
     let cmd = match args.mode.take().unwrap_or_default() {
         ModeArg::Apps { blacklist, list } => {
