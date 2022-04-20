@@ -140,7 +140,7 @@ impl Default for ModeArg {
     }
 }
 
-fn main() {
+fn main_inner() {
     let mut args = Args::from_args();
 
     let mut config = config::Config::load(args.config_file.take());
@@ -235,6 +235,32 @@ fn main() {
 
         display.flush().unwrap();
         event_loop.dispatch(None, &mut ()).unwrap();
+    }
+}
+
+fn main() {
+    let res = std::panic::catch_unwind(main_inner);
+
+    if let Err(err) = res {
+        let msg = if let Some(msg) = err.downcast_ref::<String>() {
+            msg.as_str()
+        } else if let Some(msg) = err.downcast_ref::<&str>() {
+            msg
+        } else {
+            "unknown panic"
+        };
+
+        let _ = std::process::Command::new("notify-send")
+            .args(&[
+                concat!("--app-name=", prog_name!()),
+                concat!(prog_name!(), " has panicked!"),
+                msg,
+            ])
+            .status();
+
+        log::error!("panic: {}", msg);
+
+        std::process::exit(42);
     }
 }
 

@@ -3,6 +3,7 @@
 ## Bug fixes
 
 - Skip desktop files without appropriate file extension
+- Handle panic gracefully
 
 # 0.1.5 - 2022-01-30
 
