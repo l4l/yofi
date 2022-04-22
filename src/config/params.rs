@@ -46,7 +46,7 @@ impl<'a> From<&'a Config> for ListParams {
                 .map(font_by_name)
                 .unwrap_or_else(Font::default),
             font_size: select_conf!(config, list_items, font_size).unwrap_or(DEFAULT_FONT_SIZE),
-            font_color: select_conf!(config, input_text, font_color).unwrap_or(DEFAULT_FONT_COLOR),
+            font_color: select_conf!(config, list_items, font_color).unwrap_or(DEFAULT_FONT_COLOR),
             selected_font_color: config
                 .list_items
                 .selected_font_color
