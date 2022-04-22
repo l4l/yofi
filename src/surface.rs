@@ -180,6 +180,10 @@ impl Surface {
         }
     }
 
+    pub fn inner(&self) -> &WlSurface {
+        &*self.surface
+    }
+
     /// Handles any events that have occurred since the last call, redrawing if needed.
     /// Returns true if the surface should be dropped.
     pub fn handle_events(&mut self) -> EventStatus {

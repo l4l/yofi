@@ -3,7 +3,10 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use sctk::{
     environment::Environment,
-    reexports::{calloop, client::protocol::wl_keyboard},
+    reexports::{
+        calloop,
+        client::protocol::{wl_keyboard, wl_pointer, wl_surface},
+    },
     seat::keyboard::{map_keyboard_repeat, Event as KbEvent, KeyState, RepeatKind},
     seat::{with_seat_data, SeatData, SeatListener},
 };
@@ -23,6 +26,7 @@ pub struct KeyPress {
 #[derive(Default)]
 struct SeatInfo {
     keyboard: Option<(wl_keyboard::WlKeyboard, calloop::RegistrationToken)>,
+    pointer: Option<wl_pointer::WlPointer>,
 }
 
 fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) {
@@ -80,10 +84,12 @@ impl InputHandler {
     pub fn new(
         env: &Environment<super::Env>,
         event_loop: &calloop::EventLoop<'static, ()>,
+        surface: &wl_surface::WlSurface,
     ) -> (Self, Receiver<KeyPress>) {
         let (tx, rx) = mpsc::channel();
 
         let mut seats = HashMap::<String, SeatInfo>::new();
+        let surface = surface.clone();
 
         let loop_handle = event_loop.handle();
         let mut seat_handler = move |seat, seat_data: &SeatData| {
@@ -111,9 +117,23 @@ impl InputHandler {
                     })
                     .ok();
                 }
-            } else if let Some((kbd, source)) = data.keyboard.take() {
-                kbd.release();
-                loop_handle.remove(source);
+                if data.pointer.is_none() {
+                    let pointer = seat.get_pointer();
+                    let surface = surface.clone();
+                    let seat_name = seat_data.name.clone();
+                    pointer.quick_assign(move |_, event, _| {
+                        print_pointer_event(event, seat_name.as_str(), &surface)
+                    });
+                    data.pointer = Some(pointer.detach());
+                }
+            } else {
+                if let Some((kbd, source)) = data.keyboard.take() {
+                    kbd.release();
+                    loop_handle.remove(source);
+                }
+                if let Some(ptr) = data.pointer.take() {
+                    ptr.release();
+                }
             }
         };
 
@@ -127,5 +147,49 @@ impl InputHandler {
             env.listen_for_seats(move |seat, seat_data, _| seat_handler(seat, seat_data));
 
         (Self { _seat_listener }, rx)
+    }
+}
+
+fn print_pointer_event(
+    event: wl_pointer::Event,
+    seat_name: &str,
+    main_surface: &wl_surface::WlSurface,
+) {
+    match event {
+        wl_pointer::Event::Enter {
+            surface,
+            surface_x,
+            surface_y,
+            ..
+        } => {
+            if main_surface == &surface {
+                println!(
+                    "Pointer of seat '{}' entered at ({}, {})",
+                    seat_name, surface_x, surface_y
+                );
+            }
+        }
+        wl_pointer::Event::Leave { surface, .. } => {
+            if main_surface == &surface {
+                println!("Pointer of seat '{}' left", seat_name);
+            }
+        }
+        wl_pointer::Event::Button { button, state, .. } => {
+            println!(
+                "Button {:?} of seat '{}' was {:?}",
+                button, seat_name, state
+            );
+        }
+        wl_pointer::Event::Motion {
+            surface_x,
+            surface_y,
+            ..
+        } => {
+            println!(
+                "Pointer motion to ({}, {}) on seat '{}'",
+                surface_x, surface_y, seat_name
+            )
+        }
+        _ => {}
     }
 }

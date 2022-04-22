@@ -160,7 +160,7 @@ fn main_inner() {
 
     let mut surface = surface::Surface::new(&env, config.param());
 
-    let (_input, key_stream) = input::InputHandler::new(&env, &event_loop);
+    let (_input, key_stream) = input::InputHandler::new(&env, &event_loop, surface.inner());
 
     if let Some(prompt) = args.prompt.take() {
         config.set_prompt(prompt);
