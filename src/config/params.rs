@@ -33,6 +33,7 @@ impl<'a> From<&'a Config> for InputTextParams {
                 Color::from_rgba(r, g, b, (a / 4).wrapping_mul(3))
             }),
             prompt: config.input_text.prompt.clone(),
+            password: config.input_text.password,
             margin: config.input_text.margin.clone(),
             padding: config.input_text.padding.clone(),
         }

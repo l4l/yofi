@@ -14,6 +14,7 @@ pub struct Params {
     pub font_color: Color,
     pub prompt_color: Color,
     pub prompt: Option<String>,
+    pub password: bool,
     pub margin: Margin,
     pub padding: Padding,
 }
@@ -77,13 +78,24 @@ impl<'a> Drawable for InputText<'a> {
             point.y + margin.top + padding.top,
         );
 
+        let password_text = if self.params.password {
+            Some("*".repeat(self.text.chars().count()))
+        } else {
+            None
+        };
+
         let (color, text) = if self.text.is_empty() {
             (
                 self.params.prompt_color,
                 self.params.prompt.as_deref().unwrap_or_default(),
             )
         } else {
-            (self.params.font_color, self.text)
+            let text = if let Some(password_text) = password_text.as_ref() {
+                password_text.as_str()
+            } else {
+                self.text
+            };
+            (self.params.font_color, text)
         };
 
         self.params.font.draw(

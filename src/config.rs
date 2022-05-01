@@ -50,6 +50,10 @@ impl Config {
     pub fn set_prompt(&mut self, prompt: String) {
         self.input_text.prompt = Some(prompt);
     }
+
+    pub fn set_password(&mut self) {
+        self.input_text.password = true;
+    }
 }
 
 #[derive(Defaults, Deserialize)]
@@ -61,6 +65,7 @@ struct InputText {
     font_color: Option<Color>,
     prompt_color: Option<Color>,
     prompt: Option<String>,
+    password: bool,
     #[def = "Margin::all(5.0)"]
     margin: Margin,
     #[def = "Padding::from_pair(1.7, -4.0)"]

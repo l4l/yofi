@@ -1,5 +1,9 @@
 # Unreleased changes
 
+## Features
+
+- Input masking for password
+
 ## Bug fixes
 
 - Skip desktop files without appropriate file extension
