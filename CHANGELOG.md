@@ -2,12 +2,21 @@
 
 ## Features
 
+- Support prompt message
 - Input masking for password
 
-## Bug fixes
+## Changes
 
+- Use syslog instead of journald that could be disabled
+
+## Fixes
+
+- Don't panic on malformed icons
 - Skip desktop files without appropriate file extension
+- Reduce allocations for icon loading
+- Skip folders listing for binapps mode
 - Handle panic gracefully
+- Wrong font being selected for list_items
 
 # 0.1.5 - 2022-01-30
 
