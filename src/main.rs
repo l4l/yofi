@@ -105,6 +105,8 @@ struct Args {
     #[structopt(short, long)]
     prompt: Option<String>,
     #[structopt(long)]
+    password: bool,
+    #[structopt(long)]
     log_file: Option<PathBuf>,
     #[structopt(short, long = "disable-logger")]
     disable_syslog_logger: bool,
@@ -164,6 +166,10 @@ fn main_inner() {
 
     if let Some(prompt) = args.prompt.take() {
         config.set_prompt(prompt);
+    }
+
+    if args.password {
+        config.set_password();
     }
 
     let cmd = match args.mode.take().unwrap_or_default() {
