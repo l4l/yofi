@@ -4,7 +4,7 @@ use font_kit::family_name::FamilyName;
 pub use font_kit::loaders::freetype::Font;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use raqote::{AntialiasMode, DrawOptions, Point, Source};
+use raqote::{DrawOptions, Point, Source};
 
 use super::{DrawTarget, FontBackend, FontColor, Result};
 
@@ -85,18 +85,5 @@ impl FontBackend for Font {
                 }
             }
         };
-    }
-
-    fn measure_text_width(
-        &self,
-        dt: &DrawTarget,
-        font_size: f32,
-        text: &str,
-        aa: AntialiasMode,
-    ) -> f32 {
-        dt.measure_text(self, font_size, text, aa)
-            .unwrap_or_else(|e| panic!("failed to measure text: `{:?}`: {}", text, e))
-            .size
-            .width as f32
     }
 }

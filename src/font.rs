@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use raqote::{AntialiasMode, DrawOptions, Point, SolidSource};
+use raqote::{DrawOptions, Point, SolidSource};
 
 use crate::DrawTarget;
 
@@ -43,12 +43,4 @@ pub trait FontBackend: Sized {
         color: FontColor,
         opts: &DrawOptions,
     );
-
-    fn measure_text_width(
-        &self,
-        dt: &DrawTarget,
-        font_size: f32,
-        text: &str,
-        aa: AntialiasMode,
-    ) -> f32;
 }
