@@ -18,7 +18,8 @@ use sctk::{
     window::{Event as WEvent, FallbackFrame, Window},
 };
 
-use crate::draw::{DrawTarget, Drawable, Point, Space};
+use crate::draw::{Drawable, Point, Space};
+use crate::DrawTarget;
 
 pub enum EventStatus {
     Finished,
@@ -220,7 +221,7 @@ impl Surface {
             let buf_ptr: *mut u32 = buf.as_mut_ptr() as *mut _;
             let buf: &mut [u32] =
                 unsafe { &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, buf.len() / 4) };
-            let mut dt = DrawTarget::from_buf(width as i32, height as i32, buf);
+            let mut dt = DrawTarget::from_backing(width as i32, height as i32, buf);
 
             let mut space_left = Space {
                 width: width as f32,

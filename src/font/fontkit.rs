@@ -4,9 +4,9 @@ use font_kit::family_name::FamilyName;
 pub use font_kit::loaders::freetype::Font;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, Source};
+use raqote::{AntialiasMode, DrawOptions, Point, Source};
 
-use super::{FontBackend, FontColor, Result};
+use super::{DrawTarget, FontBackend, FontColor, Result};
 
 impl FontBackend for Font {
     fn default() -> Self {

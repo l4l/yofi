@@ -6,10 +6,10 @@ use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
 use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
+use raqote::{AntialiasMode, DrawOptions, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
 
-use super::{FontBackend, FontColor, Result};
+use super::{DrawTarget, FontBackend, FontColor, Result};
 
 static FONTCONFIG_CACHE: Lazy<FcFontCache> = Lazy::new(FcFontCache::build);
 const BUF_SIZE: usize = 256 * 256;

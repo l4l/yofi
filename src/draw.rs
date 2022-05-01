@@ -1,9 +1,11 @@
 use oneshot::Sender;
-pub use raqote::{DrawTarget, Point};
+pub use raqote::Point;
 
 pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
 pub use list_view::{ListItem, Params as ListParams};
+
+pub type DrawTarget<'a> = raqote::DrawTarget<&'a mut [u32]>;
 
 mod background;
 mod input_text;
@@ -18,7 +20,7 @@ pub struct Space {
 pub trait Drawable {
     // Draws object to `dt` starting at `start_point` point with availabpe `space`
     // returns used space of that object.
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, start_point: Point) -> Space;
+    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, start_point: Point) -> Space;
 }
 
 pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
@@ -57,7 +59,7 @@ impl<'a, It> Drawable for Widget<'a, It>
 where
     It: Iterator<Item = ListItem<'a>>,
 {
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, start_point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, start_point: Point) -> Space {
         match self {
             Self::InputText(w) => w.draw(dt, scale, space, start_point),
             Self::ListView(w) => w.draw(dt, scale, space, start_point),

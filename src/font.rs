@@ -1,7 +1,9 @@
 use std::path::Path;
 
 use anyhow::Result;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
+use raqote::{AntialiasMode, DrawOptions, Point, SolidSource};
+
+use crate::DrawTarget;
 
 #[cfg(all(feature = "font-fontkit", feature = "font-fontdue"))]
 std::compile_error!("Multiple font backends are not supported. Choose only a single backend");
