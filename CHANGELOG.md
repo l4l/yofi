@@ -17,6 +17,7 @@
 - Skip folders listing for binapps mode
 - Handle panic gracefully
 - Wrong font being selected for list_items
+- Account font kerning for font-kit backend
 
 # 0.1.5 - 2022-01-30
 
