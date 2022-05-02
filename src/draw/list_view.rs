@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 use bit_vec::BitVec;
 use itertools::Itertools;
 use oneshot::Sender;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Image, Point};
+use raqote::{AntialiasMode, DrawOptions, Image, Point};
 
-use super::{Drawable, Space};
+use super::{DrawTarget, Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::style::Margin;
 use crate::Color;
@@ -65,7 +65,7 @@ impl<'a, It> Drawable for ListView<'a, It>
 where
     It: Iterator<Item = ListItem<'a>>,
 {
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
         let margin = self.params.margin * f32::from(scale);
         let item_spacing = self.params.item_spacing * f32::from(scale);
         let icon_size = self.params.icon_size.unwrap_or(0) * scale;

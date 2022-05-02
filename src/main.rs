@@ -14,6 +14,7 @@ use structopt::{clap::ArgGroup, StructOpt};
 
 pub use color::Color;
 pub use desktop::Entry as DesktopEntry;
+pub use draw::DrawTarget;
 
 mod color;
 mod config;

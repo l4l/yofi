@@ -1,8 +1,8 @@
 use std::f32::consts;
 
-use raqote::{DrawOptions, DrawTarget, PathBuilder, Point, Source};
+use raqote::{DrawOptions, PathBuilder, Point, Source};
 
-use super::{Drawable, Space};
+use super::{DrawTarget, Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::style::{Margin, Padding};
 use crate::Color;
@@ -31,7 +31,7 @@ impl<'a> InputText<'a> {
 }
 
 impl<'a> Drawable for InputText<'a> {
-    fn draw(self, dt: &mut DrawTarget, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
         let mut pb = PathBuilder::new();
 
         let font_size = f32::from(self.params.font_size * scale);

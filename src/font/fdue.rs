@@ -6,10 +6,10 @@ use anyhow::Context;
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
 use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
-use raqote::{AntialiasMode, DrawOptions, DrawTarget, Point, SolidSource};
+use raqote::{DrawOptions, Point, SolidSource};
 use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
 
-use super::{FontBackend, FontColor, Result};
+use super::{DrawTarget, FontBackend, FontColor, Result};
 
 static FONTCONFIG_CACHE: Lazy<FcFontCache> = Lazy::new(FcFontCache::build);
 const BUF_SIZE: usize = 256 * 256;
@@ -185,17 +185,5 @@ impl FontBackend for Font {
 
             dt.draw_image_with_size_at(g.width as f32, g.height as f32, g.x, g.y, &img, opts);
         }
-    }
-
-    fn measure_text_width(
-        &self,
-        _: &DrawTarget,
-        font_size: f32,
-        text: &str,
-        _: AntialiasMode,
-    ) -> f32 {
-        text.chars()
-            .map(|c| self.inner.metrics(c, font_size).advance_width)
-            .sum::<f32>()
     }
 }
