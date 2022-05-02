@@ -9,6 +9,8 @@ edition = "2021"
 [dependencies]
 font-kit = { version = "0.11", optional = true }
 pathfinder_geometry = { version = "0.5.1", optional = true }
+ttf-parser = { version = "0.12.3", optional = true }
+
 fontdue = { version = "0.6.2", optional = true }
 rust-fontconfig = { version = "0.1.5", optional = true }
 encoding_rs = "=0.8.28"
@@ -52,7 +54,7 @@ lto = true
 [features]
 default = ["font-fontdue"]
 font-fontdue = ["fontdue", "rust-fontconfig"]
-font-fontkit = ["font-kit", "pathfinder_geometry", "raqote/text"]
+font-fontkit = ["font-kit", "pathfinder_geometry", "raqote/text", "ttf-parser"]
 
 [dev-dependencies]
 test-case = "1.2.1"
