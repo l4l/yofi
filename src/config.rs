@@ -131,8 +131,6 @@ impl Config {
                 .into_iter()
                 .map(|s| CString::new(s).unwrap())
                 .collect::<Vec<_>>()
-        } else if let Ok(term) = std::env::var("TERM") {
-            vec![CString::new(term).unwrap()]
         } else {
             vec![]
         }
