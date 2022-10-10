@@ -1,21 +1,87 @@
 use std::io::BufReader;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, ensure, Context, Result};
+use once_cell::unsync::Lazy;
 
-pub struct Icon {
+pub struct Loaded {
     width: u32,
     height: u32,
     data: Vec<u32>,
 }
 
+pub enum IconInner {
+    Pending(PathBuf),
+    Failed,
+    Loaded(Loaded),
+}
+
+pub struct Icon {
+    inner: Lazy<Option<IconInner>, Box<dyn FnOnce() -> Option<IconInner>>>,
+}
+
 impl Icon {
-    pub fn load_icon(path: impl AsRef<Path>) -> Option<Icon> {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        let path = path.into();
+        Self {
+            inner: Lazy::new(Box::new(move || {
+                let mut inner = IconInner::new(path);
+                inner.load().map(|()| inner)
+            })),
+        }
+    }
+
+    pub fn as_image(&self) -> Option<raqote::Image> {
+        Lazy::force(&self.inner)
+            .as_ref()?
+            .loaded()
+            .map(|l| l.as_image())
+    }
+}
+
+impl Default for IconInner {
+    fn default() -> Self {
+        Self::Failed
+    }
+}
+
+impl IconInner {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        Self::Pending(path.into())
+    }
+
+    fn loaded(&self) -> Option<&Loaded> {
+        if let Self::Loaded(l) = self {
+            Some(l)
+        } else {
+            unreachable!()
+        }
+    }
+
+    fn load(&mut self) -> Option<()> {
+        let loaded = match self {
+            Self::Pending(path) => Loaded::load(path),
+            Self::Failed => return None,
+            Self::Loaded(_) => return Some(()),
+        };
+
+        if let Some(loaded) = loaded {
+            *self = Self::Loaded(loaded);
+            Some(())
+        } else {
+            *self = Self::Failed;
+            None
+        }
+    }
+}
+
+impl Loaded {
+    pub fn load(path: impl AsRef<Path>) -> Option<Self> {
         let path = path.as_ref();
         let failed_to_load = |e| log::info!("failed to load icon at path `{:?}`: {}", path, e);
         match path.extension()?.to_str()? {
-            "png" => Icon::from_png_path(path).map_err(failed_to_load).ok(),
-            "svg" => Icon::from_svg_path(path).map_err(failed_to_load).ok(),
+            "png" => Self::from_png_path(path).map_err(failed_to_load).ok(),
+            "svg" => Self::from_svg_path(path).map_err(failed_to_load).ok(),
             ext => {
                 log::info!("unsupported icon extension: {:?}", ext);
                 None
@@ -133,7 +199,7 @@ impl Icon {
         })
     }
 
-    pub fn as_image(&self) -> raqote::Image {
+    fn as_image(&self) -> raqote::Image {
         raqote::Image {
             width: self.width as i32,
             height: self.height as i32,

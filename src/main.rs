@@ -175,10 +175,6 @@ fn main_inner() {
 
     let cmd = match args.mode.take().unwrap_or_default() {
         ModeArg::Apps { blacklist, list } => {
-            if let Some(icon_config) = config.param() {
-                desktop::find_icon_paths(icon_config).expect("called only once");
-            }
-
             let blacklist_filter = blacklist
                 .and_then(|file| {
                     let entries = std::fs::read_to_string(&file)
@@ -192,7 +188,9 @@ fn main_inner() {
                 })
                 .unwrap_or_else(|| Box::new(|_| true));
 
-            let entries = desktop::find_entries(blacklist_filter);
+            let entries = desktop::Traverser::new(config.param(), blacklist_filter)
+                .expect("cannot load desktop file traverser")
+                .find_entries();
 
             if list {
                 for e in entries {

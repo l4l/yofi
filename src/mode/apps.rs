@@ -68,7 +68,7 @@ impl AppsMode {
         Entry {
             name: entry.entry.name.as_ref(),
             subname: Some(entry.subname(subidx).unwrap_or("Default Action")),
-            icon: entry.icon(subidx).map(|i| i.as_image()),
+            icon: entry.icon(subidx).and_then(|i| i.as_image()),
         }
     }
 

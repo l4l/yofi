@@ -4,6 +4,7 @@
 
 - Support prompt message
 - Input masking for password
+- Better icon support
 
 ## Changes
 
