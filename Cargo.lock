@@ -662,6 +662,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
+name = "freedesktop-icon-lookup"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2e174cae423532c3fac544b7288d0afc33b8c2f4f4cd93b1249f23c03fc74ef"
+dependencies = [
+ "either",
+ "thiserror",
+ "tini",
+]
+
+[[package]]
 name = "freedesktop_entry_parser"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1703,6 +1714,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tini"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e004df4c5f0805eb5f55883204a514cfa43a6d924741be29e871753a53d5565a"
+
+[[package]]
 name = "tiny-skia"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2079,6 +2096,7 @@ dependencies = [
  "fern",
  "font-kit",
  "fontdue",
+ "freedesktop-icon-lookup",
  "freedesktop_entry_parser",
  "fzyr",
  "itertools",

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::*;
-use crate::desktop::{IconConfig, DEFAULT_THEME};
+use crate::desktop::IconConfig;
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::font::{Font, FontBackend};
 use crate::icon::Icon;
@@ -58,7 +58,7 @@ impl<'a> From<&'a Config> for ListParams {
                 .icon
                 .as_ref()
                 .and_then(|i| i.fallback_icon_path.as_ref())
-                .map(|path| Icon::load_icon(&path).expect("cannot load fallback icon")),
+                .map(|path| Icon::new(&path)),
             margin: config.list_items.margin.clone(),
             hide_actions: config.list_items.hide_actions,
             action_left_margin: config.list_items.action_left_margin,
@@ -92,11 +92,7 @@ impl<'a> From<&'a Config> for Option<IconConfig> {
     fn from(config: &'a Config) -> Option<IconConfig> {
         config.icon.as_ref().map(|c| IconConfig {
             icon_size: c.size,
-            theme: c
-                .theme
-                .as_ref()
-                .unwrap_or_else(|| once_cell::sync::Lazy::force(&DEFAULT_THEME))
-                .clone(),
+            theme: c.theme.clone(),
         })
     }
 }

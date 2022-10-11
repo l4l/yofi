@@ -109,7 +109,11 @@ where
             let x_offset = point.x + margin.left;
             let y_offset = top_offset + relative_offset;
 
-            let fallback_icon = self.params.fallback_icon.as_ref().map(|i| i.as_image());
+            let fallback_icon = self
+                .params
+                .fallback_icon
+                .as_ref()
+                .and_then(|i| i.as_image());
             if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
                 if icon.width == icon.height && icon.height == i32::from(icon_size) {
                     dt.draw_image_at(
