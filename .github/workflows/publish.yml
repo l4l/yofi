@@ -16,11 +16,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --release
+      run: cargo build --profile release-lto
     - name: Upload binary
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/release/yofi
+        file: target/release-lto/yofi
         asset_name: yofi-${{ matrix.os }}
         tag: ${{ github.ref }}
