@@ -1,5 +1,7 @@
 # Unreleased changes
 
+# 0.2.0 - 2022-10-12
+
 ## Features
 
 - Support prompt message

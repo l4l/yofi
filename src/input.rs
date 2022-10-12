@@ -22,7 +22,7 @@ pub struct KeyPress {
 
 #[derive(Default)]
 struct SeatInfo {
-    keyboard: Option<(wl_keyboard::WlKeyboard, calloop::RegistrationToken)>,
+    keyboard: Option<wl_keyboard::WlKeyboard>,
 }
 
 fn send_event(state: &mut ModifierState, tx: &Sender<KeyPress>, event: KbEvent) {
@@ -111,9 +111,8 @@ impl InputHandler {
                     })
                     .ok();
                 }
-            } else if let Some((kbd, source)) = data.keyboard.take() {
+            } else if let Some(kbd) = data.keyboard.take() {
                 kbd.release();
-                loop_handle.remove(source);
             }
         };
 
