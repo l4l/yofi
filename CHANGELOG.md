@@ -5,6 +5,7 @@
 - Support prompt message
 - Input masking for password
 - Better icon support
+- Migrate from fzyr to sublime_fuzzy matcher
 
 ## Changes
 

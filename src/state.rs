@@ -1,73 +1,11 @@
-use either::Either;
-use fzyr::LocateResult;
-
 use crate::draw::ListItem;
 use crate::input::KeyPress;
 use crate::input_parser::InputValue;
 use crate::mode::{EvalInfo, Mode};
+pub use filtered_lines::ContinuousMatch;
+use filtered_lines::FilteredLines;
 
-struct Preprocessed(Either<Vec<LocateResult>, usize>);
-
-impl Preprocessed {
-    fn processed(processed: Vec<LocateResult>) -> Self {
-        Self(Either::Left(processed))
-    }
-
-    fn unfiltred(len: usize) -> Self {
-        Self(Either::Right(len))
-    }
-
-    fn len(&self) -> usize {
-        match self {
-            Self(Either::Left(x)) => x.len(),
-            Self(Either::Right(x)) => *x,
-        }
-    }
-
-    fn index(&self, selected_item: usize) -> Option<usize> {
-        if self.len() == 0 {
-            return None;
-        }
-
-        if selected_item >= self.len() {
-            panic!("Internal error: selected_item overflow");
-        }
-
-        Some(match self {
-            Self(Either::Left(x)) => x[selected_item].candidate_index,
-            Self(Either::Right(_)) => selected_item,
-        })
-    }
-
-    fn list_items<'s, 'm: 's>(
-        &'s self,
-        mode: &'m Mode,
-        item: usize,
-        subitem: usize,
-    ) -> impl Iterator<Item = ListItem<'_>> + '_ {
-        match self {
-            Self(Either::Left(x)) => Either::Left(x.iter().enumerate().map(move |(idx, r)| {
-                let e = mode.entry(r.candidate_index, if idx == item { subitem } else { 0 });
-                ListItem {
-                    name: e.name,
-                    subname: e.subname,
-                    icon: e.icon,
-                    match_mask: Some(&r.match_mask),
-                }
-            })),
-            Self(Either::Right(x)) => Either::Right((0..*x).enumerate().map(move |(idx, i)| {
-                let e = mode.entry(i, if idx == item { subitem } else { 0 });
-                ListItem {
-                    name: e.name,
-                    subname: e.subname,
-                    icon: e.icon,
-                    match_mask: None,
-                }
-            })),
-        }
-        .into_iter()
-    }
-}
+mod filtered_lines;
 
 struct InputBuffer {
     raw_input: String,
@@ -133,7 +71,7 @@ pub struct State {
     skip_offset: usize,
     selected_item: usize,
     selected_subitem: usize,
-    preprocessed: Preprocessed,
+    filtered_lines: FilteredLines,
     inner: Mode,
 }
 
@@ -144,7 +82,7 @@ impl State {
             skip_offset: 0,
             selected_item: 0,
             selected_subitem: 0,
-            preprocessed: Preprocessed::unfiltred(inner.entries_len()),
+            filtered_lines: FilteredLines::unfiltred(inner.entries_len()),
             inner,
         }
     }
@@ -234,7 +172,7 @@ impl State {
             } => {
                 self.selected_subitem = self
                     .inner
-                    .subentries_len(self.preprocessed.index(self.selected_item).unwrap_or(0))
+                    .subentries_len(self.filtered_lines.index(self.selected_item).unwrap_or(0))
                     .min(self.selected_subitem + 1)
             }
             KeyPress {
@@ -242,7 +180,7 @@ impl State {
                 ..
             } => {
                 let info = EvalInfo {
-                    index: self.preprocessed.index(self.selected_item),
+                    index: self.filtered_lines.index(self.selected_item),
                     subindex: self.selected_subitem,
                     input_value: self.input_buffer.parsed_input(),
                 };
@@ -297,22 +235,19 @@ impl State {
     }
 
     pub fn processed_entries(&self) -> impl Iterator<Item = ListItem<'_>> {
-        self.preprocessed
+        self.filtered_lines
             .list_items(&self.inner, self.selected_item, self.selected_subitem)
     }
 
     pub fn process_entries(&mut self) {
-        self.preprocessed = if self.input_buffer.search_string().is_empty() {
-            Preprocessed::unfiltred(self.inner.entries_len())
+        self.filtered_lines = if self.input_buffer.search_string().is_empty() {
+            FilteredLines::unfiltred(self.inner.entries_len())
         } else {
-            Preprocessed::processed(fzyr::locate_serial(
-                self.input_buffer.search_string(),
-                self.inner.text_entries(),
-            ))
+            FilteredLines::searched(self.inner.text_entries(), self.input_buffer.search_string())
         };
 
         self.selected_item = self
-            .preprocessed
+            .filtered_lines
             .len()
             .saturating_sub(1)
             .min(self.selected_item);

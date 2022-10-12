@@ -23,7 +23,7 @@ pub struct Entry {
     pub actions: Vec<ExecEntry>,
     pub desktop_fname: String,
     pub path: PathBuf,
-    pub name_with_keywords: String,
+    pub name: String,
     pub is_terminal: bool,
 }
 
@@ -173,8 +173,7 @@ impl<F> Traverser<F> {
                     actions,
                     desktop_fname,
                     path: dir_entry_path,
-                    name_with_keywords: n.to_owned()
-                        + localized_entry("Keywords").unwrap_or_default(),
+                    name: n.to_owned(),
                     is_terminal: main_section
                         .attr("Terminal")
                         .map(|s| s == "true")
