@@ -113,7 +113,7 @@ where
                 .fallback_icon
                 .as_ref()
                 .and_then(|i| i.as_image());
-            if let Some(icon) = item.icon.as_ref().or_else(|| fallback_icon.as_ref()) {
+            if let Some(icon) = item.icon.as_ref().or(fallback_icon.as_ref()) {
                 if icon.width == icon.height && icon.height == i32::from(icon_size) {
                     dt.draw_image_at(
                         x_offset,

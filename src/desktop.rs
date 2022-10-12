@@ -41,7 +41,7 @@ impl Entry {
             self.actions[action - 1]
                 .icon
                 .as_ref()
-                .or_else(|| self.entry.icon.as_ref())
+                .or(self.entry.icon.as_ref())
         }
     }
 }

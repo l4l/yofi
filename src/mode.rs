@@ -42,7 +42,7 @@ impl<'a> std::ops::Deref for EvalInfo<'a> {
     type Target = InputValue<'a>;
 
     fn deref(&self) -> &Self::Target {
-        &*self.input_value
+        self.input_value
     }
 }
 
