@@ -24,3 +24,7 @@ jobs:
         file: target/release-lto/yofi
         asset_name: yofi-${{ matrix.os }}
         tag: ${{ github.ref }}
+    - uses: katyo/publish-crates@v1
+      with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          no-verify: true
