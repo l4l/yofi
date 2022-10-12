@@ -14,6 +14,7 @@ There are several installation options:
 Although these are built in Ubuntu environment it should also work for other Linux distributions.
 - \[for Archlinux\] there are [yofi-bin](https://aur.archlinux.org/packages/yofi-bin/) and
 [yofi-git](https://aur.archlinux.org/packages/yofi-git/) AUR packages for binary and from-source builds.
+- Build last release version from crates.io with `cargo install yofi`.
 - Or you can manually [build from sources](#building).
 
 ## User documentation
