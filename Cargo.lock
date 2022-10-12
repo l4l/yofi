@@ -143,12 +143,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
-name = "bit-vec"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
-
-[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -706,15 +700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fzyr"
-version = "0.1.2"
-source = "git+https://github.com/l4l/fzyr.git?rev=d5c83e3#d5c83e3fef0b54559cda309d5b4a83b8cd593c50"
-dependencies = [
- "bit-vec",
- "ndarray",
-]
-
-[[package]]
 name = "generator"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -905,15 +890,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 
 [[package]]
-name = "matrixmultiply"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "916806ba0031cd542105d916a97c8572e1fa6dd79c9c51e7eb43a09ec2dd84c1"
-dependencies = [
- "rawpointer",
-]
-
-[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -973,19 +949,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ndarray"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c0d5c9540a691d153064dc47a4db2504587a75eae07bf1d73f7a596ebc73c04"
-dependencies = [
- "matrixmultiply",
- "num-complex",
- "num-integer",
- "num-traits",
- "rawpointer",
-]
-
-[[package]]
 name = "nix"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1017,15 +980,6 @@ checksum = "72e5c7731c4c1370b61604ed52a2475e861aac9e08dec9f23903d4ddfdc91c18"
 dependencies = [
  "nom",
  "regex",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "747d632c0c558b87dbabbe6a82f3b4ae03720d0646ac5b7b4dae89394be5f2c5"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
@@ -1248,12 +1202,6 @@ dependencies = [
  "sw-composite",
  "typed-arena",
 ]
-
-[[package]]
-name = "rawpointer"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
 
 [[package]]
 name = "rayon"
@@ -1588,6 +1536,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "sublime_fuzzy"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa7986063f7c0ab374407e586d7048a3d5aac94f103f751088bf398e07cd5400"
 
 [[package]]
 name = "svgtypes"
@@ -2046,7 +2000,6 @@ name = "yofi"
 version = "0.1.5"
 dependencies = [
  "anyhow",
- "bit-vec",
  "brotli-decompressor",
  "chrono",
  "defaults",
@@ -2057,7 +2010,6 @@ dependencies = [
  "fontdue",
  "freedesktop-icon-lookup",
  "freedesktop_entry_parser",
- "fzyr",
  "itertools",
  "levenshtein",
  "libc",
@@ -2079,6 +2031,7 @@ dependencies = [
  "shlex",
  "smithay-client-toolkit",
  "structopt",
+ "sublime_fuzzy",
  "syslog",
  "test-case",
  "tiny-skia",

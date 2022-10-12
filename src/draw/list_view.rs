@@ -1,12 +1,11 @@
 use std::marker::PhantomData;
 
-use bit_vec::BitVec;
-use itertools::Itertools;
 use oneshot::Sender;
 use raqote::{AntialiasMode, DrawOptions, Image, Point};
 
 use super::{DrawTarget, Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
+use crate::state::ContinuousMatch;
 use crate::style::Margin;
 use crate::Color;
 use unicode_segmentation::UnicodeSegmentation;
@@ -30,7 +29,7 @@ pub struct ListItem<'a> {
     pub name: &'a str,
     pub subname: Option<&'a str>,
     pub icon: Option<Image<'a>>,
-    pub match_mask: Option<&'a BitVec>,
+    pub match_mask: Option<ContinuousMatch<'a>>,
 }
 
 pub struct ListView<'a, It> {
@@ -142,44 +141,34 @@ where
             }
             .as_source();
 
-            let empty = BitVec::new();
-            let match_ranges = item.match_mask.unwrap_or(&empty);
-
             let antialias = AntialiasMode::Gray;
             let draw_opts = DrawOptions {
                 antialias,
                 ..DrawOptions::new()
             };
 
-            let color = if let Some(match_color) = self.params.match_color {
+            let color = if let (Some(match_color), Some(match_mask)) =
+                (self.params.match_color, item.match_mask)
+            {
                 let mut special_color =
                     vec![color; UnicodeSegmentation::graphemes(item.name, true).count()];
 
+                let match_color = match_color.as_source();
                 let special_len = special_color.len();
+                let mut last_idx = 0; // exclusive
 
-                match_ranges
-                    .iter()
-                    .group_by(|x| *x)
-                    .into_iter()
-                    .enumerate()
-                    .scan(0, |start, (_, group)| {
-                        let count = group.1.count();
-                        let s = *start;
-                        let range = s..s + count;
-                        *start += count;
-                        Some((group.0, range))
-                    })
-                    .for_each(|(is_matched, range)| {
-                        let color = if is_matched {
-                            match_color.as_source()
-                        } else {
-                            color
-                        };
+                match_mask.for_each(|m| {
+                    let unmatch_range = last_idx..m.start();
+                    if !unmatch_range.is_empty() {
+                        special_color[unmatch_range].fill(color);
+                    }
 
-                        if range.start < special_len {
-                            special_color[range.start..range.end.min(special_len)].fill(color);
-                        }
-                    });
+                    let match_range = m.start()..(m.start() + m.len()).min(special_len);
+                    last_idx = match_range.end;
+                    if !match_range.is_empty() {
+                        special_color[match_range].fill(match_color);
+                    }
+                });
 
                 FontColor::Multiple(special_color)
             } else {
