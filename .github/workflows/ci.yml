@@ -22,7 +22,6 @@ jobs:
     - name: Build
       run: |
         cargo build --verbose
-        cargo build --no-default-features --features font-fontkit --verbose
     - name: Check format
       run: cargo fmt -- --check
     - name: Lint

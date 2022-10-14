@@ -1,5 +1,9 @@
 # Unreleased changes
 
+## Changes
+
+- Dropped support for font-kit backend.
+
 # 0.2.0 - 2022-10-12
 
 ## Features
