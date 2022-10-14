@@ -3,6 +3,7 @@
 ## Changes
 
 - Dropped support for font-kit backend.
+- Use native fontconfig instead of rust-fontconfig.
 
 # 0.2.0 - 2022-10-12
 
