@@ -6,7 +6,8 @@ use raqote::{DrawOptions, Point, SolidSource};
 use crate::DrawTarget;
 
 mod fdue;
-pub type Font = fdue::Font;
+pub type InnerFont = fdue::Font;
+pub type Font = std::rc::Rc<InnerFont>;
 
 pub enum FontColor {
     Multiple(Vec<SolidSource>),
