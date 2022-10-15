@@ -1,17 +1,18 @@
 use std::cell::RefCell;
 use std::collections::BinaryHeap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context;
+use fontconfig::{Fontconfig, Pattern};
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
 use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
 use raqote::{DrawOptions, Point, SolidSource};
-use rust_fontconfig::{FcFontCache, FcFontPath, FcPattern};
 
 use super::{DrawTarget, FontBackend, FontColor, Result};
 
-static FONTCONFIG_CACHE: Lazy<FcFontCache> = Lazy::new(FcFontCache::build);
+static FONTCONFIG_CACHE: Lazy<Fontconfig> =
+    Lazy::new(|| Fontconfig::new().expect("failed to initialize fontconfig"));
 const BUF_SIZE: usize = 256 * 256;
 
 pub struct Font {
@@ -33,38 +34,40 @@ impl Font {
 }
 
 #[derive(Eq)]
-struct FuzzyResult<'a> {
-    text: &'a str,
+struct FuzzyResult {
+    text: String,
     distance: usize,
 }
 
-impl<'a> PartialEq for FuzzyResult<'a> {
+impl PartialEq for FuzzyResult {
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
     }
 }
 
-impl<'a> Ord for FuzzyResult<'a> {
+impl Ord for FuzzyResult {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.distance.cmp(&other.distance)
     }
 }
 
-impl<'a> PartialOrd for FuzzyResult<'a> {
+impl PartialOrd for FuzzyResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.distance.partial_cmp(&other.distance)
     }
 }
 
 impl Font {
-    fn from_fc_path(font_search: &FcFontPath) -> Result<Self> {
-        let bytes = std::fs::read(font_search.path.as_str()).context("font read")?;
+    fn from_path(path: &Path, index: Option<u32>) -> Result<Self> {
+        let bytes = std::fs::read(path).context("font read")?;
         let inner = fontdue::Font::from_bytes(
             bytes,
-            fontdue::FontSettings {
-                collection_index: font_search.font_index as u32,
-                ..Default::default()
-            },
+            index
+                .map(|collection_index| fontdue::FontSettings {
+                    collection_index,
+                    ..Default::default()
+                })
+                .unwrap_or_default(),
         )
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
@@ -74,41 +77,81 @@ impl Font {
     fn try_find_best_font(name: &str) -> Vec<String> {
         const COUNT_MATCHES: usize = 5;
 
-        FONTCONFIG_CACHE
-            .list()
-            .keys()
-            .filter_map(|font| {
-                let text = font.name.as_ref()?.as_str();
+        let pat = Pattern::new(&FONTCONFIG_CACHE);
+        fontconfig::list_fonts(&pat, None)
+            .iter()
+            .filter_map(|pat| {
+                let text = pat.name()?.to_string();
                 Some(FuzzyResult {
+                    distance: levenshtein(name, &text),
                     text,
-                    distance: levenshtein(name, text),
                 })
             })
             .collect::<BinaryHeap<FuzzyResult>>()
             .into_sorted_vec()
             .into_iter()
             .take(COUNT_MATCHES)
-            .map(|v| v.text.to_owned())
+            .map(|r| r.text)
             .collect()
+    }
+}
+
+fn index_to_u32(idx: i32) -> Option<u32> {
+    if idx < 0 {
+        None
+    } else {
+        Some(idx as u32)
     }
 }
 
 impl FontBackend for Font {
     fn default() -> Self {
-        FONTCONFIG_CACHE
-            .query(&FcPattern::default())
-            .map(Font::from_fc_path)
-            .unwrap()
-            .unwrap()
+        let pat = Pattern::new(&FONTCONFIG_CACHE);
+        fontconfig::list_fonts(&pat, None)
+            .iter()
+            .filter_map(|pat| {
+                let path = std::path::Path::new(pat.filename()?);
+                if !path.exists() {
+                    return None;
+                }
+                let index = pat.face_index().and_then(index_to_u32);
+                Some(Font::from_path(path, index))
+            })
+            .next()
+            .expect("cannot find any font")
+            .expect("cannot load default font")
     }
 
     fn font_by_name(name: &str) -> Result<Self> {
-        FONTCONFIG_CACHE
-            .query(&FcPattern {
-                name: Some(name.to_string()),
-                ..Default::default()
+        let cache = &*FONTCONFIG_CACHE;
+
+        // TODO: use Font.find after https://github.com/yeslogic/fontconfig-rs/pull/27
+        fn find(
+            fc: &Fontconfig,
+            family: &str,
+            style: Option<&str>,
+        ) -> Option<(PathBuf, Option<i32>)> {
+            let mut pat = Pattern::new(fc);
+            let family = std::ffi::CString::new(family).ok()?;
+            pat.add_string(fontconfig::FC_FAMILY.as_cstr(), &family);
+
+            if let Some(style) = style {
+                let style = std::ffi::CString::new(style).ok()?;
+                pat.add_string(fontconfig::FC_STYLE.as_cstr(), &style);
+            }
+
+            let font_match = pat.font_match();
+
+            font_match
+                .filename()
+                .map(|filename| (PathBuf::from(filename), font_match.face_index()))
+        }
+
+        let (path, index) = find(cache, name, None)
+            .or_else(|| {
+                let (name, style) = name.rsplit_once(' ')?;
+                find(cache, name, Some(style))
             })
-            .map(Font::from_fc_path)
             .ok_or_else(|| {
                 let matching = Font::try_find_best_font(name);
                 log::info!("The font {} could not be found.", name);
@@ -117,17 +160,13 @@ impl FontBackend for Font {
                     log::info!("Best matches:\n\t{}\n", matching.into_iter().format("\n\t"));
                 }
                 anyhow::anyhow!("cannot find font")
-            })?
+            })?;
+
+        Font::from_path(&path, index.and_then(index_to_u32))
     }
 
     fn font_by_path(path: &Path) -> Result<Self> {
-        Font::from_fc_path(&FcFontPath {
-            path: path
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid path"))?
-                .to_owned(),
-            font_index: 0,
-        })
+        Font::from_path(path, None)
     }
 
     fn draw(
