@@ -210,8 +210,18 @@ fn main_inner() {
 
     let mut state = state::State::new(cmd);
 
+    let background_config = config.param();
+    let input_config = config.param();
+    let list_config = config.param();
+
     if !env.get_shell().unwrap().needs_configure() {
-        draw(&mut state, &config, &mut surface);
+        draw(
+            &mut state,
+            &background_config,
+            &input_config,
+            &list_config,
+            &mut surface,
+        );
     }
 
     WaylandSource::new(queue)
@@ -235,7 +245,13 @@ fn main_inner() {
         };
 
         if should_redraw {
-            draw(&mut state, &config, &mut surface);
+            draw(
+                &mut state,
+                &background_config,
+                &input_config,
+                &list_config,
+                &mut surface,
+            );
         }
 
         display.flush().unwrap();
@@ -269,21 +285,27 @@ fn main() {
     }
 }
 
-fn draw(state: &mut state::State, config: &config::Config, surface: &mut surface::Surface) {
+fn draw(
+    state: &mut state::State,
+    background_config: &draw::BgParams,
+    input_config: &draw::InputTextParams,
+    list_config: &draw::ListParams,
+    surface: &mut surface::Surface,
+) {
     use std::iter::once;
 
     state.process_entries();
 
     let (tx, rx) = oneshot::channel();
 
-    let background = draw::Widget::background(config.param());
-    let input_widget = draw::Widget::input_text(state.raw_input(), config.param());
+    let background = draw::Widget::background(background_config);
+    let input_widget = draw::Widget::input_text(state.raw_input(), input_config);
     let list_view_widget = draw::Widget::list_view(
         state.processed_entries(),
         state.skip_offset(),
         state.selected_item(),
         tx,
-        config.param(),
+        list_config,
     );
 
     surface.redraw(

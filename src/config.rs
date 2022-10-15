@@ -117,9 +117,9 @@ impl Config {
             .unwrap_or_default()
     }
 
-    pub fn param<T>(&self) -> T
+    pub fn param<'a, T>(&'a self) -> T
     where
-        T: for<'a> From<&'a Self>,
+        T: From<&'a Self>,
     {
         self.into()
     }

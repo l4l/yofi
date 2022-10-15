@@ -7,13 +7,13 @@ use crate::font::{Font, FontBackend, FontColor};
 use crate::style::{Margin, Padding};
 use crate::Color;
 
-pub struct Params {
+pub struct Params<'a> {
     pub font: Font,
     pub font_size: u16,
     pub bg_color: Color,
     pub font_color: Color,
     pub prompt_color: Color,
-    pub prompt: Option<String>,
+    pub prompt: Option<&'a str>,
     pub password: bool,
     pub margin: Margin,
     pub padding: Padding,
@@ -21,11 +21,11 @@ pub struct Params {
 
 pub struct InputText<'a> {
     text: &'a str,
-    params: Params,
+    params: &'a Params<'a>,
 }
 
 impl<'a> InputText<'a> {
-    pub fn new(text: &'a str, params: Params) -> Self {
+    pub fn new(text: &'a str, params: &'a Params<'a>) -> Self {
         Self { text, params }
     }
 }
@@ -36,12 +36,12 @@ impl<'a> Drawable for InputText<'a> {
 
         let font_size = f32::from(self.params.font_size * scale);
 
-        let mut padding = self.params.padding * f32::from(scale);
+        let mut padding = &self.params.padding * f32::from(scale);
         const PADDING_TOP: f32 = 2.0;
         const PADDING_BOTTOM: f32 = 5.0;
         padding.top += PADDING_TOP;
         padding.bottom += PADDING_BOTTOM;
-        let margin = self.params.margin * f32::from(scale);
+        let margin = &self.params.margin * f32::from(scale);
 
         let border_diameter = padding.top + font_size + padding.bottom;
         let border_radius = border_diameter / 2.0;
@@ -87,7 +87,7 @@ impl<'a> Drawable for InputText<'a> {
         let (color, text) = if self.text.is_empty() {
             (
                 self.params.prompt_color,
-                self.params.prompt.as_deref().unwrap_or_default(),
+                self.params.prompt.unwrap_or_default(),
             )
         } else {
             let text = if let Some(password_text) = password_text.as_ref() {

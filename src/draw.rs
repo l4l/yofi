@@ -26,11 +26,11 @@ pub trait Drawable {
 pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
     InputText(Box<input_text::InputText<'a>>),
     ListView(list_view::ListView<'a, It>),
-    Background(background::Background),
+    Background(background::Background<'a>),
 }
 
 impl<'a, It> Widget<'a, It> {
-    pub fn input_text(text: &'a str, params: InputTextParams) -> Self {
+    pub fn input_text(text: &'a str, params: &'a InputTextParams<'a>) -> Self {
         Self::InputText(Box::new(input_text::InputText::new(text, params)))
     }
 
@@ -39,7 +39,7 @@ impl<'a, It> Widget<'a, It> {
         skip_offset: usize,
         selected_item: usize,
         tx: Sender<usize>,
-        params: ListParams,
+        params: &'a ListParams,
     ) -> Self {
         Self::ListView(list_view::ListView::new(
             items,
@@ -50,7 +50,7 @@ impl<'a, It> Widget<'a, It> {
         ))
     }
 
-    pub fn background(params: BgParams) -> Self {
+    pub fn background(params: &'a BgParams) -> Self {
         Self::Background(background::Background::new(params))
     }
 }
