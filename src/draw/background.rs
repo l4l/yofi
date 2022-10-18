@@ -7,17 +7,17 @@ pub struct Params {
     pub color: Color,
 }
 
-pub struct Background {
-    params: Params,
+pub struct Background<'a> {
+    params: &'a Params,
 }
 
-impl Background {
-    pub fn new(params: Params) -> Self {
+impl<'a> Background<'a> {
+    pub fn new(params: &'a Params) -> Self {
         Self { params }
     }
 }
 
-impl Drawable for Background {
+impl Drawable for Background<'_> {
     fn draw(self, dt: &mut DrawTarget<'_>, _: u16, _: Space, _: Point) -> Space {
         dt.clear(self.params.color.as_source());
 

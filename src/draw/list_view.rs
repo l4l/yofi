@@ -37,17 +37,17 @@ pub struct ListView<'a, It> {
     skip_offset: usize,
     selected_item: usize,
     new_skip: Sender<usize>,
-    params: Params,
+    params: &'a Params,
     _tparam: PhantomData<&'a ()>,
 }
 
-impl<It> ListView<'_, It> {
+impl<'a, It> ListView<'a, It> {
     pub fn new(
         items: It,
         skip_offset: usize,
         selected_item: usize,
         new_skip: Sender<usize>,
-        params: Params,
+        params: &'a Params,
     ) -> Self {
         Self {
             items,
@@ -65,7 +65,7 @@ where
     It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
-        let margin = self.params.margin * f32::from(scale);
+        let margin = &self.params.margin * f32::from(scale);
         let item_spacing = self.params.item_spacing * f32::from(scale);
         let icon_size = self.params.icon_size.unwrap_or(0) * scale;
         let icon_spacing = self.params.icon_spacing * f32::from(scale);

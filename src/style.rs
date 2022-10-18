@@ -42,11 +42,11 @@ impl Padding {
     }
 }
 
-impl Mul<f32> for Padding {
-    type Output = Self;
+impl Mul<f32> for &Padding {
+    type Output = Padding;
 
-    fn mul(self, rhs: f32) -> Self {
-        Self {
+    fn mul(self, rhs: f32) -> Padding {
+        Padding {
             top: self.top * rhs,
             bottom: self.bottom * rhs,
             left: self.left * rhs,
@@ -75,11 +75,11 @@ impl Margin {
     }
 }
 
-impl Mul<f32> for Margin {
-    type Output = Self;
+impl Mul<f32> for &Margin {
+    type Output = Margin;
 
-    fn mul(self, rhs: f32) -> Self {
-        Self {
+    fn mul(self, rhs: f32) -> Margin {
+        Margin {
             top: self.top * rhs,
             bottom: self.bottom * rhs,
             left: self.left * rhs,
