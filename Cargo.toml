@@ -30,7 +30,7 @@ serde = { version = "1.0.131", features = ["derive"] }
 toml = "0.5.8"
 structopt = "0.3.25"
 either = "1.6.1"
-png = { version = "0.17.2", default-features = false }
+png = { version = "0.17.6", default-features = false }
 resvg = { version = "0.23.0", default-features = false }
 usvg = { version = "0.23.0", default-features = false }
 once_cell = "1.15.0"
