@@ -8,6 +8,7 @@
 ## Fixes
 
 - Don't reload font on each ListView redraw.
+- Normalize indexed pngs.
 
 # 0.2.0 - 2022-10-12
 
