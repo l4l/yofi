@@ -90,7 +90,8 @@ impl Loaded {
     }
 
     fn from_png_path(path: impl AsRef<Path>) -> Result<Self> {
-        let decoder = png::Decoder::new(BufReader::new(std::fs::File::open(path)?));
+        let mut decoder = png::Decoder::new(BufReader::new(std::fs::File::open(path.as_ref())?));
+        decoder.set_transformations(png::Transformations::normalize_to_color8());
         let mut reader = decoder
             .read_info()
             .map_err(|e| anyhow!("failed to read png info: {}", e))?;
@@ -98,9 +99,7 @@ impl Loaded {
         let info = reader
             .next_frame(&mut buf)
             .map_err(|e| anyhow!("failed to read png frame: {}", e))?;
-
         let buf = &buf[..info.buffer_size()];
-        let info = reader.info();
 
         let data = match info.color_type {
             png::ColorType::Rgb => {
@@ -143,28 +142,7 @@ impl Loaded {
                     a | r | g | b
                 })
                 .collect(),
-            png::ColorType::Indexed => {
-                let palette = info.palette.as_ref().ok_or_else(|| {
-                    anyhow!("invalid image: palette is missing for indexed color type")
-                })?;
-
-                buf.iter()
-                    .copied()
-                    .map(|idx| {
-                        let start = 3 * usize::from(idx);
-                        let end = start + 3;
-                        let chunk = palette
-                            .get(start..end)
-                            .context("corrupted icon file (palette overflow)")?;
-                        let a = 0xffu32 << 24;
-                        let r = u32::from(chunk[0]) << 16;
-                        let g = u32::from(chunk[1]) << 8;
-                        let b = u32::from(chunk[2]);
-
-                        Ok(a | r | g | b)
-                    })
-                    .collect::<Result<_>>()?
-            }
+            png::ColorType::Indexed => unreachable!("image shall be converted"),
         };
 
         Ok(Self {
