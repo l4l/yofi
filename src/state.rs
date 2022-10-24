@@ -177,7 +177,7 @@ impl State {
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_Return,
-                ctrl, 
+                ctrl,
                 ..
             } => {
                 let info = EvalInfo {
@@ -186,7 +186,16 @@ impl State {
                     input_value: self.input_buffer.parsed_input(),
                 };
                 if ctrl {
-                    // TODO: fork()
+                    match unsafe { nix::unistd::fork() } {
+                        Ok(v) => {
+                            if v.is_child() {
+                                self.inner.eval(info);
+                            } else {
+                                return false;
+                            }
+                        }
+                        Err(e) => log::debug!("fork() error: {:?}", e),
+                    }
                 } else {
                     self.inner.eval(info);
                 }
