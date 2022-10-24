@@ -177,6 +177,7 @@ impl State {
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_Return,
+                ctrl,
                 ..
             } => {
                 let info = EvalInfo {
@@ -184,7 +185,11 @@ impl State {
                     subindex: self.selected_subitem,
                     input_value: self.input_buffer.parsed_input(),
                 };
-                self.inner.eval(info);
+                if ctrl {
+                    self.inner.fork_eval(info);
+                } else {
+                    self.inner.eval(info);
+                }
             }
             KeyPress {
                 keysym: keysyms::XKB_KEY_bracketright,

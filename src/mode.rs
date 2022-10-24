@@ -71,6 +71,17 @@ impl Mode {
         Self::Dialog(dialog::DialogMode::new())
     }
 
+    pub fn fork_eval(&mut self, info: EvalInfo<'_>) {
+        match unsafe { nix::unistd::fork() } {
+            Ok(v) => {
+                if v.is_child() {
+                    self.eval(info);
+                }
+            }
+            Err(e) => log::error!("fork() error: {}", e),
+        }
+    }
+
     delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible);
     delegate!(pub fn entries_len(&self) -> usize);
     delegate!(pub fn subentries_len(&self, idx: usize) -> usize);

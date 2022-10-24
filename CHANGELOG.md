@@ -1,5 +1,9 @@
 # Unreleased changes
 
+## Features
+
+- Launch multiple apps from one yofi launch based on fork (#24).
+
 ## Changes
 
 - Dropped support for font-kit backend.
