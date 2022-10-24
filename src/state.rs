@@ -186,16 +186,7 @@ impl State {
                     input_value: self.input_buffer.parsed_input(),
                 };
                 if ctrl {
-                    match unsafe { nix::unistd::fork() } {
-                        Ok(v) => {
-                            if v.is_child() {
-                                self.inner.eval(info);
-                            } else {
-                                return false;
-                            }
-                        }
-                        Err(e) => log::debug!("fork() error: {:?}", e),
-                    }
+                    self.inner.fork_eval(info);
                 } else {
                     self.inner.eval(info);
                 }
