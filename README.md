@@ -15,6 +15,7 @@ Although these are built in Ubuntu environment it should also work for other Lin
 - \[for Archlinux\] there are [yofi-bin](https://aur.archlinux.org/packages/yofi-bin/) and
 [yofi-git](https://aur.archlinux.org/packages/yofi-git/) AUR packages for binary and from-source builds.
 - Build last release version from crates.io with `cargo install yofi`.
+- Build with [nix](https://nixos.org): `nix profile install github:l4l/yofi`.
 - Or you can manually [build from sources](#building).
 
 ## User documentation
@@ -25,12 +26,20 @@ is unclear, missing or outdated.
 
 ## Building
 
+### Cargo
+
 For building the project you need rust compiler and cargo package manager
 (usually distributed via [rustup](https://rustup.rs/)). Once installed you
 may build & run the project with the following command:
 
 ```bash
 cargo run --release
+```
+### Nix
+
+You can build project using [nix](https://nixos.org):
+```bash
+nix build
 ```
 
 ## Contributing
