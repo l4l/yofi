@@ -35,6 +35,7 @@ may build & run the project with the following command:
 ```bash
 cargo run --release
 ```
+
 ### Nix
 
 You can build project using [nix](https://nixos.org):
