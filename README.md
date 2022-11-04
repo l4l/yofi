@@ -38,6 +38,7 @@ cargo run --release
 ### Nix
 
 You can build project using [nix](https://nixos.org):
+
 ```bash
 nix build
 ```
