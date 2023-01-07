@@ -49,6 +49,9 @@ impl<'a> Drawable for InputText<'a> {
         let left_x_center = point.x + margin.left + border_radius;
         let y_center = point.y + margin.top + border_radius;
 
+        // this is necessary since we already used dt for the background
+        pb.move_to(left_x_center - border_radius, y_center + border_radius);
+
         pb.arc(
             left_x_center,
             y_center,

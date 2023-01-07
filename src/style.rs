@@ -22,6 +22,14 @@ pub struct Margin {
     pub right: f32,
 }
 
+#[derive(Clone, Default)]
+pub struct Radius {
+    pub top_left: f32,
+    pub top_right: f32,
+    pub bottom_left: f32,
+    pub bottom_right: f32,
+}
+
 impl Padding {
     pub const fn all(val: f32) -> Self {
         Self {
@@ -75,6 +83,39 @@ impl Margin {
     }
 }
 
+impl Mul<f32> for &Radius {
+    type Output = Radius;
+
+    fn mul(self, rhs: f32) -> Radius {
+        Radius {
+            top_left: self.top_left * rhs,
+            top_right: self.top_right * rhs,
+            bottom_left: self.bottom_left * rhs,
+            bottom_right: self.bottom_right * rhs,
+        }
+    }
+}
+
+impl Radius {
+    pub const fn all(val: f32) -> Self {
+        Self {
+            top_left: val,
+            top_right: val,
+            bottom_left: val,
+            bottom_right: val,
+        }
+    }
+
+    pub const fn from_pair(first: f32, second: f32) -> Self {
+        Self {
+            top_left: first,
+            top_right: second,
+            bottom_left: second,
+            bottom_right: first,
+        }
+    }
+}
+
 impl Mul<f32> for &Margin {
     type Output = Margin;
 
@@ -98,6 +139,15 @@ impl<'de> Deserialize<'de> for Padding {
 }
 
 impl<'de> Deserialize<'de> for Margin {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        d.deserialize_str(StringVisitor(PhantomData))
+    }
+}
+
+impl<'de> Deserialize<'de> for Radius {
     fn deserialize<D>(d: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -173,6 +223,31 @@ impl FromStr for Margin {
                 right: values[1],
             }),
             _ => Err("margin should consists of either 1, 2 or 4 floats"),
+        }
+    }
+}
+
+impl FromStr for Radius {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let values = s
+            .split(' ')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.parse::<f32>().map_err(|_| "invalid float value"))
+            .collect::<Result<Vec<f32>, _>>()?;
+
+        match values.len() {
+            1 => Ok(Self::all(values[0])),
+            2 => Ok(Self::from_pair(values[0], values[1])),
+            4 => Ok(Self {
+                top_left: values[0],
+                top_right: values[1],
+                bottom_left: values[3],
+                bottom_right: values[2],
+            }),
+            _ => Err("radius should consists of either 1, 2 or 4 floats"),
         }
     }
 }

@@ -86,6 +86,9 @@ impl<'a> From<&'a Config> for ListParams {
 impl<'a> From<&'a Config> for BgParams {
     fn from(config: &'a Config) -> BgParams {
         BgParams {
+            width: config.width,
+            height: config.height,
+            radius: config.corner_radius.clone(),
             color: config.bg_color.unwrap_or(DEFAULT_BG_COLOR),
         }
     }

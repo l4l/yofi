@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use defaults::Defaults;
 use serde::Deserialize;
 
-use crate::style::{Margin, Padding};
+use crate::style::{Margin, Padding, Radius};
 use crate::Color;
 
 const DEFAULT_CONFIG_NAME: &str = concat!(crate::prog_name!(), ".config");
@@ -35,6 +35,8 @@ pub struct Config {
     font_size: Option<u16>,
     bg_color: Option<Color>,
     font_color: Option<Color>,
+    #[def = "Radius::all(0.0)"]
+    corner_radius: Radius,
 
     icon: Option<Icon>,
 
