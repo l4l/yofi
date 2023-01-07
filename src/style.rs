@@ -114,6 +114,15 @@ impl Radius {
             bottom_right: first,
         }
     }
+
+    pub(crate) fn min(&self, other: Radius) -> Radius {
+        Self {
+            top_left: self.top_left.min(other.top_left),
+            top_right: self.top_right.min(other.top_right),
+            bottom_left: self.bottom_left.min(other.bottom_left),
+            bottom_right: self.bottom_right.min(other.bottom_right),
+        }
+    }
 }
 
 impl Mul<f32> for &Margin {

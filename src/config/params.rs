@@ -47,6 +47,7 @@ impl<'a> From<&'a Config> for InputTextParams<'a> {
             password: config.input_text.password,
             margin: config.input_text.margin.clone(),
             padding: config.input_text.padding.clone(),
+            radius: config.input_text.corner_radius.clone(),
         }
     }
 }

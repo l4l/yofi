@@ -1,9 +1,14 @@
+use std::f32::consts;
+
 use oneshot::Sender;
 pub use raqote::Point;
+use raqote::{DrawOptions, PathBuilder, Source};
 
 pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
 pub use list_view::{ListItem, Params as ListParams};
+
+use crate::{style::Radius, Color};
 
 pub type DrawTarget<'a> = raqote::DrawTarget<&'a mut [u32]>;
 
@@ -18,7 +23,7 @@ pub struct Space {
 }
 
 pub trait Drawable {
-    // Draws object to `dt` starting at `start_point` point with availabpe `space`
+    // Draws object to `dt` starting at `start_point` point with available `space`
     // returns used space of that object.
     fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, start_point: Point) -> Space;
 }
@@ -26,7 +31,7 @@ pub trait Drawable {
 pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
     InputText(Box<input_text::InputText<'a>>),
     ListView(list_view::ListView<'a, It>),
-    Background(background::Background<'a>),
+    Background(background::Background),
 }
 
 impl<'a, It> Widget<'a, It> {
@@ -65,5 +70,74 @@ where
             Self::ListView(w) => w.draw(dt, scale, space, start_point),
             Self::Background(w) => w.draw(dt, scale, space, start_point),
         }
+    }
+}
+
+pub struct RoundedRect {
+    radius: Radius,
+    color: Color,
+}
+
+impl RoundedRect {
+    fn new(radius: Radius, color: Color) -> Self {
+        Self { radius, color }
+    }
+}
+
+impl Drawable for RoundedRect {
+    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, start_point: Point) -> Space {
+        let Point { x, y, _unit } = start_point;
+        let Space { width, height } = space;
+
+        // We don't want the corner curves to overlap and thus cap the radius
+        // to at most 50% of the smaller side
+        let max_radius = width.min(height) / 2.0;
+        let radius = &self.radius * f32::from(scale);
+        let Radius {
+            top_left,
+            top_right,
+            bottom_left,
+            bottom_right,
+        } = radius.min(Radius::all(max_radius));
+
+        let mut pb = PathBuilder::new();
+        pb.move_to(x, y + top_left);
+
+        pb.arc(
+            x + top_left,
+            y + top_left,
+            top_left,
+            consts::PI,
+            consts::FRAC_PI_2,
+        );
+        pb.arc(
+            x + width - top_right,
+            y + top_right,
+            top_right,
+            3.0 * consts::FRAC_PI_2,
+            consts::FRAC_PI_2,
+        );
+        pb.arc(
+            x + width - bottom_right,
+            y + height - bottom_right,
+            bottom_right,
+            2.0 * consts::PI,
+            consts::FRAC_PI_2,
+        );
+        pb.arc(
+            x + bottom_left,
+            y + height - bottom_left,
+            bottom_left,
+            consts::FRAC_PI_2,
+            consts::FRAC_PI_2,
+        );
+        let path = pb.finish();
+
+        dt.fill(
+            &path,
+            &Source::Solid(self.color.as_source()),
+            &DrawOptions::new(),
+        );
+        space
     }
 }

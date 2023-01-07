@@ -72,6 +72,8 @@ struct InputText {
     margin: Margin,
     #[def = "Padding::from_pair(1.7, -4.0)"]
     padding: Padding,
+    #[def = "Radius::all(f32::MAX)"]
+    corner_radius: Radius,
 }
 
 #[derive(Defaults, Deserialize)]
