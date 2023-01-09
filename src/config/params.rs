@@ -47,6 +47,7 @@ impl<'a> From<&'a Config> for InputTextParams<'a> {
             password: config.input_text.password,
             margin: config.input_text.margin.clone(),
             padding: config.input_text.padding.clone(),
+            radius: config.input_text.corner_radius.clone(),
         }
     }
 }
@@ -86,6 +87,9 @@ impl<'a> From<&'a Config> for ListParams {
 impl<'a> From<&'a Config> for BgParams {
     fn from(config: &'a Config) -> BgParams {
         BgParams {
+            width: config.width,
+            height: config.height,
+            radius: config.corner_radius.clone(),
             color: config.bg_color.unwrap_or(DEFAULT_BG_COLOR),
         }
     }

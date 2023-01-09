@@ -4,6 +4,7 @@
 
 - Launch multiple apps from one yofi launch based on fork (#24).
 - Nix build (#98).
+- Corner roundings config param.
 
 ## Changes
 

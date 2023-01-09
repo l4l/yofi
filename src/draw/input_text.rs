@@ -1,10 +1,8 @@
-use std::f32::consts;
+use raqote::{DrawOptions, Point};
 
-use raqote::{DrawOptions, PathBuilder, Point, Source};
-
-use super::{DrawTarget, Drawable, Space};
+use super::{DrawTarget, Drawable, RoundedRect, Space};
 use crate::font::{Font, FontBackend, FontColor};
-use crate::style::{Margin, Padding};
+use crate::style::{Margin, Padding, Radius};
 use crate::Color;
 
 pub struct Params<'a> {
@@ -17,23 +15,30 @@ pub struct Params<'a> {
     pub password: bool,
     pub margin: Margin,
     pub padding: Padding,
+    pub radius: Radius,
 }
 
 pub struct InputText<'a> {
     text: &'a str,
     params: &'a Params<'a>,
+    rect: RoundedRect,
 }
 
 impl<'a> InputText<'a> {
     pub fn new(text: &'a str, params: &'a Params<'a>) -> Self {
-        Self { text, params }
+        let color = params.bg_color;
+        let radius = params.radius.clone();
+
+        Self {
+            text,
+            params,
+            rect: RoundedRect::new(radius, color),
+        }
     }
 }
 
 impl<'a> Drawable for InputText<'a> {
     fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
-        let mut pb = PathBuilder::new();
-
         let font_size = f32::from(self.params.font_size * scale);
 
         let mut padding = &self.params.padding * f32::from(scale);
@@ -43,40 +48,21 @@ impl<'a> Drawable for InputText<'a> {
         padding.bottom += PADDING_BOTTOM;
         let margin = &self.params.margin * f32::from(scale);
 
-        let border_diameter = padding.top + font_size + padding.bottom;
-        let border_radius = border_diameter / 2.0;
+        let rect_width = space.width - margin.left - margin.right;
+        let rect_height = padding.top + font_size + padding.bottom;
+        let rect_space = Space {
+            width: rect_width,
+            height: rect_height,
+        };
+        let rect_point = Point::new(point.x + margin.left, point.y + margin.top);
 
-        let left_x_center = point.x + margin.left + border_radius;
-        let y_center = point.y + margin.top + border_radius;
+        self.rect.draw(dt, scale, rect_space, rect_point);
 
-        pb.arc(
-            left_x_center,
-            y_center,
-            border_radius,
-            consts::FRAC_PI_2,
-            consts::PI,
-        );
-        let right_x_center = (point.x + space.width - border_radius - margin.right)
-            .max(left_x_center - border_radius);
-        pb.arc(
-            right_x_center,
-            y_center,
-            border_radius,
-            3.0 * consts::FRAC_PI_2,
-            consts::PI,
-        );
-        let path = pb.finish();
+        padding.left += (rect_height / 2.0)
+            .min(self.params.radius.top_left)
+            .min(self.params.radius.top_right);
 
-        dt.fill(
-            &path,
-            &Source::Solid(self.params.bg_color.as_source()),
-            &DrawOptions::new(),
-        );
-
-        let pos = Point::new(
-            left_x_center + padding.left,
-            point.y + margin.top + padding.top,
-        );
+        let pos = Point::new(rect_point.x + padding.left, rect_point.y + padding.top);
 
         let password_text = if self.params.password {
             Some("*".repeat(self.text.chars().count()))
@@ -111,7 +97,7 @@ impl<'a> Drawable for InputText<'a> {
 
         Space {
             width: space.width,
-            height: point.y + margin.top + border_diameter + margin.bottom,
+            height: margin.top + rect_height + margin.bottom,
         }
     }
 }
