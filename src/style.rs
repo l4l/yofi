@@ -186,16 +186,38 @@ where
     }
 }
 
-impl FromStr for Padding {
-    type Err = &'static str;
+struct FiniteFloatVec {
+    pub values: Vec<f32>,
+}
+
+impl FromStr for FiniteFloatVec {
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let values = s
             .split(' ')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
-            .map(|s| s.parse::<f32>().map_err(|_| "invalid float value"))
+            .map(|s| {
+                s.parse::<f32>()
+                    .map_err(|_| format!("invalid float value: {:?}", s))
+                    .and_then(|f| {
+                        f.is_finite()
+                            .then_some(f)
+                            .ok_or(format!("non-finite float value: {:?}", f))
+                    })
+            })
             .collect::<Result<Vec<f32>, _>>()?;
+
+        Ok(Self { values })
+    }
+}
+
+impl FromStr for Padding {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let values = FiniteFloatVec::from_str(s)?.values;
 
         match values.len() {
             1 => Ok(Self::all(values[0])),
@@ -206,21 +228,16 @@ impl FromStr for Padding {
                 left: values[3],
                 right: values[1],
             }),
-            _ => Err("padding should consists of either 1, 2 or 4 floats"),
+            _ => Err("padding should consists of either 1, 2 or 4 floats".into()),
         }
     }
 }
 
 impl FromStr for Margin {
-    type Err = &'static str;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let values = s
-            .split(' ')
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .map(|s| s.parse::<f32>().map_err(|_| "invalid float value"))
-            .collect::<Result<Vec<f32>, _>>()?;
+        let values = FiniteFloatVec::from_str(s)?.values;
 
         match values.len() {
             1 => Ok(Self::all(values[0])),
@@ -231,20 +248,23 @@ impl FromStr for Margin {
                 left: values[3],
                 right: values[1],
             }),
-            _ => Err("margin should consists of either 1, 2 or 4 floats"),
+            _ => Err("margin should consists of either 1, 2 or 4 floats".into()),
         }
     }
 }
 
 impl FromStr for Radius {
-    type Err = &'static str;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let values = s
-            .split(' ')
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .map(|s| s.parse::<f32>().map_err(|_| "invalid float value"))
+        let values = FiniteFloatVec::from_str(s)?
+            .values
+            .iter()
+            .map(|&f| {
+                (!f.is_sign_negative())
+                    .then_some(f)
+                    .ok_or(format!("radius can not be negative: {:?}", f))
+            })
             .collect::<Result<Vec<f32>, _>>()?;
 
         match values.len() {
@@ -256,7 +276,7 @@ impl FromStr for Radius {
                 bottom_left: values[3],
                 bottom_right: values[2],
             }),
-            _ => Err("radius should consists of either 1, 2 or 4 floats"),
+            _ => Err("radius should consists of either 1, 2 or 4 floats".into()),
         }
     }
 }
