@@ -1,31 +1,38 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    naersk.url = "github:nix-community/naersk";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { self, flake-utils, naersk, nixpkgs }:
+  outputs = { self, flake-utils, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = (import nixpkgs) {
-          inherit system;
-        };
+        inherit (nixpkgs) lib;
 
-        naersk' = pkgs.callPackage naersk {};
+        pkgs = nixpkgs.legacyPackages.${system};
+        rpath = lib.makeLibraryPath (with pkgs; [
+          fontconfig
+          libxkbcommon
+          wayland
+        ]);
+      in
+      {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "yofi";
+          inherit ((lib.importTOML (self + "/Cargo.toml")).package) version;
 
-      in rec {
-        defaultPackage = naersk'.buildPackage {
-          src = ./.;
-          buildInputs = [pkgs.wayland];
-          nativeBuildInputs = [pkgs.makeWrapper];
-          postInstall = ''
-            wrapProgram $out/bin/yofi --prefix LD_LIBRARY_PATH : ${pkgs.wayland}/lib
+          src = self;
+
+          cargoLock.lockFile = self + "/Cargo.lock";
+
+          postFixup = ''
+            patchelf $out/bin/yofi --add-rpath ${rpath}
           '';
         };
 
-        devShell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rustc cargo wayland];
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [ rustc cargo ];
+          LD_LIBRARY_PATH = rpath;
         };
       }
     );
