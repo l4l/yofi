@@ -8,6 +8,8 @@ pub struct Params {
     pub height: u32,
     pub color: Color,
     pub radius: Radius,
+    pub border_color: Color,
+    pub border_width: f32,
 }
 
 pub struct Background {
@@ -20,7 +22,7 @@ impl Background {
         let radius = params.radius.clone();
 
         Self {
-            rect: RoundedRect::new(radius, color),
+            rect: RoundedRect::new(radius, color, params.border_color, params.border_width),
         }
     }
 }

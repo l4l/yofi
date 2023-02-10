@@ -76,11 +76,18 @@ where
 pub struct RoundedRect {
     radius: Radius,
     color: Color,
+    border_color: Color,
+    border_width: f32,
 }
 
 impl RoundedRect {
-    fn new(radius: Radius, color: Color) -> Self {
-        Self { radius, color }
+    fn new(radius: Radius, color: Color, border_color: Color, border_width: f32) -> Self {
+        Self {
+            radius,
+            color,
+            border_color,
+            border_width,
+        }
     }
 }
 
