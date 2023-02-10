@@ -2,7 +2,7 @@ use std::f32::consts;
 
 use oneshot::Sender;
 pub use raqote::Point;
-use raqote::{DrawOptions, PathBuilder, Source};
+use raqote::{DrawOptions, PathBuilder, Source, StrokeStyle};
 
 pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
@@ -143,6 +143,16 @@ impl Drawable for RoundedRect {
         dt.fill(
             &path,
             &Source::Solid(self.color.as_source()),
+            &DrawOptions::new(),
+        );
+
+        dt.stroke(
+            &path,
+            &Source::Solid(self.border_color.as_source()),
+            &StrokeStyle {
+                width: self.border_width,
+                ..Default::default()
+            },
             &DrawOptions::new(),
         );
         space
