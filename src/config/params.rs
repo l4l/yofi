@@ -92,7 +92,7 @@ impl<'a> From<&'a Config> for BgParams {
             radius: config.corner_radius.clone(),
             color: config.bg_color.unwrap_or(DEFAULT_BG_COLOR),
             border_color: config.bg_border_color.unwrap_or(DEFAULT_BG_BORDER_COLOR),
-            border_width: config.bg_border_width.unwrap_or(2.0),
+            border_width: config.bg_border_width.unwrap_or(0.0),
         }
     }
 }

@@ -138,6 +138,7 @@ impl Drawable for RoundedRect {
             consts::FRAC_PI_2,
             consts::FRAC_PI_2,
         );
+        pb.line_to(x, y + top_left);
         let path = pb.finish();
 
         dt.fill(
