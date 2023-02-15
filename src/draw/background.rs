@@ -1,6 +1,6 @@
 use raqote::{Point, SolidSource};
 
-use super::{DrawTarget, Drawable, RoundedRect, Space};
+use super::{Border, DrawTarget, Drawable, RoundedRect, Space};
 use crate::{style::Radius, Color};
 
 pub struct Params {
@@ -8,8 +8,7 @@ pub struct Params {
     pub height: u32,
     pub color: Color,
     pub radius: Radius,
-    pub border_color: Color,
-    pub border_width: f32,
+    pub border: Option<(Color, f32)>,
 }
 
 pub struct Background {
@@ -20,10 +19,14 @@ impl Background {
     pub fn new(params: &Params) -> Self {
         let color = params.color;
         let radius = params.radius.clone();
+        let border = if let Some((c, w)) = params.border {
+            Some(Border::new(c, w))
+        } else {
+            None
+        };
+        let rect = RoundedRect::new(radius, color).with_border(border);
 
-        Self {
-            rect: RoundedRect::new(radius, color, params.border_color, params.border_width),
-        }
+        Self { rect }
     }
 }
 

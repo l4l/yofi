@@ -2,7 +2,7 @@ use std::f32::consts;
 
 use oneshot::Sender;
 pub use raqote::Point;
-use raqote::{DrawOptions, PathBuilder, Source, StrokeStyle};
+use raqote::{DrawOptions, Path, PathBuilder, Source, StrokeStyle};
 
 pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
@@ -76,18 +76,20 @@ where
 pub struct RoundedRect {
     radius: Radius,
     color: Color,
-    border_color: Color,
-    border_width: f32,
+    border: Option<Border>,
 }
 
 impl RoundedRect {
-    fn new(radius: Radius, color: Color, border_color: Color, border_width: f32) -> Self {
+    fn new(radius: Radius, color: Color) -> Self {
         Self {
             radius,
             color,
-            border_color,
-            border_width,
+            border: None,
         }
+    }
+
+    fn with_border(self, border: Option<Border>) -> Self {
+        Self { border, ..self }
     }
 }
 
@@ -147,8 +149,30 @@ impl Drawable for RoundedRect {
             &DrawOptions::new(),
         );
 
+        if let Some(b) = self.border {
+            b.add_stroke(dt, &path);
+        }
+
+        space
+    }
+}
+
+pub struct Border {
+    border_color: Color,
+    border_width: f32,
+}
+
+impl Border {
+    pub fn new(border_color: Color, border_width: f32) -> Self {
+        Self {
+            border_color,
+            border_width,
+        }
+    }
+
+    fn add_stroke(self, dt: &mut DrawTarget<'_>, path: &Path) {
         dt.stroke(
-            &path,
+            path,
             &Source::Solid(self.border_color.as_source()),
             &StrokeStyle {
                 width: self.border_width,
@@ -156,6 +180,5 @@ impl Drawable for RoundedRect {
             },
             &DrawOptions::new(),
         );
-        space
     }
 }

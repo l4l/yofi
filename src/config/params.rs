@@ -86,13 +86,18 @@ impl<'a> From<&'a Config> for ListParams {
 
 impl<'a> From<&'a Config> for BgParams {
     fn from(config: &'a Config) -> BgParams {
+        let border = match (config.bg_border_color, config.bg_border_width) {
+            (None, None) => None,
+            (Some(c), Some(w)) => Some((c, w)),
+            (Some(c), None) => Some((c, DEFAULT_BG_BORDER_WIDTH)),
+            (None, Some(w)) => Some((DEFAULT_BG_BORDER_COLOR, w)),
+        };
         BgParams {
             width: config.width,
             height: config.height,
             radius: config.corner_radius.clone(),
             color: config.bg_color.unwrap_or(DEFAULT_BG_COLOR),
-            border_color: config.bg_border_color.unwrap_or(DEFAULT_BG_BORDER_COLOR),
-            border_width: config.bg_border_width.unwrap_or(0.0),
+            border,
         }
     }
 }

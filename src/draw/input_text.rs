@@ -28,13 +28,11 @@ impl<'a> InputText<'a> {
     pub fn new(text: &'a str, params: &'a Params<'a>) -> Self {
         let color = params.bg_color;
         let radius = params.radius.clone();
-        let border_color = Color::from_rgba(0, 0, 0, 0);
-        let border_width = 0.0;
 
         Self {
             text,
             params,
-            rect: RoundedRect::new(radius, color, border_color, border_width),
+            rect: RoundedRect::new(radius, color),
         }
     }
 }

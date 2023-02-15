@@ -16,7 +16,9 @@ const DEFAULT_FONT_COLOR: Color = Color::from_rgba(0xf8, 0xf8, 0xf2, 0xff);
 const DEFAULT_BG_COLOR: Color = Color::from_rgba(0x27, 0x28, 0x22, 0xee);
 const DEFAULT_INPUT_BG_COLOR: Color = Color::from_rgba(0x75, 0x71, 0x5e, 0xc0);
 const DEFAULT_SELECTED_FONT_COLOR: Color = Color::from_rgba(0xa6, 0xe2, 0x2e, 0xff);
+
 const DEFAULT_BG_BORDER_COLOR: Color = Color::from_rgba(0x13, 0x14, 0x11, 0xff);
+const DEFAULT_BG_BORDER_WIDTH: f32 = 2.0;
 
 mod params;
 
