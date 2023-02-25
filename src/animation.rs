@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use keyframe::{ease_with_scaled_time, functions::EaseInOut};
 use std::{borrow::Cow, collections::HashMap, time::Duration};
 
+#[derive(Default)]
 pub struct Animator {
     animations: HashMap<String, AnimationInner>,
     remove_later: Vec<String>,
@@ -26,10 +27,7 @@ pub enum AnimationType {
 
 impl Animator {
     pub fn new() -> Self {
-        Self {
-            animations: HashMap::default(),
-            remove_later: vec![],
-        }
+        Self::default()
     }
 
     pub fn add_animation(
