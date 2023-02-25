@@ -92,6 +92,7 @@ impl<'a> From<&'a Config> for BgParams {
             (Some(c), None) => Some((c, DEFAULT_BG_BORDER_WIDTH)),
             (None, Some(w)) => Some((DEFAULT_BG_BORDER_COLOR, w)),
         };
+
         BgParams {
             width: config.width,
             height: config.height,
@@ -110,6 +111,7 @@ impl<'a> From<&'a Config> for SurfaceParams {
             force_window: config.force_window,
             window_offsets: config.window_offsets,
             scale: config.scale,
+            auto_shrink: config.auto_shrink,
         }
     }
 }

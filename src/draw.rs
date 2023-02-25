@@ -34,6 +34,11 @@ pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
     Background(background::Background),
 }
 
+pub struct ListViewInfo {
+    pub new_skip: usize,
+    pub new_height: u32,
+}
+
 impl<'a, It> Widget<'a, It> {
     pub fn input_text(text: &'a str, params: &'a InputTextParams<'a>) -> Self {
         Self::InputText(Box::new(input_text::InputText::new(text, params)))
@@ -43,7 +48,7 @@ impl<'a, It> Widget<'a, It> {
         items: It,
         skip_offset: usize,
         selected_item: usize,
-        tx: Sender<usize>,
+        tx: Sender<ListViewInfo>,
         params: &'a ListParams,
     ) -> Self {
         Self::ListView(list_view::ListView::new(

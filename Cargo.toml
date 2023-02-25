@@ -47,6 +47,7 @@ syslog = "6.0.0"
 defaults = "0.2.0"
 freedesktop-icon-lookup = "0.1.0"
 sublime_fuzzy = "0.7.0"
+keyframe = "1.1.1"
 
 [profile.release-lto]
 lto = true

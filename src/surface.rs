@@ -33,6 +33,8 @@ pub struct Params {
     pub force_window: bool,
     pub window_offsets: Option<(i32, i32)>,
     pub scale: Option<u16>,
+
+    pub auto_shrink: bool,
 }
 
 enum RenderSurface {
@@ -73,8 +75,11 @@ pub struct Surface {
     surface: RenderSurface,
     next_render_event: Rc<Cell<Option<RenderEvent>>>,
     pools: DoubleMemPool,
+
     scale: Rc<Cell<u16>>,
     dimensions: (u32, u32),
+
+    shrink: bool,
 }
 
 impl Surface {
@@ -178,6 +183,7 @@ impl Surface {
             pools,
             scale,
             dimensions: (width, height),
+            shrink: params.auto_shrink,
         }
     }
 
@@ -195,6 +201,18 @@ impl Surface {
             }
             None => EventStatus::Idle,
         }
+    }
+
+    pub fn update_height(&mut self, height: u32) {
+        self.dimensions.1 = height;
+    }
+
+    pub fn is_shrink(&self) -> bool {
+        self.shrink
+    }
+
+    pub fn get_height(&self) -> u32 {
+        self.dimensions.1
     }
 
     pub fn redraw<D>(&mut self, drawables: impl Iterator<Item = D>)
@@ -219,8 +237,11 @@ impl Surface {
         {
             let buf: &mut [u8] = pool.mmap();
             let buf_ptr: *mut u32 = buf.as_mut_ptr() as *mut _;
-            let buf: &mut [u32] =
-                unsafe { &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, buf.len() / 4) };
+
+            let buf: &mut [u32] = unsafe {
+                &mut *std::ptr::slice_from_raw_parts_mut(buf_ptr, (width * height) as usize)
+            };
+
             let mut dt = DrawTarget::from_backing(width as i32, height as i32, buf);
 
             let mut space_left = Space {
@@ -241,6 +262,20 @@ impl Surface {
         }
 
         // Create a new buffer from the pool
+    }
+
+    pub fn commit(&mut self) {
+        let scale = self.scale.get();
+
+        let width = self.dimensions.0 * u32::from(scale);
+        let height = self.dimensions.1 * u32::from(scale);
+
+        let pool = if let Some(pool) = self.pools.pool() {
+            pool
+        } else {
+            return;
+        };
+
         let buffer = pool.buffer(
             0,
             width as i32,

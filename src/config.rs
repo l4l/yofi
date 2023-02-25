@@ -30,6 +30,8 @@ pub struct Config {
     #[def = "512"]
     height: u32,
     #[def = "false"]
+    auto_shrink: bool,
+    #[def = "false"]
     force_window: bool,
     window_offsets: Option<(i32, i32)>,
     scale: Option<u16>,

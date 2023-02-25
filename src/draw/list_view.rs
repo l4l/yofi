@@ -7,7 +7,7 @@ use super::{DrawTarget, Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::state::ContinuousMatch;
 use crate::style::Margin;
-use crate::Color;
+use crate::{Color, ListViewInfo};
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Params {
@@ -36,7 +36,7 @@ pub struct ListView<'a, It> {
     items: It,
     skip_offset: usize,
     selected_item: usize,
-    new_skip: Sender<usize>,
+    info_channel: Sender<ListViewInfo>,
     params: &'a Params,
     _tparam: PhantomData<&'a ()>,
 }
@@ -46,14 +46,14 @@ impl<'a, It> ListView<'a, It> {
         items: It,
         skip_offset: usize,
         selected_item: usize,
-        new_skip: Sender<usize>,
+        info_channel: Sender<ListViewInfo>,
         params: &'a Params,
     ) -> Self {
         Self {
             items,
             skip_offset,
             selected_item,
-            new_skip,
+            info_channel,
             params,
             _tparam: PhantomData,
         }
@@ -100,13 +100,15 @@ where
             (self.selected_item - self.skip_offset, self.skip_offset)
         };
 
-        self.new_skip.send(skip_offset).unwrap();
+        let mut relative_height = 0;
 
         for (i, item) in iter.skip(skip_offset).enumerate().take(displayed_items) {
             let relative_offset = (i as f32 + (i > selected_item && has_subname) as i32 as f32)
                 * (entry_height + item_spacing);
             let x_offset = point.x + margin.left;
             let y_offset = top_offset + relative_offset;
+
+            relative_height = y_offset as u32 + 5;
 
             let fallback_icon = self
                 .params
@@ -197,6 +199,13 @@ where
                 }
             }
         }
+
+        self.info_channel
+            .send(ListViewInfo {
+                new_skip: skip_offset,
+                new_height: relative_height,
+            })
+            .unwrap();
 
         space
     }

@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use std::path::PathBuf;
+use std::{collections::HashSet, time::Duration};
 
 use log::LevelFilter;
 use sctk::{
@@ -12,10 +12,12 @@ use sctk::{
 };
 use structopt::{clap::ArgGroup, StructOpt};
 
+pub use animation::Animator;
 pub use color::Color;
 pub use desktop::Entry as DesktopEntry;
-pub use draw::DrawTarget;
+pub use draw::{DrawTarget, ListViewInfo};
 
+mod animation;
 mod color;
 mod config;
 mod desktop;
@@ -209,6 +211,7 @@ fn main_inner() {
     };
 
     let mut state = state::State::new(cmd);
+    let mut animator = Animator::new();
 
     let background_config = config.param();
     let input_config = config.param();
@@ -217,6 +220,7 @@ fn main_inner() {
     if !env.get_shell().unwrap().needs_configure() {
         draw(
             &mut state,
+            &mut animator,
             &background_config,
             &input_config,
             &list_config,
@@ -231,6 +235,8 @@ fn main_inner() {
     loop {
         let mut should_redraw = false;
         for event in key_stream.try_iter() {
+            animator.cancel_animation("HeightAnimation");
+
             should_redraw = true;
 
             if state.process_event(event) {
@@ -244,9 +250,14 @@ fn main_inner() {
             surface::EventStatus::Idle => {}
         };
 
+        if animator.proceed() {
+            should_redraw = true
+        }
+
         if should_redraw {
             draw(
                 &mut state,
+                &mut animator,
                 &background_config,
                 &input_config,
                 &list_config,
@@ -255,7 +266,9 @@ fn main_inner() {
         }
 
         display.flush().unwrap();
-        event_loop.dispatch(None, &mut ()).unwrap();
+        event_loop
+            .dispatch(animator.proceed_step(), &mut ())
+            .unwrap();
     }
 }
 
@@ -287,6 +300,7 @@ fn main() {
 
 fn draw(
     state: &mut state::State,
+    animator: &mut Animator,
     background_config: &draw::BgParams,
     input_config: &draw::InputTextParams,
     list_config: &draw::ListParams,
@@ -297,6 +311,13 @@ fn draw(
     state.process_entries();
 
     let (tx, rx) = oneshot::channel();
+
+    let old_height = surface.get_height();
+
+    match animator.get_value("HeightAnimation") {
+        Some(value) => surface.update_height(value as u32),
+        None => surface.update_height(background_config.height),
+    }
 
     let background = draw::Widget::background(background_config);
     let input_widget = draw::Widget::input_text(state.raw_input(), input_config);
@@ -314,5 +335,42 @@ fn draw(
             .chain(once(list_view_widget)),
     );
 
-    state.update_skip_offset(rx.recv().unwrap());
+    let info: ListViewInfo = rx.recv().unwrap();
+    state.update_skip_offset(info.new_skip);
+
+    if surface.is_shrink() {
+        let mut full_height = info.new_height
+            + list_config.margin.bottom as u32
+            + list_config.font_size as u32
+            + list_config.margin.top as u32;
+
+        if info.new_height == 0 {
+            // Add more space for input if list is empty
+            full_height += input_config.margin.bottom as u32 + input_config.font_size as u32;
+        }
+
+        if animator.contains("HeightAnimation") {
+            surface.commit();
+            return;
+        }
+
+        if full_height != old_height {
+            if full_height > background_config.height {
+                full_height = background_config.height;
+            }
+
+            animator.add_animation(
+                "HeightAnimation".into(),
+                old_height as f64,
+                full_height as f64,
+                Duration::from_millis(500),
+                animation::AnimationType::Single,
+            );
+        }
+
+        surface.update_height(old_height);
+        surface.commit();
+    } else {
+        surface.commit();
+    }
 }
