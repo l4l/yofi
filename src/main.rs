@@ -256,7 +256,7 @@ fn main_inner() {
             surface::EventStatus::Idle => {}
         };
 
-        if animator.proceed() {
+        if animations && animator.proceed() {
             should_redraw = true
         }
 
@@ -273,9 +273,14 @@ fn main_inner() {
         }
 
         display.flush().unwrap();
-        event_loop
-            .dispatch(animator.proceed_step(), &mut ())
-            .unwrap();
+
+        let timeout = if animations {
+            animator.proceed_step()
+        } else {
+            None
+        };
+
+        event_loop.dispatch(timeout, &mut ()).unwrap();
     }
 }
 
