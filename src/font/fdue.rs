@@ -207,12 +207,6 @@ impl FontBackend for Font {
             None => layout.glyphs().len(),
         };
 
-        println!(
-            "font_size = {}, height = {:?}",
-            font_size,
-            layout.lines().map(|v| v.len())
-        );
-
         if take_glyphs != layout.glyphs().len() {
             let overflow_text = "...";
 
