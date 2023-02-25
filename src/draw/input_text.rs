@@ -63,6 +63,10 @@ impl<'a> Drawable for InputText<'a> {
             .min(self.params.radius.top_right);
 
         let pos = Point::new(rect_point.x + padding.left, rect_point.y + padding.top);
+        let end_pos = Point::new(
+            dt.width() as f32 - self.params.padding.right - self.params.margin.right,
+            pos.y,
+        );
 
         let password_text = if self.params.password {
             Some("*".repeat(self.text.chars().count()))
@@ -89,6 +93,7 @@ impl<'a> Drawable for InputText<'a> {
             text,
             font_size,
             pos,
+            end_pos,
             FontColor::Single(color.as_source()),
             &DrawOptions::new(),
         );

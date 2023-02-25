@@ -31,6 +31,7 @@ pub trait FontBackend: Sized {
         text: &str,
         font_size: f32,
         start_pos: Point,
+        end_pos: Point,
         color: FontColor,
         opts: &DrawOptions,
     );

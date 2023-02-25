@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use fontconfig::{Fontconfig, Pattern};
-use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign};
+use fontdue::layout::{
+    CoordinateSystem, Layout, LayoutSettings, TextStyle, VerticalAlign, WrapStyle,
+};
 use levenshtein::levenshtein;
 use once_cell::sync::Lazy;
 use raqote::{DrawOptions, Point, SolidSource};
@@ -109,7 +111,7 @@ impl FontBackend for Font {
         let pat = Pattern::new(&FONTCONFIG_CACHE);
         fontconfig::list_fonts(&pat, None)
             .iter()
-            .filter_map(|pat| {
+            .find_map(|pat| {
                 let path = std::path::Path::new(pat.filename()?);
                 if !path.exists() {
                     return None;
@@ -117,7 +119,6 @@ impl FontBackend for Font {
                 let index = pat.face_index().and_then(index_to_u32);
                 Some(Font::from_path(path, index))
             })
-            .next()
             .expect("cannot find any font")
             .expect("cannot load default font")
     }
@@ -172,9 +173,10 @@ impl FontBackend for Font {
     fn draw(
         &self,
         dt: &mut DrawTarget,
-        text: &str,
+        mut text: &str,
         font_size: f32,
         start_pos: Point,
+        end_pos: Point,
         color: FontColor,
         opts: &DrawOptions,
     ) {
@@ -185,13 +187,53 @@ impl FontBackend for Font {
             x: start_pos.x,
             y: start_pos.y,
             max_height: Some(font_size),
+            max_width: Some(end_pos.x - start_pos.x),
             vertical_align: VerticalAlign::Middle,
+            wrap_style: WrapStyle::Letter,
             ..LayoutSettings::default()
         });
 
         layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
 
-        for (n, g) in layout.glyphs().iter().enumerate() {
+        let take_glyphs = match layout.lines() {
+            Some(vec) => {
+                // If layout return miltiple lines then we have text overflow, cut the text
+                // and layout again
+                match vec.get(1) {
+                    Some(second_line) => second_line.glyph_start,
+                    None => layout.glyphs().len(),
+                }
+            }
+            None => layout.glyphs().len(),
+        };
+
+        println!(
+            "font_size = {}, height = {:?}",
+            font_size,
+            layout.lines().map(|v| v.len())
+        );
+
+        if take_glyphs != layout.glyphs().len() {
+            let overflow_text = "...";
+
+            // Try place ... in end of cutted text. Check strange case if width of window is too small
+            // even for overflow_text. No panic at all
+            let glyph_offset = if take_glyphs > overflow_text.len() {
+                take_glyphs - overflow_text.len()
+            } else {
+                take_glyphs
+            };
+
+            text = &text[0..layout.glyphs().get(glyph_offset).unwrap().byte_offset];
+            layout.clear();
+            layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
+
+            if glyph_offset != take_glyphs {
+                layout.append(&[&self.inner], &TextStyle::new(overflow_text, font_size, 0));
+            }
+        }
+
+        for (n, g) in layout.glyphs().iter().take(take_glyphs).enumerate() {
             let (_, b) = self.inner.rasterize_config(g.key);
 
             assert!(g.width * g.height <= BUF_SIZE);

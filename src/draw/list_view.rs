@@ -134,6 +134,8 @@ where
             }
 
             let pos = Point::new(x_offset + icon_size_f32 + icon_spacing, y_offset);
+            let end_pos = Point::new(dt.width() as f32 - self.params.margin.right, y_offset);
+
             let color = if i == selected_item {
                 self.params.selected_font_color
             } else {
@@ -176,7 +178,8 @@ where
             };
 
             let font = &self.params.font;
-            font.draw(dt, item.name, font_size, pos, color, &draw_opts);
+            font.draw(dt, item.name, font_size, pos, end_pos, color, &draw_opts);
+
             if i == selected_item && has_subname {
                 if let Some(subname) = item.subname {
                     font.draw(
@@ -187,6 +190,7 @@ where
                             pos.x + self.params.action_left_margin,
                             pos.y + entry_height + item_spacing,
                         ),
+                        Point::new(end_pos.x, pos.y + entry_height + item_spacing),
                         FontColor::Single(self.params.font_color.as_source()),
                         &draw_opts,
                     );

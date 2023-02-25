@@ -229,13 +229,16 @@ fn main_inner() {
         .unwrap();
 
     loop {
+        println!("Loop iterator 1");
         let mut should_redraw = false;
         for event in key_stream.try_iter() {
+            println!("Loop iterator 2");
             should_redraw = true;
 
             if state.process_event(event) {
                 return;
             }
+            println!("Loop iterator 3");
         }
 
         match surface.handle_events() {
