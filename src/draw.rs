@@ -6,7 +6,7 @@ use raqote::{DrawOptions, Path, PathBuilder, Source, StrokeStyle};
 
 pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
-pub use list_view::{ListItem, Params as ListParams};
+pub use list_view::{ListItem, Params as ListParams, ADDITIONAL_CAP};
 
 use crate::{style::Radius, Color};
 
@@ -36,7 +36,7 @@ pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
 
 pub struct ListViewInfo {
     pub new_skip: usize,
-    pub new_height: u32,
+    pub new_y: u32,
 }
 
 impl<'a, It> Widget<'a, It> {

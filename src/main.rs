@@ -17,6 +17,8 @@ pub use color::Color;
 pub use desktop::Entry as DesktopEntry;
 pub use draw::{DrawTarget, ListViewInfo};
 
+use crate::draw::ADDITIONAL_CAP;
+
 mod animation;
 mod color;
 mod config;
@@ -338,16 +340,11 @@ fn draw(
     let info: ListViewInfo = rx.recv().unwrap();
     state.update_skip_offset(info.new_skip);
 
-    if surface.is_shrink() {
-        let mut full_height = info.new_height
-            + list_config.margin.bottom as u32
+    if surface.is_auto_height() {
+        let mut full_height = info.new_y
             + list_config.font_size as u32
-            + list_config.margin.top as u32;
-
-        if info.new_height == 0 {
-            // Add more space for input if list is empty
-            full_height += input_config.margin.bottom as u32 + input_config.font_size as u32;
-        }
+            + list_config.margin.bottom as u32
+            + ADDITIONAL_CAP;
 
         if animator.contains("HeightAnimation") {
             surface.commit();

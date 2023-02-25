@@ -34,7 +34,7 @@ pub struct Params {
     pub window_offsets: Option<(i32, i32)>,
     pub scale: Option<u16>,
 
-    pub auto_shrink: bool,
+    pub auto_height: bool,
 }
 
 enum RenderSurface {
@@ -79,7 +79,7 @@ pub struct Surface {
     scale: Rc<Cell<u16>>,
     dimensions: (u32, u32),
 
-    shrink: bool,
+    auto_height: bool,
 }
 
 impl Surface {
@@ -183,7 +183,7 @@ impl Surface {
             pools,
             scale,
             dimensions: (width, height),
-            shrink: params.auto_shrink,
+            auto_height: params.auto_height,
         }
     }
 
@@ -207,8 +207,8 @@ impl Surface {
         self.dimensions.1 = height;
     }
 
-    pub fn is_shrink(&self) -> bool {
-        self.shrink
+    pub fn is_auto_height(&self) -> bool {
+        self.auto_height
     }
 
     pub fn get_height(&self) -> u32 {

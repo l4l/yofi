@@ -10,6 +10,8 @@ use crate::style::Margin;
 use crate::{Color, ListViewInfo};
 use unicode_segmentation::UnicodeSegmentation;
 
+pub const ADDITIONAL_CAP: u32 = 10;
+
 pub struct Params {
     pub font: Font,
     pub font_size: u16,
@@ -100,7 +102,10 @@ where
             (self.selected_item - self.skip_offset, self.skip_offset)
         };
 
-        let mut relative_height = 0;
+        let mut last_y = point.y as u32
+            - self.params.font_size as u32
+            - self.params.margin.bottom as u32
+            - ADDITIONAL_CAP;
 
         for (i, item) in iter.skip(skip_offset).enumerate().take(displayed_items) {
             let relative_offset = (i as f32 + (i > selected_item && has_subname) as i32 as f32)
@@ -108,7 +113,7 @@ where
             let x_offset = point.x + margin.left;
             let y_offset = top_offset + relative_offset;
 
-            relative_height = y_offset as u32 + 5;
+            last_y = y_offset as u32;
 
             let fallback_icon = self
                 .params
@@ -203,7 +208,7 @@ where
         self.info_channel
             .send(ListViewInfo {
                 new_skip: skip_offset,
-                new_height: relative_height,
+                new_y: last_y,
             })
             .unwrap();
 

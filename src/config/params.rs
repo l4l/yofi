@@ -111,7 +111,7 @@ impl<'a> From<&'a Config> for SurfaceParams {
             force_window: config.force_window,
             window_offsets: config.window_offsets,
             scale: config.scale,
-            auto_shrink: config.auto_shrink,
+            auto_height: config.auto_height,
         }
     }
 }
