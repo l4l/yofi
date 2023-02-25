@@ -32,6 +32,8 @@ pub struct Config {
     #[def = "false"]
     auto_height: bool,
     #[def = "false"]
+    animations: bool,
+    #[def = "false"]
     force_window: bool,
     window_offsets: Option<(i32, i32)>,
     scale: Option<u16>,
@@ -54,6 +56,10 @@ pub struct Config {
 impl Config {
     pub fn disable_icons(&mut self) {
         self.icon = None;
+    }
+
+    pub fn animations_enabled(&self) -> bool {
+        self.animations
     }
 
     pub fn set_prompt(&mut self, prompt: String) {
@@ -101,6 +107,8 @@ struct ListItems {
     item_spacing: f32,
     #[def = "10.0"]
     icon_spacing: f32,
+    #[def = "true"]
+    show_default: bool,
 }
 
 #[derive(Defaults, Deserialize)]

@@ -218,6 +218,7 @@ fn main_inner() {
     let background_config = config.param();
     let input_config = config.param();
     let list_config = config.param();
+    let animations = config.animations_enabled();
 
     if !env.get_shell().unwrap().needs_configure() {
         draw(
@@ -227,6 +228,7 @@ fn main_inner() {
             &input_config,
             &list_config,
             &mut surface,
+            animations,
         );
     }
 
@@ -237,7 +239,9 @@ fn main_inner() {
     loop {
         let mut should_redraw = false;
         for event in key_stream.try_iter() {
-            animator.cancel_animation("HeightAnimation");
+            if animations {
+                animator.cancel_animation("HeightAnimation");
+            }
 
             should_redraw = true;
 
@@ -264,6 +268,7 @@ fn main_inner() {
                 &input_config,
                 &list_config,
                 &mut surface,
+                animations,
             );
         }
 
@@ -307,10 +312,11 @@ fn draw(
     input_config: &draw::InputTextParams,
     list_config: &draw::ListParams,
     surface: &mut surface::Surface,
+    animations: bool,
 ) {
     use std::iter::once;
 
-    state.process_entries();
+    state.process_entries(list_config.show_default);
 
     let (tx, rx) = oneshot::channel();
 
@@ -356,16 +362,26 @@ fn draw(
                 full_height = background_config.height;
             }
 
-            animator.add_animation(
-                "HeightAnimation".into(),
-                old_height as f64,
-                full_height as f64,
-                Duration::from_millis(500),
-                animation::AnimationType::Single,
-            );
+            // Hack for input_changed: If input buffer capacity is 0 then we do not typing
+            // anything, so disable animation for first calls of draw (for support
+            // ListItem::show_default)
+            if animations && state.input_changed() {
+                animator.add_animation(
+                    "HeightAnimation".into(),
+                    old_height as f64,
+                    full_height as f64,
+                    Duration::from_millis(500),
+                    animation::AnimationType::Single,
+                );
+            }
         }
 
-        surface.update_height(old_height);
+        if animations && state.input_changed() {
+            surface.update_height(old_height);
+        } else {
+            surface.update_height(full_height);
+        }
+
         surface.commit();
     } else {
         surface.commit();

@@ -80,6 +80,7 @@ impl<'a> From<&'a Config> for ListParams {
             action_left_margin: config.list_items.action_left_margin,
             item_spacing: config.list_items.item_spacing,
             icon_spacing: config.list_items.icon_spacing,
+            show_default: config.list_items.show_default,
         }
     }
 }

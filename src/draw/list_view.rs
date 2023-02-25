@@ -25,6 +25,7 @@ pub struct Params {
     pub action_left_margin: f32,
     pub item_spacing: f32,
     pub icon_spacing: f32,
+    pub show_default: bool,
 }
 
 pub struct ListItem<'a> {

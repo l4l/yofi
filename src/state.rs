@@ -227,6 +227,10 @@ impl State {
         self.input_buffer.raw_input()
     }
 
+    pub fn input_changed(&self) -> bool {
+        self.input_buffer.raw_input.capacity() != 0
+    }
+
     pub fn skip_offset(&self) -> usize {
         self.skip_offset
     }
@@ -244,9 +248,14 @@ impl State {
             .list_items(&self.inner, self.selected_item, self.selected_subitem)
     }
 
-    pub fn process_entries(&mut self) {
+    pub fn process_entries(&mut self, show_default: bool) {
         self.filtered_lines = if self.input_buffer.search_string().is_empty() {
-            FilteredLines::unfiltred(self.inner.entries_len())
+            let len = if show_default {
+                self.inner.entries_len()
+            } else {
+                0
+            };
+            FilteredLines::unfiltred(len)
         } else {
             FilteredLines::searched(self.inner.text_entries(), self.input_buffer.search_string())
         };
