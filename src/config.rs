@@ -1,5 +1,6 @@
 use std::ffi::CString;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use defaults::Defaults;
 use serde::Deserialize;
@@ -32,8 +33,6 @@ pub struct Config {
     #[def = "false"]
     auto_height: bool,
     #[def = "false"]
-    animations: bool,
-    #[def = "false"]
     force_window: bool,
     window_offsets: Option<(i32, i32)>,
     scale: Option<u16>,
@@ -48,6 +47,7 @@ pub struct Config {
     corner_radius: Radius,
 
     icon: Option<Icon>,
+    animation: Option<Animation>,
 
     input_text: InputText,
     list_items: ListItems,
@@ -58,8 +58,8 @@ impl Config {
         self.icon = None;
     }
 
-    pub fn animations_enabled(&self) -> bool {
-        self.animations
+    pub fn animation(&self) -> &Option<Animation> {
+        &self.animation
     }
 
     pub fn set_prompt(&mut self, prompt: String) {
@@ -118,6 +118,13 @@ struct Icon {
     size: u16,
     theme: Option<String>,
     fallback_icon_path: Option<PathBuf>,
+}
+
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
+pub struct Animation {
+    #[def = "500"]
+    height_duration_ms: u64,
 }
 
 fn config_path() -> PathBuf {

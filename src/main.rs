@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
-use std::{collections::HashSet, time::Duration};
 
+use animation::AnimationConfig;
 use log::LevelFilter;
 use sctk::{
     environment::SimpleGlobal,
@@ -12,7 +13,7 @@ use sctk::{
 };
 use structopt::{clap::ArgGroup, StructOpt};
 
-pub use animation::Animator;
+pub use animation::{Animation, Animator};
 pub use color::Color;
 pub use desktop::Entry as DesktopEntry;
 pub use draw::{DrawTarget, ListViewInfo};
@@ -218,7 +219,7 @@ fn main_inner() {
     let background_config = config.param();
     let input_config = config.param();
     let list_config = config.param();
-    let animations = config.animations_enabled();
+    let animation_config = config.param();
 
     if !env.get_shell().unwrap().needs_configure() {
         draw(
@@ -228,7 +229,7 @@ fn main_inner() {
             &input_config,
             &list_config,
             &mut surface,
-            animations,
+            &animation_config,
         );
     }
 
@@ -239,8 +240,8 @@ fn main_inner() {
     loop {
         let mut should_redraw = false;
         for event in key_stream.try_iter() {
-            if animations {
-                animator.cancel_animation("HeightAnimation");
+            if animation_config.is_some() {
+                animator.cancel_animation(Animation::Height);
             }
 
             should_redraw = true;
@@ -256,7 +257,7 @@ fn main_inner() {
             surface::EventStatus::Idle => {}
         };
 
-        if animations && animator.proceed() {
+        if animation_config.is_some() && animator.proceed() {
             should_redraw = true
         }
 
@@ -268,13 +269,13 @@ fn main_inner() {
                 &input_config,
                 &list_config,
                 &mut surface,
-                animations,
+                &animation_config,
             );
         }
 
         display.flush().unwrap();
 
-        let timeout = if animations {
+        let timeout = if animation_config.is_some() {
             animator.proceed_step()
         } else {
             None
@@ -317,7 +318,7 @@ fn draw(
     input_config: &draw::InputTextParams,
     list_config: &draw::ListParams,
     surface: &mut surface::Surface,
-    animations: bool,
+    animation_config: &Option<AnimationConfig>,
 ) {
     use std::iter::once;
 
@@ -327,7 +328,7 @@ fn draw(
 
     let old_height = surface.get_height();
 
-    match animator.get_value("HeightAnimation") {
+    match animator.get_value(Animation::Height) {
         Some(value) => surface.update_height(value as u32),
         None => surface.update_height(background_config.height),
     }
@@ -357,10 +358,12 @@ fn draw(
             + list_config.margin.bottom as u32
             + ADDITIONAL_CAP;
 
-        if animator.contains("HeightAnimation") {
+        if animator.contains(Animation::Height) {
             surface.commit();
             return;
         }
+
+        let animations = animation_config.is_some();
 
         if full_height != old_height {
             if full_height > background_config.height {
@@ -372,11 +375,10 @@ fn draw(
             // ListItem::show_default)
             if animations && state.input_changed() {
                 animator.add_animation(
-                    "HeightAnimation".into(),
+                    Animation::Height,
                     old_height as f64,
                     full_height as f64,
-                    Duration::from_millis(500),
-                    animation::AnimationType::Single,
+                    animation_config.as_ref().unwrap().height,
                 );
             }
         }

@@ -260,8 +260,6 @@ impl Surface {
                 space_left.height -= occupied.height;
             }
         }
-
-        // Create a new buffer from the pool
     }
 
     pub fn commit(&mut self) {

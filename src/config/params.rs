@@ -6,6 +6,7 @@ use std::rc::Rc;
 use once_cell::unsync::Lazy;
 
 use super::*;
+use crate::animation::AnimationConfig;
 use crate::desktop::IconConfig;
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::font::{Font, FontBackend, InnerFont};
@@ -122,6 +123,14 @@ impl<'a> From<&'a Config> for Option<IconConfig> {
         config.icon.as_ref().map(|c| IconConfig {
             icon_size: c.size,
             theme: c.theme.clone(),
+        })
+    }
+}
+
+impl<'a> From<&'a Config> for Option<AnimationConfig> {
+    fn from(config: &'a Config) -> Option<AnimationConfig> {
+        config.animation.as_ref().map(|c| AnimationConfig {
+            height: Duration::from_millis(c.height_duration_ms),
         })
     }
 }

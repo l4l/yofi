@@ -10,6 +10,8 @@ pub use list_view::{ListItem, Params as ListParams, ADDITIONAL_CAP};
 
 use crate::{style::Radius, Color};
 
+pub use self::list_view::ListViewInfo;
+
 pub type DrawTarget<'a> = raqote::DrawTarget<&'a mut [u32]>;
 
 mod background;
@@ -32,11 +34,6 @@ pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
     InputText(Box<input_text::InputText<'a>>),
     ListView(list_view::ListView<'a, It>),
     Background(background::Background),
-}
-
-pub struct ListViewInfo {
-    pub new_skip: usize,
-    pub new_y: u32,
 }
 
 impl<'a, It> Widget<'a, It> {

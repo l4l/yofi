@@ -7,7 +7,7 @@ use super::{DrawTarget, Drawable, Space};
 use crate::font::{Font, FontBackend, FontColor};
 use crate::state::ContinuousMatch;
 use crate::style::Margin;
-use crate::{Color, ListViewInfo};
+use crate::Color;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub const ADDITIONAL_CAP: u32 = 10;
@@ -42,6 +42,11 @@ pub struct ListView<'a, It> {
     info_channel: Sender<ListViewInfo>,
     params: &'a Params,
     _tparam: PhantomData<&'a ()>,
+}
+
+pub struct ListViewInfo {
+    pub new_skip: usize,
+    pub new_y: u32,
 }
 
 impl<'a, It> ListView<'a, It> {
