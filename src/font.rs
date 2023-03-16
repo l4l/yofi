@@ -25,12 +25,14 @@ pub trait FontBackend: Sized {
 
     fn font_by_path(path: &Path) -> Result<Self>;
 
+    #[allow(clippy::too_many_arguments)]
     fn draw(
         &self,
         dt: &mut DrawTarget,
         text: &str,
         font_size: f32,
         start_pos: Point,
+        end_pos: Point,
         color: FontColor,
         opts: &DrawOptions,
     );
