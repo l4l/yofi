@@ -195,18 +195,18 @@ where
 
             if i == selected_item && has_subname {
                 if let Some(subname) = item.subname {
+                    let y_offset = pos.y + entry_height + item_spacing;
                     font.draw(
                         dt,
                         subname,
                         font_size,
-                        Point::new(
-                            pos.x + self.params.action_left_margin,
-                            pos.y + entry_height + item_spacing,
-                        ),
-                        Point::new(end_pos.x, pos.y + entry_height + item_spacing),
+                        Point::new(pos.x + self.params.action_left_margin, y_offset),
+                        Point::new(end_pos.x, y_offset),
                         FontColor::Single(self.params.font_color.as_source()),
                         &draw_opts,
                     );
+
+                    last_y = y_offset as u32;
                 }
             }
         }
