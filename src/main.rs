@@ -1,5 +1,6 @@
-use std::collections::HashSet;
 use std::path::PathBuf;
+use std::time::Instant;
+use std::{collections::HashSet, time::Duration};
 
 use log::LevelFilter;
 use sctk::{
@@ -260,6 +261,8 @@ fn main_inner() {
 }
 
 fn main() {
+    const NOTIFY_TIMEOUT: Duration = Duration::from_micros(500);
+
     let res = std::panic::catch_unwind(main_inner);
 
     if let Err(err) = res {
@@ -271,13 +274,28 @@ fn main() {
             "unknown panic"
         };
 
-        let _ = std::process::Command::new("notify-send")
+        let child_started = Instant::now();
+
+        let mut child = std::process::Command::new("notify-send")
             .args(&[
                 concat!("--app-name=", prog_name!()),
                 concat!(prog_name!(), " has panicked!"),
                 msg,
             ])
-            .status();
+            .spawn()
+            .unwrap();
+
+        loop {
+            let child_exited = child.try_wait().unwrap().is_some();
+            if child_exited {
+                break;
+            } else if child_started.elapsed() > NOTIFY_TIMEOUT {
+                log::error!("Couldn't contact notification daemon. Timeout");
+                break;
+            } else {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
 
         log::error!("panic: {}", msg);
 
