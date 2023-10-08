@@ -261,7 +261,7 @@ fn main_inner() {
 }
 
 fn main() {
-    const NOTIFY_TIMEOUT: Duration = Duration::from_micros(500);
+    const NOTIFY_TIMEOUT: Duration = Duration::from_millis(250);
 
     let res = std::panic::catch_unwind(main_inner);
 
