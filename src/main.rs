@@ -271,8 +271,10 @@ fn main() {
             "unknown panic"
         };
 
-        let _ = std::process::Command::new("notify-send")
+        let _ = std::process::Command::new("timeout")
             .args(&[
+                "1s",
+                "notify-send",
                 concat!("--app-name=", prog_name!()),
                 concat!(prog_name!(), " has panicked!"),
                 msg,
