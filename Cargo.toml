@@ -45,7 +45,7 @@ unicode-segmentation = "1.10.0"
 levenshtein = "1.0.5"
 syslog = "6.0.0"
 defaults = "0.2.0"
-freedesktop-icon-lookup = "0.1.0"
+freedesktop-icon-lookup = "0.1.3"
 sublime_fuzzy = "0.7.0"
 
 [profile.release-lto]
