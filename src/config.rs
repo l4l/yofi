@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::path::PathBuf;
 
+use anyhow::{Context, Result};
 use defaults::Defaults;
 use serde::Deserialize;
 
@@ -54,11 +55,11 @@ impl Config {
         self.icon = None;
     }
 
-    pub fn set_prompt(&mut self, prompt: String) {
+    pub fn override_prompt(&mut self, prompt: String) {
         self.input_text.prompt = Some(prompt);
     }
 
-    pub fn set_password(&mut self) {
+    pub fn override_password(&mut self) {
         self.input_text.password = true;
     }
 }
@@ -110,18 +111,36 @@ struct Icon {
     fallback_icon_path: Option<PathBuf>,
 }
 
-fn config_path() -> PathBuf {
-    xdg::BaseDirectories::with_prefix(crate::prog_name!())
-        .expect("failed to get xdg dirs")
-        .place_config_file(DEFAULT_CONFIG_NAME)
-        .expect("cannot create configuration directory")
+fn default_config_path() -> Result<Option<PathBuf>> {
+    let file = xdg::BaseDirectories::with_prefix(crate::prog_name!())
+        .context("failed to get xdg dirs")?
+        .get_config_file(DEFAULT_CONFIG_NAME);
+    if file
+        .try_exists()
+        .with_context(|| format!("reading default config at {}", file.display()))?
+    {
+        Ok(Some(file))
+    } else {
+        Ok(None)
+    }
 }
 
 impl Config {
-    pub fn load(path: Option<PathBuf>) -> Self {
-        std::fs::read_to_string(path.unwrap_or_else(config_path))
-            .map(|c| toml::from_str(&c).unwrap_or_else(|e| panic!("invalid config: {}", e)))
-            .unwrap_or_default()
+    pub fn load(path: Option<PathBuf>) -> Result<Self> {
+        let path = match path {
+            Some(p) => p,
+            None => match default_config_path()? {
+                Some(path) => path,
+                None => return Ok(Config::default()),
+            },
+        };
+        match std::fs::read_to_string(&path) {
+            Ok(c) => toml::from_str(&c).context("invalid config"),
+            Err(err) if matches!(err.kind(), std::io::ErrorKind::NotFound) => Ok(Config::default()),
+            Err(e) => {
+                Err(anyhow::Error::new(e).context(format!("config read at {}", path.display())))
+            }
+        }
     }
 
     pub fn param<'a, T>(&'a self) -> T

@@ -19,19 +19,20 @@ impl SeatHandler for Window {
     ) {
         match capability {
             Capability::Keyboard if self.keyboard.is_none() => {
-                self.keyboard = Some(
-                    self.seat_state
-                        .get_keyboard_with_repeat(
-                            qh,
-                            &seat,
-                            None,
-                            self.loop_handle.clone(),
-                            Box::new(|_state, _wl_kbd, event| {
-                                println!("Repeat: {:?} ", event);
-                            }),
-                        )
-                        .expect("Failed to create keyboard"),
-                );
+                let wl_keyboard = match self.seat_state.get_keyboard_with_repeat(
+                    qh,
+                    &seat,
+                    None,
+                    self.loop_handle.clone(),
+                    Box::new(|_state, _wl_kbd, _event| {}),
+                ) {
+                    Ok(k) => k,
+                    Err(err) => {
+                        self.error = Some(err.into());
+                        return;
+                    }
+                };
+                self.keyboard = Some(wl_keyboard);
             }
             _ => {}
         }

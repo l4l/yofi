@@ -1,3 +1,4 @@
+use anyhow::Context;
 use sctk::{
     delegate_compositor, delegate_keyboard, delegate_layer, delegate_output, delegate_registry,
     delegate_seat, delegate_shm, delegate_xdg_shell, delegate_xdg_window,
@@ -64,6 +65,8 @@ pub struct Window {
 
     loop_handle: LoopHandle<'static, Window>,
     exit: bool,
+
+    error: Option<anyhow::Error>,
 }
 
 enum RenderSurface {
@@ -83,30 +86,31 @@ impl std::ops::Deref for RenderSurface {
 }
 
 impl Window {
-    pub fn new(config: crate::config::Config, state: State) -> (Self, EventLoop<'static, Self>) {
-        let conn = Connection::connect_to_env().unwrap();
+    pub fn new(
+        config: crate::config::Config,
+        state: State,
+    ) -> anyhow::Result<(Self, EventLoop<'static, Self>)> {
+        let conn = Connection::connect_to_env()?;
 
-        let (globals, event_queue) = globals::registry_queue_init(&conn).unwrap();
+        let (globals, event_queue) = globals::registry_queue_init(&conn)?;
         let qh = event_queue.handle();
         let event_loop: EventLoop<Window> =
-            EventLoop::try_new().expect("Failed to initialize the event loop!");
+            EventLoop::try_new().context("failed to initialize the event loop")?;
         let loop_handle = event_loop.handle();
-        WaylandSource::new(conn.clone(), event_queue)
-            .insert(loop_handle)
-            .unwrap();
+        WaylandSource::new(conn.clone(), event_queue).insert(loop_handle)?;
 
         let params: Params = config.param();
         let scale = params.scale.unwrap_or(1);
         let (width, height) = (params.width, params.height);
-        let shm = Shm::bind(&globals, &qh).expect("wl_shm is not available");
+        let shm = Shm::bind(&globals, &qh).context("wl_shm is not available")?;
         let pool = SlotPool::new(
             (4 * width * u32::from(scale) * height * u32::from(scale)) as usize,
             &shm,
         )
-        .expect("Failed to create a memory pool!");
+        .context("Failed to create a memory pool!")?;
 
         let compositor = sctk::compositor::CompositorState::bind(&globals, &qh)
-            .expect("wl_compositor is not available");
+            .context("wl_compositor is not available")?;
         let surface = compositor.create_surface(&qh);
         let surface = if let Some(layer_shell) = wlr_layer::LayerShell::bind(&globals, &qh)
             .ok()
@@ -131,7 +135,8 @@ impl Window {
 
             RenderSurface::LayerShell(layer)
         } else {
-            let xdg_shell = xdg::XdgShell::bind(&globals, &qh).expect("xdg shell is not available");
+            let xdg_shell =
+                xdg::XdgShell::bind(&globals, &qh).context("xdg shell is not available")?;
             let window = xdg_shell.create_window(surface, xdg_win::WindowDecorations::None, &qh);
             window.set_title(crate::prog_name!());
             window.set_min_size(Some((width, height)));
@@ -139,7 +144,7 @@ impl Window {
             RenderSurface::Xdg(window)
         };
 
-        (
+        Ok((
             Self {
                 config,
                 state,
@@ -158,9 +163,10 @@ impl Window {
                 key_modifiers: Default::default(),
                 loop_handle: event_loop.handle(),
                 exit: false,
+                error: None,
             },
             event_loop,
-        )
+        ))
     }
 
     fn width(&self) -> u32 {
@@ -208,10 +214,22 @@ impl Window {
         };
 
         use crate::draw::*;
-        let canvas_ptr: *mut u32 = canvas.as_mut_ptr() as *mut _;
-        let canvas: &mut [u32] =
-            unsafe { &mut *std::ptr::slice_from_raw_parts_mut(canvas_ptr, canvas.len() / 4) };
-        let mut dt = DrawTarget::from_backing(width, height, canvas);
+        let mut dt = {
+            #[allow(clippy::needless_lifetimes)]
+            fn transmute_slice<'a>(a: &'a mut [u8]) -> &'a mut [u32] {
+                assert_eq!(a.as_ptr().align_offset(std::mem::align_of::<u32>()), 0);
+                assert_eq!(a.len() % 4, 0);
+                // Safety:
+                // - (asserted) it's well-aligned for *u32
+                // - canvas is a valid mut slice
+                // - it does not alias with original reference as it's been shadowed
+                // - len does not overflow as it reduced from the valid len
+                // - lifetimes are same
+                unsafe { std::mem::transmute::<&mut [u8], &mut [u32]>(a) }
+            }
+            let canvas = transmute_slice(canvas);
+            DrawTarget::from_backing(width, height, canvas)
+        };
 
         let mut space_left = Space {
             width: width as f32,
@@ -241,6 +259,10 @@ impl Window {
 
     pub fn asked_exit(&self) -> bool {
         self.exit
+    }
+
+    pub fn take_error(&mut self) -> Option<anyhow::Error> {
+        self.error.take()
     }
 }
 

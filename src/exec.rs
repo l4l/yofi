@@ -1,22 +1,25 @@
 use std::ffi::CString;
 
+use anyhow::{Context, Result};
+
 use crate::input_parser::InputValue;
 
 pub fn exec(
     term: Option<Vec<CString>>,
     command_string: impl IntoIterator<Item = impl Into<CString>>,
     input_value: &InputValue,
-) -> std::convert::Infallible {
+) -> Result<std::convert::Infallible> {
     let InputValue {
         source: _,
         search_string: _,
         args,
         env_vars,
-        workind_dir,
+        working_dir,
     } = input_value;
 
-    if let Some(workind_dir) = &workind_dir {
-        nix::unistd::chdir(*workind_dir).expect("chdir failed");
+    if let Some(working_dir) = &working_dir {
+        nix::unistd::chdir(*working_dir)
+            .with_context(|| format!("chdir to {working_dir} failed"))?;
     }
 
     let command_iter = command_string.into_iter().map(Into::into);
@@ -31,7 +34,7 @@ pub fn exec(
             command.extend(args.as_bytes());
         }
 
-        term.push(CString::new(command).unwrap());
+        term.push(CString::new(command).expect("invalid command"));
         term
     } else {
         let args_iter = args.iter().flat_map(|args| {
@@ -52,10 +55,10 @@ pub fn exec(
 
         let (prog, args) = (&command[0], &command[0..]);
         log::debug!("execvpe: {:?} {:?} (envs: {:?})", prog, args, env_vars);
-        nix::unistd::execvpe(prog, args, &env_vars).expect("execvpe failed")
+        nix::unistd::execvpe(prog, args, &env_vars).context("execvpe failed")
     } else {
         let (prog, args) = (&command[0], &command[0..]);
         log::debug!("execvp: {:?} {:?}", prog, args);
-        nix::unistd::execvp(prog, args).expect("execvp failed")
+        nix::unistd::execvp(prog, args).context("execvp failed")
     }
 }

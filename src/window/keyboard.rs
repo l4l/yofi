@@ -34,7 +34,9 @@ impl KeyboardHandler for Window {
             (Keysym::Left, _) => self.state.prev_subitem(),
             (Keysym::Right, _) => self.state.next_subitem(),
             (Keysym::Return, M { ctrl, .. }) | (Keysym::ISO_Enter, M { ctrl, .. }) => {
-                self.state.eval_input(ctrl)
+                if let Err(err) = self.state.eval_input(ctrl) {
+                    self.error = Some(err);
+                }
             }
             (Keysym::BackSpace, M { ctrl: false, .. }) => self.state.remove_input_char(),
             (Keysym::BackSpace, M { ctrl: true, .. }) | (Keysym::w, M { ctrl: true, .. }) => {

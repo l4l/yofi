@@ -8,7 +8,7 @@ pub struct InputValue<'a> {
     pub search_string: &'a str,
     pub args: Option<&'a str>,
     pub env_vars: Option<&'a str>,
-    pub workind_dir: Option<&'a str>,
+    pub working_dir: Option<&'a str>,
 }
 
 impl InputValue<'static> {
@@ -18,7 +18,7 @@ impl InputValue<'static> {
             search_string: "",
             args: None,
             env_vars: None,
-            workind_dir: None,
+            working_dir: None,
         }
     }
 }
@@ -57,7 +57,7 @@ pub fn parse(source: &str) -> InputValue<'_> {
         search_string,
         args: None,
         env_vars: None,
-        workind_dir: None,
+        working_dir: None,
     };
 
     while let Some(kind) = next_kind.take() {
@@ -66,7 +66,7 @@ pub fn parse(source: &str) -> InputValue<'_> {
         match kind {
             NextValueKind::Args => command.args = Some(cmd),
             NextValueKind::EnvVars => command.env_vars = Some(cmd),
-            NextValueKind::WorkingDir => command.workind_dir = Some(cmd),
+            NextValueKind::WorkingDir => command.working_dir = Some(cmd),
         }
 
         input = left;
@@ -110,21 +110,21 @@ mod tests {
         search_string: "qwdqwd",
         args: Some("asd"),
         env_vars: Some("qwe "),
-        workind_dir: Some("zx,c"),
+        working_dir: Some("zx,c"),
         ..InputValue::empty()
     }; "search string with working dir then env then args")]
     #[test_case("#qwe~zx,c!!asd", InputValue {
         search_string: "",
         args: Some("asd"),
         env_vars: Some("qwe"),
-        workind_dir: Some("zx,c"),
+        working_dir: Some("zx,c"),
         ..InputValue::empty()
     }; "all but search string")]
     #[test_case("ffx!!--new-instance#MOZ_ENABLE_WAYLAND=1~/run/user/1000", InputValue {
         search_string: "ffx",
         args: Some("--new-instance"),
         env_vars: Some("MOZ_ENABLE_WAYLAND=1"),
-        workind_dir: Some("/run/user/1000"),
+        working_dir: Some("/run/user/1000"),
         ..InputValue::empty()
     }; "with all params")]
     fn test_parse(input: &str, input_value: InputValue) {

@@ -117,10 +117,11 @@ impl FontBackend for Font {
                     return None;
                 }
                 let index = pat.face_index().and_then(index_to_u32);
-                Some(Font::from_path(path, index))
+                Font::from_path(path, index)
+                    .map_err(|e| log::debug!("cannot load default font at {}: {e}", path.display()))
+                    .ok()
             })
             .expect("cannot find any font")
-            .expect("cannot load default font")
     }
 
     fn font_by_name(name: &str) -> Result<Self> {

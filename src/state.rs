@@ -90,16 +90,18 @@ impl State {
         self.input_buffer.update_input(|input| input.clear())
     }
 
-    pub fn eval_input(&mut self, with_fork: bool) {
+    pub fn eval_input(&mut self, with_fork: bool) -> anyhow::Result<()> {
         let info = EvalInfo {
             index: self.filtered_lines.index(self.selected_item),
             subindex: self.selected_subitem,
             input_value: self.input_buffer.parsed_input(),
         };
         if with_fork {
-            self.inner.fork_eval(info);
+            self.inner.fork_eval(info)
         } else {
-            self.inner.eval(info);
+            self.inner
+                .eval(info)
+                .map(|_: std::convert::Infallible| unreachable!())
         }
     }
 

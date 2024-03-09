@@ -2,17 +2,23 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
-use std::rc::Rc;
+
+use anyhow::{Context, Result};
 
 use super::{Entry, EvalInfo};
 use crate::usage_cache::Usage;
 
 const CACHE_PATH: &str = concat!(crate::prog_name!(), ".bincache");
 
+#[derive(PartialEq, Eq, Hash)]
+struct Binary {
+    path: String,
+    fname: String,
+}
+
 pub struct BinsMode {
-    bins: Vec<Rc<Path>>,
-    entry_name_cache: HashMap<Rc<Path>, String>,
+    bins: Vec<Binary>,
+    entry_name_cache: HashMap<String, String>,
     term: Vec<CString>,
     usage: Usage,
 }
@@ -21,57 +27,58 @@ impl BinsMode {
     pub fn new(term: Vec<CString>) -> Self {
         let usage = Usage::from_path(CACHE_PATH);
 
-        let mut bins: Vec<_> = std::env::var("PATH")
+        let paths = std::env::var("PATH")
             .map(|paths| paths.split(':').map(|s| s.to_owned()).collect())
-            .unwrap_or_else(|_| vec!["/usr/bin".into()])
+            .unwrap_or_else(|_| vec!["/usr/bin".into()]);
+        let mut bins: Vec<_> = paths
             .into_iter()
-            .flat_map(std::fs::read_dir)
+            .flat_map(|p| std::fs::read_dir(&p).map_err(|e| log::warn!("failed to read {p}: {e}")))
             .flatten()
             .flatten()
             .filter_map(|f| {
                 let meta = f.metadata().ok()?;
                 if f.path().is_file() && meta.permissions().mode() & 0o001 > 0 {
                     let p = f.path();
-                    p.file_name()?;
-                    Some(p)
+                    Some(Binary {
+                        path: p.to_str()?.to_owned(),
+                        fname: p.file_name()?.to_str()?.to_owned(),
+                    })
                 } else {
                     None
                 }
             })
-            .map(Rc::<Path>::from)
             .collect();
 
         bins.sort_by(|x, y| {
-            let x_usage_count = usage.entry_count(x.to_str().unwrap());
-            let y_usage_count = usage.entry_count(y.to_str().unwrap());
+            let x_usage_count = usage.entry_count(&x.path);
+            let y_usage_count = usage.entry_count(&y.path);
 
             Reverse(x_usage_count)
                 .cmp(&Reverse(y_usage_count))
-                .then_with(|| x.cmp(y))
+                .then_with(|| x.path.cmp(&y.path))
         });
         bins.dedup();
 
         let mut fname_counts = HashMap::<_, u8>::new();
 
         for b in &bins {
-            let count = fname_counts.entry(b.file_name().unwrap()).or_default();
+            let count = fname_counts.entry(b.fname.clone()).or_default();
             *count = count.saturating_add(1);
         }
 
         let mut entry_name_cache = HashMap::new();
 
         for bin in &bins {
-            let fname = bin.file_name().unwrap();
-            if fname_counts.get(fname).filter(|&&cnt| cnt > 1).is_none() {
+            if fname_counts
+                .get(&bin.fname)
+                .filter(|&&cnt| cnt > 1)
+                .is_none()
+            {
+                log::warn!("file name {} found multiple times, skipping", bin.fname);
                 continue;
             }
 
-            let fname_str = fname.to_str().unwrap();
-
-            entry_name_cache.insert(
-                Rc::clone(bin),
-                format!("{} ({})", fname_str, bin.to_str().unwrap()),
-            );
+            entry_name_cache.insert(bin.path.clone(), format!("{} ({})", bin.fname, bin.path));
         }
 
         Self {
@@ -82,9 +89,9 @@ impl BinsMode {
         }
     }
 
-    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> Result<std::convert::Infallible> {
         let binary = if let Some(idx) = info.index {
-            self.bins[idx].to_str().unwrap()
+            self.bins[idx].path.as_str()
         } else {
             info.search_string
         };
@@ -94,7 +101,7 @@ impl BinsMode {
 
         crate::exec::exec(
             Some(std::mem::take(&mut self.term)),
-            vec![CString::new(binary).expect("invalid binary")],
+            std::iter::once(CString::new(binary).context("invalid binary name")?),
             info.input_value,
         )
     }
@@ -109,12 +116,11 @@ impl BinsMode {
 
     pub fn entry(&self, idx: usize, _: usize) -> Entry<'_> {
         let bin = &self.bins[idx];
-        let fname = bin.file_name().unwrap();
 
-        let name = if let Some(name) = self.entry_name_cache.get(bin) {
+        let name = if let Some(name) = self.entry_name_cache.get(&bin.path) {
             name.as_str()
         } else {
-            fname.to_str().unwrap()
+            bin.fname.as_str()
         };
 
         Entry {
@@ -125,8 +131,6 @@ impl BinsMode {
     }
 
     pub fn text_entries(&self) -> impl super::ExactSizeIterator<Item = &str> {
-        self.bins
-            .iter()
-            .map(|e| e.file_name().and_then(|s| s.to_str()).unwrap())
+        self.bins.iter().map(|e| e.fname.as_str())
     }
 }
