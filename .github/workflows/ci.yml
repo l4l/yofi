@@ -16,6 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install sysdeps
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install libxkbcommon-dev
     - uses: actions-rs/toolchain@v1
       with:
         components: rustfmt, clippy
