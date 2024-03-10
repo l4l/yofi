@@ -225,7 +225,9 @@ impl Window {
                 // - it does not alias with original reference as it's been shadowed
                 // - len does not overflow as it reduced from the valid len
                 // - lifetimes are same
-                unsafe { std::mem::transmute::<&mut [u8], &mut [u32]>(a) }
+                unsafe {
+                    &mut *std::ptr::slice_from_raw_parts_mut(a.as_mut_ptr().cast(), a.len() / 4)
+                }
             }
             let canvas = transmute_slice(canvas);
             DrawTarget::from_backing(width, height, canvas)
