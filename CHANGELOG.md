@@ -2,19 +2,31 @@
 
 ## Features
 
+## Changes
+
+## Fixes
+
+# 0.2.1 - 2024-03-10
+
+## Features
+
 - Launch multiple apps from one yofi launch based on fork (#24).
 - Nix build (#98).
 - Corner roundings config param.
+- Background border.
+- Font overflow hint for long text items.
 
 ## Changes
 
 - Dropped support for font-kit backend.
 - Use native fontconfig instead of rust-fontconfig.
+- More errors are handled over panic.
 
 ## Fixes
 
 - Don't reload font on each ListView redraw.
 - Normalize indexed pngs.
+- Icon themes suport multiple inheritance.
 
 # 0.2.0 - 2022-10-12
 
