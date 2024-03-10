@@ -45,7 +45,6 @@ pub fn exec(
 
     if let Some(env_vars) = env_vars {
         let env_vars = std::env::vars()
-            .into_iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .chain(shlex::split(env_vars).expect("invalid envs"))
             .map(|s| CString::new(s).expect("invalid envs"))

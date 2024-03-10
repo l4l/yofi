@@ -10,6 +10,7 @@ pub struct Locale<'a> {
     modifier: Option<&'a str>,
 }
 
+#[allow(clippy::needless_raw_string_hashes)]
 const LOCALE_REGEX: &str = r#"(?x)
                              ^
                              ([[:alpha:]]+) # lang
@@ -122,7 +123,7 @@ mod tests {
         "lang, country, encoding, modifier"
     )]
     #[test_case("qw@ui", Locale::new("qw", None, "ui"); "lang, modifier")]
-    fn regex_compiles(s: &str, x: Locale<'static>) {
+    fn regex_matches(s: &str, x: Locale<'static>) {
         let re = Regex::new(LOCALE_REGEX).unwrap();
         let c = re.captures(s).unwrap();
 

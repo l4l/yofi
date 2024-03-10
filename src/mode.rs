@@ -87,12 +87,11 @@ impl Mode {
     delegate!(pub fn subentries_len(&self, idx: usize) -> usize);
     delegate!(pub fn entry(&self, idx: usize, subidx: usize) -> Entry<'_>);
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + ExactSizeIterator + '_ {
+    pub fn text_entries(&self) -> impl ExactSizeIterator<Item = &str> + '_ {
         match self {
             Mode::Apps(mode) => Either::Left(Either::Right(mode.text_entries())),
             Mode::BinApps(mode) => Either::Left(Either::Left(mode.text_entries())),
             Mode::Dialog(mode) => Either::Right(mode.text_entries()),
         }
-        .into_iter()
     }
 }

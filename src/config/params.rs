@@ -10,7 +10,7 @@ use crate::desktop::IconConfig;
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::font::{Font, FontBackend, InnerFont};
 use crate::icon::Icon;
-use crate::surface::Params as SurfaceParams;
+use crate::window::Params as WindowParams;
 
 macro_rules! select_conf {
     ($config:ident, $inner:ident, $field:ident) => {
@@ -74,7 +74,7 @@ impl<'a> From<&'a Config> for ListParams {
                 .icon
                 .as_ref()
                 .and_then(|i| i.fallback_icon_path.as_ref())
-                .map(|path| Icon::new(&path)),
+                .map(Icon::new),
             margin: config.list_items.margin.clone(),
             hide_actions: config.list_items.hide_actions,
             action_left_margin: config.list_items.action_left_margin,
@@ -102,9 +102,9 @@ impl<'a> From<&'a Config> for BgParams {
     }
 }
 
-impl<'a> From<&'a Config> for SurfaceParams {
-    fn from(config: &'a Config) -> SurfaceParams {
-        SurfaceParams {
+impl<'a> From<&'a Config> for WindowParams {
+    fn from(config: &'a Config) -> WindowParams {
+        WindowParams {
             width: config.width,
             height: config.height,
             force_window: config.force_window,

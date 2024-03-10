@@ -254,7 +254,7 @@ where
 }
 
 fn read_dir(path: &Path) -> impl Iterator<Item = DirEntry> {
-    fs::read_dir(&path)
+    fs::read_dir(path)
         .map_err(|e| log::debug!("cannot read {:?} folder: {}, skipping", path, e))
         .into_iter()
         .flatten()

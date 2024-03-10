@@ -124,7 +124,7 @@ impl BinsMode {
         }
     }
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
+    pub fn text_entries(&self) -> impl super::ExactSizeIterator<Item = &str> {
         self.bins
             .iter()
             .map(|e| e.file_name().and_then(|s| s.to_str()).unwrap())

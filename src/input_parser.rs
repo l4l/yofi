@@ -1,8 +1,5 @@
-use nom::{
-    error::{Error, ErrorKind},
-    IResult,
-};
 use once_cell::sync::OnceCell;
+use regex::Regex;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq, Eq))]
@@ -32,34 +29,29 @@ enum NextValueKind {
     WorkingDir,
 }
 
-static SEPARATOR_REGEX: OnceCell<regex::Regex> = OnceCell::new();
+static SEPARATOR_REGEX: OnceCell<Regex> = OnceCell::new();
 
-fn parse_command_part(input: &str) -> IResult<&str, (&str, Option<NextValueKind>)> {
+fn parse_command_part(input: &str) -> (&str, (&str, Option<NextValueKind>)) {
     let re = SEPARATOR_REGEX
-        .get_or_init(|| regex::Regex::new(r"(.*?)(!!|#|~)").unwrap())
+        .get_or_init(|| Regex::new(r"(!!|#|~)").unwrap())
         .clone();
-    let res = match nom_regex::str::re_capture::<Error<_>>(re)(input) {
-        Ok((left, matches)) => {
-            let parsed = matches[1];
-            let kind = match matches[2] {
-                "!!" => Some(NextValueKind::Args),
-                "#" => Some(NextValueKind::EnvVars),
-                "~" => Some(NextValueKind::WorkingDir),
-                _ => None,
-            };
-            (left, (parsed, kind))
-        }
-        Err(nom::Err::Error(Error {
-            input,
-            code: ErrorKind::RegexpCapture,
-        })) => ("", (input, None)),
-        Err(err) => return Err(err),
+    let Some(cap) = re.captures(input) else {
+        return ("", (input, None));
     };
-    Ok(res)
+    let m = cap.get(0).unwrap();
+    let bang = cap.get(1).unwrap().as_str();
+    let kind = match bang {
+        "!!" => Some(NextValueKind::Args),
+        "#" => Some(NextValueKind::EnvVars),
+        "~" => Some(NextValueKind::WorkingDir),
+        s => panic!("regex bug: unexpected bang match {}", s),
+    };
+
+    (&input[m.end()..], (&input[..m.start()], kind))
 }
 
-pub fn parser(source: &str) -> IResult<&str, InputValue<'_>> {
-    let (mut input, (search_string, mut next_kind)) = parse_command_part(source)?;
+pub fn parse(source: &str) -> InputValue<'_> {
+    let (mut input, (search_string, mut next_kind)) = parse_command_part(source);
     let mut command = InputValue {
         source,
         search_string,
@@ -69,7 +61,7 @@ pub fn parser(source: &str) -> IResult<&str, InputValue<'_>> {
     };
 
     while let Some(kind) = next_kind.take() {
-        let (left, (cmd, new_kind)) = parse_command_part(input)?;
+        let (left, (cmd, new_kind)) = parse_command_part(input);
 
         match kind {
             NextValueKind::Args => command.args = Some(cmd),
@@ -81,12 +73,14 @@ pub fn parser(source: &str) -> IResult<&str, InputValue<'_>> {
         next_kind = new_kind;
     }
 
-    Ok((input, command))
+    debug_assert!(input.is_empty(), "trailing input: {}", input);
+
+    command
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{parser, InputValue};
+    use super::{parse, InputValue};
 
     use quickcheck_macros::quickcheck;
     use test_case::test_case;
@@ -135,20 +129,16 @@ mod tests {
     }; "with all params")]
     fn test_parse(input: &str, input_value: InputValue) {
         assert_eq!(
-            parser(input),
-            Ok((
-                "",
-                InputValue {
-                    source: input,
-                    ..input_value
-                }
-            ))
+            parse(input),
+            InputValue {
+                source: input,
+                ..input_value
+            }
         );
     }
 
     #[quickcheck]
     fn test_parse_all(input: String) {
-        let (left, _) = parser(&input).unwrap();
-        assert_eq!(left, "");
+        parse(&input);
     }
 }

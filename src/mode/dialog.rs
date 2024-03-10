@@ -7,6 +7,7 @@ pub struct DialogMode {
 }
 
 impl DialogMode {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let stdin = std::io::stdin();
         let rdr = stdin.lock();
@@ -44,7 +45,7 @@ impl DialogMode {
         }
     }
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
+    pub fn text_entries(&self) -> impl super::ExactSizeIterator<Item = &str> {
         self.lines.iter().map(|e| e.as_str())
     }
 }
