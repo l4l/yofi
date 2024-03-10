@@ -55,7 +55,7 @@ impl Ord for FuzzyResult {
 
 impl PartialOrd for FuzzyResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.distance.partial_cmp(&other.distance)
+        Some(self.cmp(other))
     }
 }
 
@@ -117,10 +117,11 @@ impl FontBackend for Font {
                     return None;
                 }
                 let index = pat.face_index().and_then(index_to_u32);
-                Some(Font::from_path(path, index))
+                Font::from_path(path, index)
+                    .map_err(|e| log::debug!("cannot load default font at {}: {e}", path.display()))
+                    .ok()
             })
             .expect("cannot find any font")
-            .expect("cannot load default font")
     }
 
     fn font_by_name(name: &str) -> Result<Self> {
@@ -134,11 +135,11 @@ impl FontBackend for Font {
         ) -> Option<(PathBuf, Option<i32>)> {
             let mut pat = Pattern::new(fc);
             let family = std::ffi::CString::new(family).ok()?;
-            pat.add_string(fontconfig::FC_FAMILY.as_cstr(), &family);
+            pat.add_string(fontconfig::FC_FAMILY, &family);
 
             if let Some(style) = style {
                 let style = std::ffi::CString::new(style).ok()?;
-                pat.add_string(fontconfig::FC_STYLE.as_cstr(), &style);
+                pat.add_string(fontconfig::FC_STYLE, &style);
             }
 
             let font_match = pat.font_match();

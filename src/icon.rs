@@ -133,22 +133,22 @@ impl Loaded {
     }
 
     fn from_svg_path(path: impl AsRef<Path>) -> Result<Self> {
-        let opt = usvg::Options::default();
+        let opt = resvg::usvg::Options::default();
         let data = std::fs::read(path.as_ref())
             .with_context(|| format!("failed to open svg file: {:?}", path.as_ref()))?;
-        let tree = usvg::Tree::from_data(&data, &opt.to_ref())
+        let tree = resvg::usvg::Tree::from_data(&data, &opt)
             .map_err(|e| anyhow!("svg open error: {}", e))?;
 
-        let width = tree.svg_node().size.width().ceil() as u32;
-        let height = tree.svg_node().size.height().ceil() as u32;
-        let mut buf = tiny_skia::Pixmap::new(width, height).context("invalid pixmap size")?;
+        let pixmap_size = tree.size().to_int_size();
+        let width = pixmap_size.width();
+        let height = pixmap_size.height();
+        let mut buf =
+            resvg::tiny_skia::Pixmap::new(width, height).context("invalid pixmap size")?;
         resvg::render(
             &tree,
-            usvg::FitTo::Original,
-            tiny_skia::Transform::identity(),
-            buf.as_mut(),
-        )
-        .ok_or_else(|| anyhow!("cannot render svg"))?;
+            resvg::tiny_skia::Transform::default(),
+            &mut buf.as_mut(),
+        );
 
         Ok(Self {
             width,

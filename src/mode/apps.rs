@@ -1,6 +1,8 @@
 use std::cmp::Reverse;
 use std::ffi::CString;
 
+use anyhow::{Context, Result};
+
 use super::{Entry, EvalInfo};
 use crate::usage_cache::Usage;
 use crate::DesktopEntry;
@@ -26,8 +28,8 @@ impl AppsMode {
         }
     }
 
-    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
-        let idx = info.index.unwrap();
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> Result<std::convert::Infallible> {
+        let idx = info.index.context("no app remain to launch")?;
         let entry = &self.entries[idx];
         let exec = if info.subindex == 0 {
             &entry.entry.exec
@@ -36,10 +38,10 @@ impl AppsMode {
         };
 
         let args = shlex::split(exec)
-            .unwrap()
+            .with_context(|| format!("invalid app command line: {exec}"))?
             .into_iter()
             .filter(|s| !s.starts_with('%')) // TODO: use placeholders somehow
-            .map(|s| CString::new(s).unwrap());
+            .map(|s| CString::new(s).expect("invalid argument"));
 
         self.usage
             .increment_entry_usage(entry.desktop_fname.clone());
@@ -72,7 +74,7 @@ impl AppsMode {
         }
     }
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
+    pub fn text_entries(&self) -> impl super::ExactSizeIterator<Item = &str> {
         self.entries.iter().map(|e| e.name.as_str())
     }
 }

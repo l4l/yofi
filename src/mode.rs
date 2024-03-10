@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::iter::ExactSizeIterator;
 
+use anyhow::{Context, Result};
 use either::Either;
 use raqote::Image;
 
@@ -67,32 +68,39 @@ impl Mode {
         Self::BinApps(bins::BinsMode::new(term))
     }
 
-    pub fn dialog() -> Self {
-        Self::Dialog(dialog::DialogMode::new())
+    pub fn dialog() -> Result<Self> {
+        dialog::DialogMode::new().map(Self::Dialog)
     }
 
-    pub fn fork_eval(&mut self, info: EvalInfo<'_>) {
-        match unsafe { nix::unistd::fork() } {
-            Ok(v) => {
-                if v.is_child() {
-                    self.eval(info);
-                }
-            }
-            Err(e) => log::error!("fork() error: {}", e),
+    pub fn fork_eval(&mut self, info: EvalInfo<'_>) -> Result<()> {
+        // Safety:
+        // - no need for signal-safety as we single-thread everywhere;
+        // - all file descriptors are closed;
+        let pid = unsafe { nix::unistd::fork() }.context("fork() error")?;
+
+        if pid.is_child() {
+            use std::os::fd::AsRawFd;
+            // Just in case, not sure it will break anything.
+            let _ = nix::unistd::close(std::io::stdin().as_raw_fd());
+            let _ = nix::unistd::close(std::io::stdout().as_raw_fd());
+            let _ = nix::unistd::close(std::io::stderr().as_raw_fd());
+
+            self.eval(info)?;
         }
+
+        Ok(())
     }
 
-    delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible);
+    delegate!(pub fn eval(&mut self, info: EvalInfo<'_>) -> Result<std::convert::Infallible>);
     delegate!(pub fn entries_len(&self) -> usize);
     delegate!(pub fn subentries_len(&self, idx: usize) -> usize);
     delegate!(pub fn entry(&self, idx: usize, subidx: usize) -> Entry<'_>);
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + ExactSizeIterator + '_ {
+    pub fn text_entries(&self) -> impl ExactSizeIterator<Item = &str> + '_ {
         match self {
             Mode::Apps(mode) => Either::Left(Either::Right(mode.text_entries())),
             Mode::BinApps(mode) => Either::Left(Either::Left(mode.text_entries())),
             Mode::Dialog(mode) => Either::Right(mode.text_entries()),
         }
-        .into_iter()
     }
 }

@@ -34,6 +34,62 @@ pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
     Background(background::Background),
 }
 
+pub struct Drawables<'a> {
+    counter: u32,
+    tx: Option<oneshot::Sender<usize>>,
+    rx: Option<oneshot::Receiver<usize>>,
+    state: &'a mut crate::state::State,
+    background_config: BgParams,
+    input_config: InputTextParams<'a>,
+    list_config: ListParams,
+}
+
+impl<'a> Drawables<'a> {
+    pub fn borrowed_next(&mut self) -> Option<impl Drawable + '_> {
+        self.counter += 1;
+        Some(match self.counter {
+            1 => Widget::background(&self.background_config),
+            2 => Widget::input_text(self.state.raw_input(), &self.input_config),
+            3 => Widget::list_view(
+                self.state.processed_entries(),
+                self.state.skip_offset(),
+                self.state.selected_item(),
+                self.tx.take().unwrap(),
+                &self.list_config,
+            ),
+            4 => {
+                self.state
+                    .update_skip_offset(self.rx.take().unwrap().recv().unwrap());
+                return None;
+            }
+            _ => return None,
+        })
+    }
+}
+
+pub fn make_drawables<'c: 'it, 's: 'it, 'it>(
+    config: &'c crate::config::Config,
+    state: &'s mut crate::state::State,
+) -> Drawables<'it> {
+    let background_config = config.param();
+    let input_config = config.param();
+    let list_config = config.param();
+
+    state.process_entries();
+
+    let (tx, rx) = oneshot::channel();
+    Drawables {
+        counter: 0,
+        tx: Some(tx),
+        rx: Some(rx),
+        state,
+
+        background_config,
+        input_config,
+        list_config,
+    }
+}
+
 impl<'a, It> Widget<'a, It> {
     pub fn input_text(text: &'a str, params: &'a InputTextParams<'a>) -> Self {
         Self::InputText(Box::new(input_text::InputText::new(text, params)))

@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader};
+use anyhow::{Context, Result};
 
 use super::{Entry, EvalInfo};
 
@@ -7,24 +7,20 @@ pub struct DialogMode {
 }
 
 impl DialogMode {
-    pub fn new() -> Self {
-        let stdin = std::io::stdin();
-        let rdr = stdin.lock();
-
-        Self {
-            lines: BufReader::new(rdr)
-                .lines()
-                .collect::<Result<_, _>>()
-                .expect("Failed to read stdin"),
-        }
+    pub fn new() -> Result<Self> {
+        std::io::stdin()
+            .lines()
+            .collect::<Result<_, _>>()
+            .context("failed to read stdin")
+            .map(|lines| Self { lines })
     }
 
-    pub fn eval(&mut self, info: EvalInfo<'_>) -> std::convert::Infallible {
+    pub fn eval(&mut self, info: EvalInfo<'_>) -> Result<std::convert::Infallible> {
         let value = info
             .index
             .and_then(|idx| Some(self.lines.get(idx)?.as_str()))
             .unwrap_or(info.input_value.source);
-        println!("{}", value);
+        println!("{value}");
         std::process::exit(0);
     }
 
@@ -44,7 +40,7 @@ impl DialogMode {
         }
     }
 
-    pub fn text_entries(&self) -> impl Iterator<Item = &str> + super::ExactSizeIterator {
+    pub fn text_entries(&self) -> impl super::ExactSizeIterator<Item = &str> {
         self.lines.iter().map(|e| e.as_str())
     }
 }
