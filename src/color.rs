@@ -1,10 +1,11 @@
-use std::convert::TryInto;
-
+use anyhow::Context;
 use raqote::SolidSource;
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug, Clone, Copy)]
-pub struct Color(#[serde(deserialize_with = "deserialize_color")] u32);
+#[derive(Deserialize, Clone, Copy)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
+#[serde(from = "ColorDeser")]
+pub struct Color(u32);
 
 impl Color {
     pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
@@ -29,55 +30,73 @@ impl std::ops::Deref for Color {
     }
 }
 
-fn deserialize_color<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
-    struct ColorDeHelper;
-
-    impl<'de> serde::de::Visitor<'de> for ColorDeHelper {
-        type Value = u32;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(
-                formatter,
-                "invalid color value, must be either numerical or css-like hex value with # prefix"
-            )
-        }
-
-        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            value.try_into().map_err(serde::de::Error::custom)
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            let part = match value.chars().next() {
-                None => return Err(serde::de::Error::custom("color cannot be empty")),
-                Some('#') => value.split_at(1).1,
-                Some(_) => {
-                    return Err(serde::de::Error::custom(
-                        "color can be either decimal or hex number prefixed with '#'",
-                    ))
-                }
-            };
-
-            let decoded = u32::from_str_radix(part, 16).map_err(serde::de::Error::custom);
-            match part.len() {
-                3 => {
-                    let decoded = decoded?;
-                    let (r, g, b) = ((decoded & 0xf00) >> 8, (decoded & 0xf0) >> 4, decoded & 0xf);
-                    Ok((r << 4 | r) << 24 | (g << 4 | g) << 16 | (b << 4 | b) << 8 | 0xff)
-                }
-                6 => decoded.map(|d| d << 8 | 0xff),
-                8 => decoded,
-                _ => Err(serde::de::Error::custom(
-                    "hex color can only be specified in #RGB, #RRGGBB, or #RRGGBBAA format",
-                )),
-            }
+impl From<ColorDeser> for Color {
+    fn from(value: ColorDeser) -> Self {
+        match value {
+            ColorDeser::Int(x) => Self(x),
+            ColorDeser::String(ColorDeserString(c)) => c,
         }
     }
+}
 
-    d.deserialize_any(ColorDeHelper)
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+enum ColorDeser {
+    Int(u32),
+    String(ColorDeserString),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(try_from = "String")]
+struct ColorDeserString(Color);
+
+impl TryFrom<String> for ColorDeserString {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let part = match value.chars().next() {
+            None => anyhow::bail!("color cannot be empty"),
+            Some('#') => value.split_at(1).1,
+            Some(_) => {
+                anyhow::bail!("color can be either decimal or hex number prefixed with '#'")
+            }
+        };
+
+        let decoded = u32::from_str_radix(part, 16).context("parse hex number");
+        Ok(Self(match (decoded, part.len()) {
+            (Ok(d), 3) => {
+                let (r, g, b) = (
+                    ((d & 0xf00) >> 8) as u8,
+                    ((d & 0xf0) >> 4) as u8,
+                    (d & 0xf) as u8,
+                );
+                Color::from_rgba(r << 4 | r, g << 4 | g, b << 4 | b, 0xff)
+            }
+            (Ok(d), 6) => Color(d << 8 | 0xff),
+            (Ok(d), 8) => Color(d),
+            (e, _) => anyhow::bail!(
+                "hex color can only be specified in #RGB, #RRGGBB, or #RRGGBBAA format, {e:?}"
+            ),
+        }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(r##"x = 1234"##, Color(1234); "decimal number")]
+    #[test_case(r##"x = 0x5432"##, Color(0x5432); "hex number")]
+    #[test_case(r##"x = "#123""##, Color::from_rgba(0x11, 0x22, 0x33, 0xff); "3-sym css")]
+    #[test_case(r##"x = "#123456""##, Color::from_rgba(0x12, 0x34, 0x56, 0xff); "6-sym css")]
+    #[test_case(r##"x = "#12345678""##, Color::from_rgba(0x12, 0x34, 0x56, 0x78); "8-sym css")]
+    fn deser_color(s: &str, expected: Color) {
+        #[derive(Deserialize)]
+        struct T {
+            x: Color,
+        }
+        let c = toml::from_str::<T>(s).unwrap().x;
+        assert_eq!(c, expected);
+    }
 }

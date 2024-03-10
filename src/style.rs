@@ -7,6 +7,7 @@ use serde::de::{Deserializer, Visitor};
 use serde::Deserialize;
 
 #[derive(Clone, Default)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Padding {
     pub top: f32,
     pub bottom: f32,
@@ -15,6 +16,7 @@ pub struct Padding {
 }
 
 #[derive(Clone, Default)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Margin {
     pub top: f32,
     pub bottom: f32,
@@ -23,6 +25,7 @@ pub struct Margin {
 }
 
 #[derive(Clone, Default)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Radius {
     pub top_left: f32,
     pub top_right: f32,
@@ -46,6 +49,15 @@ impl Padding {
             bottom: vertical,
             left: horizontal,
             right: horizontal,
+        }
+    }
+
+    pub const fn from_four(top: f32, right: f32, bottom: f32, left: f32) -> Self {
+        Self {
+            top,
+            bottom,
+            left,
+            right,
         }
     }
 }
@@ -79,6 +91,15 @@ impl Margin {
             bottom: vertical,
             left: horizontal,
             right: horizontal,
+        }
+    }
+
+    pub const fn from_four(top: f32, right: f32, bottom: f32, left: f32) -> Self {
+        Self {
+            top,
+            bottom,
+            left,
+            right,
         }
     }
 }
@@ -123,6 +144,20 @@ impl Radius {
             bottom_right: self.bottom_right.min(other.bottom_right),
         }
     }
+
+    pub const fn from_four(
+        top_left: f32,
+        top_right: f32,
+        bottom_right: f32,
+        bottom_left: f32,
+    ) -> Self {
+        Self {
+            top_left,
+            top_right,
+            bottom_left,
+            bottom_right,
+        }
+    }
 }
 
 impl Mul<f32> for &Margin {
@@ -138,32 +173,41 @@ impl Mul<f32> for &Margin {
     }
 }
 
-impl<'de> Deserialize<'de> for Padding {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        d.deserialize_str(StringVisitor(PhantomData))
-    }
+macro_rules! impl_traits {
+    ($t:ty) => {
+        impl<'de> Deserialize<'de> for $t {
+            fn deserialize<D>(d: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                d.deserialize_str(StringVisitor(PhantomData))
+            }
+        }
+
+        impl FromStr for $t {
+            type Err = String;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                let values = FiniteFloatVec::from_str(s)?.values;
+
+                match values.len() {
+                    1 => Ok(Self::all(values[0])),
+                    2 => Ok(Self::from_pair(values[0], values[1])),
+                    4 => Ok(Self::from_four(values[0], values[1], values[2], values[3])),
+                    _ => Err(concat!(
+                        stringify!($t),
+                        " should consists of either 1, 2 or 4 floats"
+                    )
+                    .into()),
+                }
+            }
+        }
+    };
 }
 
-impl<'de> Deserialize<'de> for Margin {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        d.deserialize_str(StringVisitor(PhantomData))
-    }
-}
-
-impl<'de> Deserialize<'de> for Radius {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        d.deserialize_str(StringVisitor(PhantomData))
-    }
-}
+impl_traits!(Padding);
+impl_traits!(Margin);
+impl_traits!(Radius);
 
 struct StringVisitor<T>(PhantomData<T>);
 
@@ -213,70 +257,43 @@ impl FromStr for FiniteFloatVec {
     }
 }
 
-impl FromStr for Padding {
-    type Err = String;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let values = FiniteFloatVec::from_str(s)?.values;
+    #[test]
+    fn from_str_margin() {
+        let parse = |s: &str| s.parse::<Margin>().unwrap();
 
-        match values.len() {
-            1 => Ok(Self::all(values[0])),
-            2 => Ok(Self::from_pair(values[0], values[1])),
-            4 => Ok(Self {
-                top: values[0],
-                bottom: values[2],
-                left: values[3],
-                right: values[1],
-            }),
-            _ => Err("padding should consists of either 1, 2 or 4 floats".into()),
-        }
+        assert_eq!(Margin::all(1.2), parse("1.2"));
+        assert_eq!(Margin::from_pair(1.2, 3.4), parse("1.2 3.4"));
+        assert_eq!(
+            Margin::from_four(1.2, 3.4, 5.6, 7.8),
+            parse("1.2 3.4 5.6 7.8")
+        );
     }
-}
 
-impl FromStr for Margin {
-    type Err = String;
+    #[test]
+    fn from_str_padding() {
+        let parse = |s: &str| s.parse::<Padding>().unwrap();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let values = FiniteFloatVec::from_str(s)?.values;
-
-        match values.len() {
-            1 => Ok(Self::all(values[0])),
-            2 => Ok(Self::from_pair(values[0], values[1])),
-            4 => Ok(Self {
-                top: values[0],
-                bottom: values[2],
-                left: values[3],
-                right: values[1],
-            }),
-            _ => Err("margin should consists of either 1, 2 or 4 floats".into()),
-        }
+        assert_eq!(Padding::all(1.2), parse("1.2"));
+        assert_eq!(Padding::from_pair(1.2, 3.4), parse("1.2 3.4"));
+        assert_eq!(
+            Padding::from_four(1.2, 3.4, 5.6, 7.8),
+            parse("1.2 3.4 5.6 7.8")
+        );
     }
-}
 
-impl FromStr for Radius {
-    type Err = String;
+    #[test]
+    fn from_str_radius() {
+        let parse = |s: &str| s.parse::<Radius>().unwrap();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let values = FiniteFloatVec::from_str(s)?
-            .values
-            .iter()
-            .map(|&f| {
-                (!f.is_sign_negative())
-                    .then_some(f)
-                    .ok_or(format!("radius can not be negative: {:?}", f))
-            })
-            .collect::<Result<Vec<f32>, _>>()?;
-
-        match values.len() {
-            1 => Ok(Self::all(values[0])),
-            2 => Ok(Self::from_pair(values[0], values[1])),
-            4 => Ok(Self {
-                top_left: values[0],
-                top_right: values[1],
-                bottom_left: values[3],
-                bottom_right: values[2],
-            }),
-            _ => Err("radius should consists of either 1, 2 or 4 floats".into()),
-        }
+        assert_eq!(Radius::all(1.2), parse("1.2"));
+        assert_eq!(Radius::from_pair(1.2, 3.4), parse("1.2 3.4"));
+        assert_eq!(
+            Radius::from_four(1.2, 3.4, 5.6, 7.8),
+            parse("1.2 3.4 5.6 7.8")
+        );
     }
 }
