@@ -1,3 +1,4 @@
+use anyhow::Context;
 use sctk::{
     compositor::CompositorHandler,
     reexports::client::{
@@ -16,7 +17,20 @@ impl CompositorHandler for Window {
         _surface: &WlSurface,
         new_factor: i32,
     ) {
+        let old_scale = self.scale;
         self.scale = new_factor.try_into().expect("invalid surface scale factor");
+        if old_scale != self.scale {
+            let size = (4 * self.width() * self.height())
+                .try_into()
+                .expect("pixel buffer overflow");
+            if let Err(err) = self
+                .pool
+                .resize(size)
+                .with_context(|| format!("on pool resize to {size}"))
+            {
+                self.error = Some(err);
+            }
+        }
     }
 
     fn transform_changed(
