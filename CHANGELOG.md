@@ -6,6 +6,12 @@
 
 ## Fixes
 
+# 0.2.2 - 2024-03-10
+
+## Fixes
+
+- Invalid scale handling
+
 # 0.2.1 - 2024-03-10
 
 ## Features

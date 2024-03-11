@@ -181,6 +181,7 @@ impl Window {
         let width = self.width().try_into().expect("width overflow");
         let height = self.height().try_into().expect("height overflow");
         let stride = width * 4;
+        self.surface.set_buffer_scale(self.scale.into());
 
         if self
             .buffer
@@ -239,10 +240,9 @@ impl Window {
         };
         let mut point = Point::new(0., 0.);
 
-        let scale = self.scale;
         let mut drawables = crate::draw::make_drawables(&self.config, &mut self.state);
         while let Some(d) = drawables.borrowed_next() {
-            let occupied = d.draw(&mut dt, scale, space_left, point);
+            let occupied = d.draw(&mut dt, self.scale, space_left, point);
             debug_assert!(
                 occupied.width <= space_left.width && occupied.height <= space_left.height
             );
@@ -251,8 +251,7 @@ impl Window {
             space_left.height -= occupied.height;
         }
 
-        self.surface
-            .damage_buffer(0, 0, self.width as i32, self.height as i32);
+        self.surface.damage_buffer(0, 0, width, height);
         self.surface.frame(qh, self.surface.clone());
         buffer.attach_to(&self.surface).expect("buffer attach");
         self.buffer = Some(buffer);

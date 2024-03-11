@@ -1,6 +1,6 @@
 [package]
 name = "yofi"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Kitsu <mail@kitsu.me>"]
 edition = "2021"
 
