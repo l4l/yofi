@@ -25,13 +25,27 @@
 
           cargoLock.lockFile = self + "/Cargo.lock";
 
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+          ];
+
+          buildInputs = with pkgs; [
+            libxkbcommon
+          ];
+
           postFixup = ''
             patchelf $out/bin/yofi --add-rpath ${rpath}
           '';
         };
 
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rustc cargo ];
+          nativeBuildInputs = with pkgs; [
+            rustc
+            cargo
+            pkg-config
+            libxkbcommon
+          ];
+
           LD_LIBRARY_PATH = rpath;
         };
       }
