@@ -2,6 +2,8 @@
 
 ## Features
 
+- yofi.toml is now supported.
+
 ## Changes
 
 ## Fixes
