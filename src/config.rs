@@ -118,12 +118,15 @@ fn default_config_path() -> Result<Option<PathBuf>> {
     let xdg_dirs =
         xdg::BaseDirectories::with_prefix(crate::prog_name!()).context("failed to get xdg dirs")?;
 
-    for &filename in &DEFAULT_CONFIG_NAMES {
+    for (index, &filename) in DEFAULT_CONFIG_NAMES.iter().enumerate() {
         let file = xdg_dirs.get_config_file(filename);
         if file
             .try_exists()
             .with_context(|| format!("reading default config at {}", file.display()))?
         {
+            if index != 0 {
+                eprintln!("warning: yofi.config is deprecated, please rename your configuration file to yofi.toml");
+            }
             return Ok(Some(file));
         }
     }
