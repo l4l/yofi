@@ -18,7 +18,7 @@ fn setup_logger(level: LevelFilter, args: &Args) -> Result<()> {
             ))
         })
         .level(level)
-        .chain(std::io::stdout());
+        .chain(std::io::stderr());
 
     let dispatcher = if let Some(log_file) = &args.log_file {
         dispatcher.chain(fern::log_file(log_file)?)
