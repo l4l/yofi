@@ -8,7 +8,10 @@ use serde::Deserialize;
 use crate::style::{Margin, Padding, Radius};
 use crate::Color;
 
-const DEFAULT_CONFIG_NAME: &str = concat!(crate::prog_name!(), ".config");
+const DEFAULT_CONFIG_NAMES: [&str; 2] = [
+    concat!(crate::prog_name!(), ".toml"),
+    concat!(crate::prog_name!(), ".config"),
+];
 
 const DEFAULT_ICON_SIZE: u16 = 16;
 const DEFAULT_FONT_SIZE: u16 = 24;
@@ -112,17 +115,23 @@ struct Icon {
 }
 
 fn default_config_path() -> Result<Option<PathBuf>> {
-    let file = xdg::BaseDirectories::with_prefix(crate::prog_name!())
-        .context("failed to get xdg dirs")?
-        .get_config_file(DEFAULT_CONFIG_NAME);
-    if file
-        .try_exists()
-        .with_context(|| format!("reading default config at {}", file.display()))?
-    {
-        Ok(Some(file))
-    } else {
-        Ok(None)
+    let xdg_dirs =
+        xdg::BaseDirectories::with_prefix(crate::prog_name!()).context("failed to get xdg dirs")?;
+
+    for (index, &filename) in DEFAULT_CONFIG_NAMES.iter().enumerate() {
+        let file = xdg_dirs.get_config_file(filename);
+        if file
+            .try_exists()
+            .with_context(|| format!("reading default config at {}", file.display()))?
+        {
+            if index != 0 {
+                eprintln!("warning: yofi.config is deprecated, please rename your configuration file to yofi.toml");
+            }
+            return Ok(Some(file));
+        }
     }
+
+    Ok(None)
 }
 
 impl Config {

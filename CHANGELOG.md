@@ -2,7 +2,11 @@
 
 ## Features
 
+- yofi.toml is now supported.
+
 ## Changes
+
+- yofi.config is deprecated.
 
 ## Fixes
 
