@@ -2,6 +2,8 @@
 
 ## Features
 
+- Support some actions with pointer (e.g mouse).
+
 ## Changes
 
 - Log to stderr instead of stdout.

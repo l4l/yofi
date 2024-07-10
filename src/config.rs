@@ -48,6 +48,7 @@ pub struct Config {
 
     input_text: InputText,
     list_items: ListItems,
+    mouse: Mouse,
 }
 
 impl Config {
@@ -109,6 +110,13 @@ struct Icon {
     size: u16,
     theme: Option<String>,
     fallback_icon_path: Option<PathBuf>,
+}
+
+#[derive(Defaults, Deserialize)]
+#[serde(default)]
+struct Mouse {
+    launch_on_middle: bool,
+    wheel_scroll_multiplier: f64,
 }
 
 fn default_config_path() -> Result<Option<PathBuf>> {
