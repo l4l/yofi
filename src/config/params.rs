@@ -10,7 +10,7 @@ use crate::desktop::IconConfig;
 use crate::draw::{BgParams, InputTextParams, ListParams};
 use crate::font::{Font, FontBackend, InnerFont};
 use crate::icon::Icon;
-use crate::window::Params as WindowParams;
+use crate::window::{Params as WindowParams, PointerParams};
 
 macro_rules! select_conf {
     ($config:ident, $inner:ident, $field:ident) => {
@@ -120,6 +120,15 @@ impl<'a> From<&'a Config> for Option<IconConfig> {
             icon_size: c.size,
             theme: c.theme.clone(),
         })
+    }
+}
+
+impl<'a> From<&'a Config> for PointerParams {
+    fn from(config: &'a Config) -> Self {
+        Self {
+            launch_on_middle: config.mouse.launch_on_middle,
+            wheel_scroll_multiplier: config.mouse.wheel_scroll_multiplier,
+        }
     }
 }
 

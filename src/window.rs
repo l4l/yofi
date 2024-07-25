@@ -1,10 +1,10 @@
 use anyhow::Context;
 use sctk::{
-    delegate_compositor, delegate_keyboard, delegate_layer, delegate_output, delegate_registry,
-    delegate_seat, delegate_shm, delegate_xdg_shell, delegate_xdg_window,
+    delegate_compositor, delegate_keyboard, delegate_layer, delegate_output, delegate_pointer,
+    delegate_registry, delegate_seat, delegate_shm, delegate_xdg_shell, delegate_xdg_window,
     output::OutputState,
     reexports::client::{
-        protocol::{wl_keyboard::WlKeyboard, wl_surface::WlSurface},
+        protocol::{wl_keyboard::WlKeyboard, wl_pointer::WlPointer, wl_surface::WlSurface},
         *,
     },
     reexports::{
@@ -25,11 +25,13 @@ use sctk::{
 };
 
 use crate::state::State;
+pub use pointer::Params as PointerParams;
 
 mod compositor;
 mod keyboard;
 mod layer_shell;
 mod output;
+mod pointer;
 mod registry;
 mod seat;
 mod shm;
@@ -60,13 +62,19 @@ pub struct Window {
     height: u32,
     scale: u16,
 
-    keyboard: Option<WlKeyboard>,
+    input: InputSource,
     key_modifiers: sctk::seat::keyboard::Modifiers,
+    wheel_scroll_pending: f64,
 
     loop_handle: LoopHandle<'static, Window>,
     exit: bool,
 
     error: Option<anyhow::Error>,
+}
+
+struct InputSource {
+    keyboard: Option<WlKeyboard>,
+    pointer: Option<WlPointer>,
 }
 
 enum RenderSurface {
@@ -159,8 +167,12 @@ impl Window {
                 width,
                 height,
                 scale,
-                keyboard: None,
+                input: InputSource {
+                    keyboard: None,
+                    pointer: None,
+                },
                 key_modifiers: Default::default(),
+                wheel_scroll_pending: 0.0,
                 loop_handle: event_loop.handle(),
                 exit: false,
                 error: None,
@@ -276,3 +288,4 @@ delegate_xdg_shell!(Window);
 delegate_layer!(Window);
 delegate_xdg_window!(Window);
 delegate_registry!(Window);
+delegate_pointer!(Window);

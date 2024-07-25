@@ -18,7 +18,7 @@ impl SeatHandler for Window {
         capability: Capability,
     ) {
         match capability {
-            Capability::Keyboard if self.keyboard.is_none() => {
+            Capability::Keyboard if self.input.keyboard.is_none() => {
                 let wl_keyboard = match self.seat_state.get_keyboard_with_repeat(
                     qh,
                     &seat,
@@ -32,7 +32,12 @@ impl SeatHandler for Window {
                         return;
                     }
                 };
-                self.keyboard = Some(wl_keyboard);
+                self.input.keyboard = Some(wl_keyboard);
+            }
+            Capability::Pointer if self.input.pointer.is_none() => {
+                if let Ok(p) = self.seat_state.get_pointer(qh, &seat) {
+                    self.input.pointer = Some(p);
+                }
             }
             _ => {}
         }
@@ -46,7 +51,7 @@ impl SeatHandler for Window {
         capability: Capability,
     ) {
         if let Capability::Keyboard = capability {
-            if let Some(k) = self.keyboard.take() {
+            if let Some(k) = self.input.keyboard.take() {
                 k.release();
             }
         }
