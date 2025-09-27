@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- Handle key repeatitions properly.
+
 # 0.2.2 - 2024-03-10
 
 ## Fixes
