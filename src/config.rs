@@ -68,6 +68,7 @@ impl Config {
 #[derive(Defaults, Deserialize)]
 #[serde(default)]
 struct InputText {
+    hide: bool,
     font: Option<String>,
     font_size: Option<u16>,
     bg_color: Option<Color>,

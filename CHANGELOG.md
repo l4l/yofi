@@ -3,6 +3,7 @@
 ## Features
 
 - Support some actions with pointer (e.g mouse).
+- Add flag to hide input bar.
 
 ## Changes
 
