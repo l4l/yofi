@@ -29,6 +29,7 @@ impl<'a> From<&'a Config> for InputTextParams<'a> {
             .unwrap_or(DEFAULT_FONT_COLOR);
 
         InputTextParams {
+            hide: config.input_text.hide,
             font: select_conf!(config, input_text, font)
                 .map(font_by_name)
                 .unwrap_or_else(default_font),

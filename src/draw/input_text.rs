@@ -6,6 +6,7 @@ use crate::style::{Margin, Padding, Radius};
 use crate::Color;
 
 pub struct Params<'a> {
+    pub hide: bool,
     pub font: Font,
     pub font_size: u16,
     pub bg_color: Color,
@@ -39,6 +40,13 @@ impl<'a> InputText<'a> {
 
 impl<'a> Drawable for InputText<'a> {
     fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
+        if self.params.hide {
+            return Space {
+                width: 0.,
+                height: 0.,
+            };
+        }
+
         let font_size = f32::from(self.params.font_size * scale);
 
         let mut padding = &self.params.padding * f32::from(scale);
