@@ -8,15 +8,8 @@ use sctk::{
 
 use super::Window;
 
-impl KeyboardHandler for Window {
-    fn press_key(
-        &mut self,
-        _conn: &Connection,
-        _qh: &QueueHandle<Self>,
-        _keyboard: &WlKeyboard,
-        _serial: u32,
-        event: sctk::seat::keyboard::KeyEvent,
-    ) {
+impl Window {
+    pub fn handle_keypress(&mut self, event: sctk::seat::keyboard::KeyEvent) {
         use sctk::seat::keyboard::Keysym;
         type M = Modifiers;
         match (event.keysym, self.key_modifiers) {
@@ -54,6 +47,19 @@ impl KeyboardHandler for Window {
                 m.shift
             ),
         }
+    }
+}
+
+impl KeyboardHandler for Window {
+    fn press_key(
+        &mut self,
+        _conn: &Connection,
+        _qh: &QueueHandle<Self>,
+        _keyboard: &WlKeyboard,
+        _serial: u32,
+        event: sctk::seat::keyboard::KeyEvent,
+    ) {
+        self.handle_keypress(event)
     }
 
     fn update_modifiers(

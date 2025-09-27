@@ -24,7 +24,7 @@ impl SeatHandler for Window {
                     &seat,
                     None,
                     self.loop_handle.clone(),
-                    Box::new(|_state, _wl_kbd, _event| {}),
+                    Box::new(|state, _wl_kbd, event| state.handle_keypress(event)),
                 ) {
                     Ok(k) => k,
                     Err(err) => {
