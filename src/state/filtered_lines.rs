@@ -8,13 +8,19 @@ pub type ContinuousMatch<'a> = sublime_fuzzy::ContinuousMatches<'a>;
 
 pub struct FilteredLines(Either<Vec<(usize, Match)>, usize>);
 
+fn order_items(m1: &Match, m2: &Match) -> std::cmp::Ordering {
+    m2.score()
+        .cmp(&m1.score())
+        .then_with(|| m1.matched_indices().cmp(m2.matched_indices()))
+}
+
 impl FilteredLines {
     pub fn searched<'a>(entries: impl Iterator<Item = &'a str>, search_string: &str) -> Self {
         let mut v = entries
             .enumerate()
             .filter_map(|(i, e)| Some((i, sublime_fuzzy::best_match(search_string, e)?)))
             .collect::<Vec<_>>();
-        v.sort_by_key(|(_, m)| std::cmp::Reverse(m.score()));
+        v.sort_by(|(_, m1), (_, m2)| order_items(m1, m2));
         Self(Either::Left(v))
     }
 
@@ -73,5 +79,30 @@ impl FilteredLines {
             })),
         }
         .into_iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+    use test_case::test_case;
+
+    use super::*;
+
+    #[test_case(vec!["asd"], "asd", vec!["asd"])]
+    #[test_case(vec!["xy", "yx"], "xy", vec!["xy"])]
+    #[test_case(vec!["xy", "yx"], "x", vec!["xy", "yx"])]
+    #[test_case(vec!["xy", "yx"], "y", vec!["yx", "xy"])]
+    #[test_case(vec!["ab-cd", "ac-bd"], "cd", vec!["ab-cd", "ac-bd"])]
+    #[test_case(vec!["ab-cd", "cd-ab"], "ab", vec!["ab-cd", "cd-ab"])]
+    fn test_order_items(input: Vec<&str>, query: &str, expected: Vec<&str>) {
+        let result = input
+            .into_iter()
+            .filter_map(|x| Some(dbg!(x, sublime_fuzzy::best_match(query, x)?)))
+            .sorted_by(|(_, m1), (_, m2)| order_items(m1, m2))
+            .map(|(x, _)| (x))
+            .collect::<Vec<_>>();
+
+        assert_eq!(result, expected)
     }
 }
