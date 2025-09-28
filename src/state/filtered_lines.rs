@@ -55,7 +55,7 @@ impl FilteredLines {
         mode: &'m Mode,
         item: usize,
         subitem: usize,
-    ) -> impl Iterator<Item = ListItem<'_>> + '_ {
+    ) -> impl ExactSizeIterator<Item = ListItem<'_>> + '_ {
         match self {
             Self(Either::Left(x)) => {
                 Either::Left(x.iter().enumerate().map(move |(idx, (item_idx, s_match))| {

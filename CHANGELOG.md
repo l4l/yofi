@@ -4,11 +4,13 @@
 
 - Support some actions with pointer (e.g mouse).
 - Add flag to hide input bar.
+- Adaptive height config option.
 
 ## Changes
 
 - Log to stderr instead of stdout.
 - Prefer earlier match with same score for input search.
+- Empty subitems now hidden.
 
 ## Fixes
 

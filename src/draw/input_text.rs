@@ -5,6 +5,9 @@ use crate::font::{Font, FontBackend, FontColor};
 use crate::style::{Margin, Padding, Radius};
 use crate::Color;
 
+const MIN_PADDING_TOP: f32 = 2.0;
+const MIN_PADDING_BOTTOM: f32 = 5.0;
+
 pub struct Params<'a> {
     pub hide: bool,
     pub font: Font,
@@ -23,6 +26,29 @@ pub struct InputText<'a> {
     text: &'a str,
     params: &'a Params<'a>,
     rect: RoundedRect,
+}
+
+impl Params<'_> {
+    pub fn occupied_space(&self, scale: u16) -> Space {
+        if self.hide {
+            return Space {
+                width: 0.,
+                height: 0.,
+            };
+        }
+
+        let mut padding = &self.padding * f32::from(scale);
+        padding.top += MIN_PADDING_TOP;
+        padding.bottom += MIN_PADDING_BOTTOM;
+        let margin = &self.margin * f32::from(scale);
+
+        let font_size = f32::from(self.font_size * scale);
+        let rect_height = padding.top + font_size + padding.bottom;
+        Space {
+            width: 0.,
+            height: margin.top + rect_height + margin.bottom,
+        }
+    }
 }
 
 impl<'a> InputText<'a> {
@@ -50,10 +76,8 @@ impl<'a> Drawable for InputText<'a> {
         let font_size = f32::from(self.params.font_size * scale);
 
         let mut padding = &self.params.padding * f32::from(scale);
-        const PADDING_TOP: f32 = 2.0;
-        const PADDING_BOTTOM: f32 = 5.0;
-        padding.top += PADDING_TOP;
-        padding.bottom += PADDING_BOTTOM;
+        padding.top += MIN_PADDING_TOP;
+        padding.bottom += MIN_PADDING_BOTTOM;
         let margin = &self.params.margin * f32::from(scale);
 
         let rect_width = space.width - margin.left - margin.right;

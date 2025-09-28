@@ -252,7 +252,11 @@ impl Window {
         };
         let mut point = Point::new(0., 0.);
 
-        let mut drawables = crate::draw::make_drawables(&self.config, &mut self.state);
+        let (mut drawables, dyn_space) =
+            crate::draw::make_drawables(&self.config, &mut self.state, self.scale);
+        if let Some(dyn_space) = dyn_space {
+            space_left.height = space_left.height.min(dyn_space.height);
+        }
         while let Some(d) = drawables.borrowed_next() {
             let occupied = d.draw(&mut dt, self.scale, space_left, point);
             debug_assert!(
