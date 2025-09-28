@@ -8,6 +8,7 @@
 ## Changes
 
 - Log to stderr instead of stdout.
+- Prefer earlier match with same score for input search.
 
 ## Fixes
 
