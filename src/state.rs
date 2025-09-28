@@ -146,7 +146,12 @@ impl State {
         self.selected_item
     }
 
-    pub fn processed_entries(&self) -> impl Iterator<Item = ListItem<'_>> {
+    pub fn has_subitems(&self) -> bool {
+        // For now either all items has subname or none.
+        self.inner.subentries_len(self.selected_item) > 0
+    }
+
+    pub fn processed_entries(&self) -> impl ExactSizeIterator<Item = ListItem<'_>> {
         self.filtered_lines
             .list_items(&self.inner, self.selected_item, self.selected_subitem)
     }

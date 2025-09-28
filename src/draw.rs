@@ -54,6 +54,7 @@ impl<'a> Drawables<'a> {
                 self.state.processed_entries(),
                 self.state.skip_offset(),
                 self.state.selected_item(),
+                self.state.has_subitems(),
                 self.tx.take().unwrap(),
                 &self.list_config,
             ),
@@ -70,24 +71,43 @@ impl<'a> Drawables<'a> {
 pub fn make_drawables<'c: 'it, 's: 'it, 'it>(
     config: &'c crate::config::Config,
     state: &'s mut crate::state::State,
-) -> Drawables<'it> {
+    scale: u16,
+) -> (Drawables<'it>, Option<Space>) {
     let background_config = config.param();
-    let input_config = config.param();
-    let list_config = config.param();
+    let input_config: InputTextParams<'_> = config.param();
+    let list_config: ListParams = config.param();
 
     state.process_entries();
 
-    let (tx, rx) = oneshot::channel();
-    Drawables {
-        counter: 0,
-        tx: Some(tx),
-        rx: Some(rx),
-        state,
+    let space = if config.is_height_adaptive() {
+        let input_space = input_config.occupied_space(scale);
+        let list_space = list_config.space_for_entries(
+            state.processed_entries().len().max(1),
+            scale,
+            state.has_subitems(),
+        );
+        Some(Space {
+            width: 0.,
+            height: input_space.height + list_space.height,
+        })
+    } else {
+        None
+    };
 
-        background_config,
-        input_config,
-        list_config,
-    }
+    let (tx, rx) = oneshot::channel();
+    (
+        Drawables {
+            counter: 0,
+            tx: Some(tx),
+            rx: Some(rx),
+            state,
+
+            background_config,
+            input_config,
+            list_config,
+        },
+        space,
+    )
 }
 
 impl<'a, It> Widget<'a, It> {
@@ -99,6 +119,7 @@ impl<'a, It> Widget<'a, It> {
         items: It,
         skip_offset: usize,
         selected_item: usize,
+        has_subitems: bool,
         tx: Sender<usize>,
         params: &'a ListParams,
     ) -> Self {
@@ -106,6 +127,7 @@ impl<'a, It> Widget<'a, It> {
             items,
             skip_offset,
             selected_item,
+            has_subitems,
             tx,
             params,
         ))

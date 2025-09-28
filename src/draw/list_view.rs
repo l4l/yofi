@@ -36,9 +36,41 @@ pub struct ListView<'a, It> {
     items: It,
     skip_offset: usize,
     selected_item: usize,
+    has_subitems: bool,
     new_skip: Sender<usize>,
     params: &'a Params,
     _tparam: PhantomData<&'a ()>,
+}
+
+impl Params {
+    fn common_bounds(&self, scale: u16) -> (Margin, f32, f32) {
+        let margin = &self.margin * f32::from(scale);
+        let item_spacing = self.item_spacing * f32::from(scale);
+        let icon_size = self.icon_size.unwrap_or(0) * scale;
+        let font_size = f32::from(self.font_size * scale);
+        let entry_height = font_size.max(f32::from(icon_size));
+        (margin, item_spacing, entry_height)
+    }
+
+    pub fn entries_fitted(&self, scale: u16, has_subname: bool, space: Space) -> usize {
+        let (margin, item_spacing, entry_height) = self.common_bounds(scale);
+
+        (((space.height - margin.top - margin.bottom + item_spacing)
+            / (entry_height + item_spacing)) as usize)
+            .saturating_sub(has_subname as usize)
+    }
+
+    pub fn space_for_entries(&self, count: usize, scale: u16, has_subname: bool) -> Space {
+        let (margin, item_spacing, entry_height) = self.common_bounds(scale);
+
+        let has_subname = (has_subname && !self.hide_actions) as usize;
+        let count = has_subname + count;
+        let height = count as f32 * entry_height
+            + (count - 1 + has_subname) as f32 * item_spacing
+            + margin.top
+            + margin.bottom;
+        Space { height, width: 0.0 }
+    }
 }
 
 impl<'a, It> ListView<'a, It> {
@@ -46,6 +78,7 @@ impl<'a, It> ListView<'a, It> {
         items: It,
         skip_offset: usize,
         selected_item: usize,
+        has_subitems: bool,
         new_skip: Sender<usize>,
         params: &'a Params,
     ) -> Self {
@@ -53,6 +86,7 @@ impl<'a, It> ListView<'a, It> {
             items,
             skip_offset,
             selected_item,
+            has_subitems,
             new_skip,
             params,
             _tparam: PhantomData,
@@ -65,28 +99,18 @@ where
     It: Iterator<Item = ListItem<'a>>,
 {
     fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
-        let margin = &self.params.margin * f32::from(scale);
-        let item_spacing = self.params.item_spacing * f32::from(scale);
+        let (margin, item_spacing, entry_height) = self.params.common_bounds(scale);
         let icon_size = self.params.icon_size.unwrap_or(0) * scale;
         let icon_spacing = self.params.icon_spacing * f32::from(scale);
 
         let icon_size_f32 = f32::from(icon_size);
         let font_size = f32::from(self.params.font_size * scale);
         let top_offset = point.y + margin.top + (icon_size_f32 - font_size).max(0.) / 2.;
-        let entry_height = font_size.max(icon_size_f32);
-
-        let mut iter = self.items.peekable();
 
         let hide_actions = self.params.hide_actions;
-        // For now either all items has subname or none.
-        let has_subname = iter
-            .peek()
-            .map(|e| e.subname.is_some() && !hide_actions)
-            .unwrap_or(false);
+        let has_subname = self.has_subitems && !hide_actions;
 
-        let displayed_items = ((space.height - margin.top - margin.bottom + item_spacing)
-            / (entry_height + item_spacing)) as usize
-            - has_subname as usize;
+        let displayed_items = self.params.entries_fitted(scale, has_subname, space);
 
         let max_offset = self.skip_offset + displayed_items;
         let (selected_item, skip_offset) = if self.selected_item < self.skip_offset {
@@ -102,7 +126,12 @@ where
 
         self.new_skip.send(skip_offset).unwrap();
 
-        for (i, item) in iter.skip(skip_offset).enumerate().take(displayed_items) {
+        for (i, item) in self
+            .items
+            .skip(skip_offset)
+            .enumerate()
+            .take(displayed_items)
+        {
             let relative_offset = (i as f32 + (i > selected_item && has_subname) as i32 as f32)
                 * (entry_height + item_spacing);
             let x_offset = point.x + margin.left;
@@ -199,5 +228,45 @@ where
         }
 
         space
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use test_case::test_matrix;
+
+    #[test_matrix(
+        [0, 1, 2, 10, 100],
+        [1, 2, 3],
+        [false, true]
+    )]
+    fn test_param_entries_fit(count: usize, scale: u16, has_subname: bool) {
+        let param = Params {
+            font: crate::font::InnerFont::default().into(),
+            font_size: 24,
+            font_color: Color::from_rgba(15, 15, 15, 255),
+            selected_font_color: Color::from_rgba(15, 15, 15, 255),
+            match_color: None,
+            icon_size: Some(16),
+            fallback_icon: None,
+            margin: Margin {
+                top: 10.,
+                bottom: 5.,
+                left: 2.,
+                right: 3.,
+            },
+            hide_actions: false,
+            action_left_margin: 0.,
+            item_spacing: 1.5,
+            icon_spacing: 0.5,
+        };
+
+        let space = param.space_for_entries(count, scale, true);
+        let x = param.entries_fitted(scale, true, space);
+
+        dbg!((count, scale, has_subname, space.height, x));
+        assert_eq!(x, count);
     }
 }

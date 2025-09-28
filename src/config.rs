@@ -33,6 +33,7 @@ pub struct Config {
     #[def = "false"]
     force_window: bool,
     window_offsets: Option<(i32, i32)>,
+    adaptive_height: bool,
     scale: Option<u16>,
     term: Option<String>,
     font: Option<String>,
@@ -62,6 +63,10 @@ impl Config {
 
     pub fn override_password(&mut self) {
         self.input_text.password = true;
+    }
+
+    pub fn is_height_adaptive(&self) -> bool {
+        self.adaptive_height
     }
 }
 
