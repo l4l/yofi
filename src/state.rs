@@ -48,6 +48,7 @@ impl InputBuffer {
 pub struct State {
     input_buffer: InputBuffer,
     skip_offset: usize,
+    // index without considering filtering
     selected_item: usize,
     selected_subitem: usize,
     filtered_lines: FilteredLines,
@@ -146,9 +147,11 @@ impl State {
         self.selected_item
     }
 
-    pub fn has_subitems(&self) -> bool {
-        // For now either all items has subname or none.
-        self.inner.subentries_len(self.selected_item) > 0
+    pub fn selected_has_subitems(&self) -> bool {
+        self.filtered_lines
+            .index(self.selected_item)
+            .map(|idx| self.inner.subentries_len(idx))
+            .is_some_and(|count| count > 0)
     }
 
     pub fn processed_entries(&self) -> impl ExactSizeIterator<Item = ListItem<'_>> {

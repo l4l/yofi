@@ -54,7 +54,7 @@ impl<'a> Drawables<'a> {
                 self.state.processed_entries(),
                 self.state.skip_offset(),
                 self.state.selected_item(),
-                self.state.has_subitems(),
+                self.state.selected_has_subitems(),
                 self.tx.take().unwrap(),
                 &self.list_config,
             ),
@@ -84,7 +84,7 @@ pub fn make_drawables<'c: 'it, 's: 'it, 'it>(
         let list_space = list_config.space_for_entries(
             state.processed_entries().len().max(1),
             scale,
-            state.has_subitems(),
+            state.selected_has_subitems(),
         );
         Some(Space {
             width: 0.,
