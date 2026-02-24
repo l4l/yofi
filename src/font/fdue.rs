@@ -108,9 +108,20 @@ fn index_to_u32(idx: i32) -> Option<u32> {
 
 impl FontBackend for Font {
     fn default() -> Self {
+        for name in ["DejaVu Sans Mono", "monospace"] {
+            if let Ok(font) = Font::font_by_name(name) {
+                return font;
+            }
+        }
+
+        log::info!("no preferred default font found, falling back to any available font");
         let pat = Pattern::new(&FONTCONFIG_CACHE);
         fontconfig::list_fonts(&pat, None)
             .iter()
+            .filter(|pat| {
+                pat.lang_set()
+                    .map_or(false, |mut langs| langs.any(|l| l == "en"))
+            })
             .find_map(|pat| {
                 let path = std::path::Path::new(pat.filename()?);
                 if !path.exists() {
@@ -261,5 +272,21 @@ impl FontBackend for Font {
 
             dt.draw_image_with_size_at(g.width as f32, g.height as f32, g.x, g.y, &img, opts);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fontconfig_has_en_font() {
+        let pat = Pattern::new(&FONTCONFIG_CACHE);
+        let fonts = fontconfig::list_fonts(&pat, None);
+        let has_en = fonts.iter().any(|pat| {
+            pat.lang_set()
+                .map_or(false, |mut langs| langs.any(|l| l == "en"))
+        });
+        assert!(has_en, "no font with English language support found");
     }
 }
