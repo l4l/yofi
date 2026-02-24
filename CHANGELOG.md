@@ -15,6 +15,7 @@
 ## Fixes
 
 - Handle key repeatitions properly.
+- Default may not have english glyphs.
 
 # 0.2.2 - 2024-03-10
 

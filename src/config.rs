@@ -65,6 +65,10 @@ impl Config {
         self.input_text.password = true;
     }
 
+    pub fn override_font(&mut self, font: String) {
+        self.font = Some(font);
+    }
+
     pub fn is_height_adaptive(&self) -> bool {
         self.adaptive_height
     }
