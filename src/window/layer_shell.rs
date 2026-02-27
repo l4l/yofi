@@ -23,8 +23,9 @@ impl LayerShellHandler for Window {
         _serial: u32,
     ) {
         let (w, h) = configure.new_size;
-        self.width = w;
-        self.height = h;
+        let (cw, ch) = self.content_size();
+        self.width = if w > 0 { w } else { cw };
+        self.height = if h > 0 { h } else { ch };
         layer.set_keyboard_interactivity(KeyboardInteractivity::Exclusive);
 
         if !self.configured_surface {
