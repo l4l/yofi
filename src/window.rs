@@ -82,6 +82,12 @@ enum RenderSurface {
     LayerShell(wlr_layer::LayerSurface),
 }
 
+impl RenderSurface {
+    fn is_overlay(&self) -> bool {
+        matches!(self, RenderSurface::LayerShell(_))
+    }
+}
+
 impl std::ops::Deref for RenderSurface {
     type Target = WlSurface;
 
@@ -132,11 +138,18 @@ impl Window {
                 None,
             );
 
-            if let Some((top_offset, left_offset)) = params.window_offsets {
-                layer.set_anchor(wlr_layer::Anchor::LEFT | wlr_layer::Anchor::TOP);
-                layer.set_margin(top_offset, 0, 0, left_offset);
-            }
-            layer.set_size(width, height);
+            layer.set_anchor(
+                wlr_layer::Anchor::TOP
+                    | wlr_layer::Anchor::BOTTOM
+                    | wlr_layer::Anchor::LEFT
+                    | wlr_layer::Anchor::RIGHT,
+            );
+            // If you pass 0 for either value, the compositor will assign it and inform you
+            // of the assignment in the configure event. You must set your anchor to opposite
+            // edges in the dimensions you omit; not doing so is a protocol error.
+            // src: https://wayland.app/protocols/wlr-layer-shell-unstable-v1
+            layer.set_size(0, 0);
+            layer.set_exclusive_zone(-1);
             layer.set_keyboard_interactivity(wlr_layer::KeyboardInteractivity::Exclusive);
 
             layer.commit();
@@ -189,6 +202,28 @@ impl Window {
         self.height * u32::from(self.scale)
     }
 
+    fn content_size(&self) -> (u32, u32) {
+        let params: Params = self.config.param();
+        (params.width, params.height)
+    }
+
+    /// Returns the (x, y) pixel offset to position the content area within the
+    /// surface, in logical (unscaled) coordinates.
+    fn content_offset(&self) -> (f32, f32) {
+        if !self.surface.is_overlay() {
+            return (0.0, 0.0);
+        }
+        let params: Params = self.config.param();
+        if let Some((top, left)) = params.window_offsets {
+            (left as f32, top as f32)
+        } else {
+            let (cw, ch) = self.content_size();
+            let x = (self.width as f32 - cw as f32) / 2.0;
+            let y = (self.height as f32 - ch as f32) / 2.0;
+            (x, y)
+        }
+    }
+
     pub fn draw(&mut self, qh: &QueueHandle<Self>) {
         let width = self.width().try_into().expect("width overflow");
         let height = self.height().try_into().expect("height overflow");
@@ -211,6 +246,18 @@ impl Window {
                 .expect("create buffer")
                 .0
         });
+
+        let overlay = self.surface.is_overlay();
+        let (content_w, content_h) = if overlay {
+            let (cw, ch) = self.content_size();
+            let s = i32::from(self.scale);
+            (cw as i32 * s, ch as i32 * s)
+        } else {
+            (width, height)
+        };
+        let (offset_x, offset_y) = self.content_offset();
+        let scaled_offset_x = offset_x * self.scale as f32;
+        let scaled_offset_y = offset_y * self.scale as f32;
 
         let canvas = match self.pool.canvas(&buffer) {
             Some(canvas) => canvas,
@@ -247,10 +294,10 @@ impl Window {
         };
 
         let mut space_left = Space {
-            width: width as f32,
-            height: height as f32,
+            width: content_w as f32,
+            height: content_h as f32,
         };
-        let mut point = Point::new(0., 0.);
+        let mut point = Point::new(scaled_offset_x, scaled_offset_y);
 
         let (mut drawables, dyn_space) =
             crate::draw::make_drawables(&self.config, &mut self.state, self.scale);

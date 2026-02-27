@@ -5,6 +5,7 @@
 - Support some actions with pointer (e.g mouse).
 - Add flag to hide input bar.
 - Adaptive height config option.
+- Quit on outer region click.
 
 ## Changes
 

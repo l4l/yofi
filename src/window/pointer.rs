@@ -34,10 +34,24 @@ impl PointerHandler for Window {
             }
 
             match event.kind {
-                // TODO: implement precise clicks on items
-                // PointerEventKind::Release {
-                //     button: BTN_LEFT, ..
-                // } => ..,
+                PointerEventKind::Release {
+                    button: BTN_LEFT, ..
+                } if self.surface.is_overlay() => {
+                    let (ox, oy) = self.content_offset();
+                    let left = f64::from(ox);
+                    let top = f64::from(oy);
+                    let (cw, ch) = self.content_size();
+                    let right = cw as f64 + left;
+                    let bottom = ch as f64 + top;
+
+                    let (px, py) = event.position;
+                    if px < left || py < top || px > right || py > bottom {
+                        self.exit = true;
+                    } else {
+                        // TODO: implement precise clicks on items
+                        continue;
+                    }
+                }
                 PointerEventKind::Release {
                     button: BTN_MIDDLE, ..
                 } if config.launch_on_middle => {
