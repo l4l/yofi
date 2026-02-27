@@ -72,6 +72,10 @@ impl Mode {
         dialog::DialogMode::new().map(Self::Dialog)
     }
 
+    pub fn dialog_from_lines(lines: Vec<String>) -> Self {
+        Self::Dialog(dialog::DialogMode::from_lines(lines))
+    }
+
     pub fn fork_eval(&mut self, info: EvalInfo<'_>) -> Result<()> {
         // Safety:
         // - no need for signal-safety as we single-thread everywhere;

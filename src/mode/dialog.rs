@@ -15,6 +15,10 @@ impl DialogMode {
             .map(|lines| Self { lines })
     }
 
+    pub fn from_lines(lines: Vec<String>) -> Self {
+        Self { lines }
+    }
+
     pub fn eval(&mut self, info: EvalInfo<'_>) -> Result<std::convert::Infallible> {
         let value = info
             .index
