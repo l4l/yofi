@@ -68,9 +68,7 @@ pub fn render_to_buffer(
     }
     while let Some(d) = drawables.borrowed_next() {
         let occupied = d.draw(&mut dt, scale, space_left, point);
-        debug_assert!(
-            occupied.width <= space_left.width && occupied.height <= space_left.height
-        );
+        debug_assert!(occupied.width <= space_left.width && occupied.height <= space_left.height);
         point.y += occupied.height;
         space_left.height -= occupied.height;
     }
