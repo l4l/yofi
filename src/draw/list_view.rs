@@ -163,7 +163,7 @@ where
             }
 
             let pos = Point::new(x_offset + icon_size_f32 + icon_spacing, y_offset);
-            let end_pos = Point::new(dt.width() as f32 - self.params.margin.right, y_offset);
+            let end_pos = Point::new(point.x + space.width - margin.right, y_offset);
 
             let color = if i == selected_item {
                 self.params.selected_font_color

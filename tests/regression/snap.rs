@@ -8,8 +8,12 @@ pub enum Action {
     NextItem,
 }
 
+fn to_entries(items: &[&str]) -> Vec<String> {
+    items.iter().map(|s| s.to_string()).collect()
+}
+
 pub fn test_entries() -> Vec<String> {
-    [
+    to_entries(&[
         "Firefox",
         "Chromium",
         "Terminal",
@@ -18,10 +22,16 @@ pub fn test_entries() -> Vec<String> {
         "Calculator",
         "Text Editor",
         "Music Player",
-    ]
-    .iter()
-    .map(|s| s.to_string())
-    .collect()
+    ])
+}
+
+pub fn test_entries_with_long_name() -> Vec<String> {
+    to_entries(&[
+        "Very Long Application Name That Definitely Does Not Fit In The Window",
+        "Firefox",
+        "Chromium",
+        "Terminal",
+    ])
 }
 
 fn unpremultiply_to_rgba(buffer: &[u32]) -> Vec<u8> {
@@ -85,6 +95,15 @@ fn load_png_rgba(path: &str) -> (u32, u32, Vec<u8>) {
 }
 
 pub fn run_regression(name: &str, entries: Vec<String>, actions: &[Action]) {
+    run_regression_with_padding(name, entries, actions, (0, 0));
+}
+
+pub fn run_regression_with_padding(
+    name: &str,
+    entries: Vec<String>,
+    actions: &[Action],
+    padding: (u32, u32),
+) {
     let config = Config::default();
 
     let mode = Mode::dialog_from_lines(entries);
@@ -99,14 +118,20 @@ pub fn run_regression(name: &str, entries: Vec<String>, actions: &[Action]) {
 
     let params: Params = config.param();
     let scale = params.scale.unwrap_or(1);
-    let w = (params.width * u32::from(scale)) as i32;
-    let h = (params.height * u32::from(scale)) as i32;
-    let mut buffer = vec![0u32; (w * h) as usize];
-    yofi::render_to_buffer(&config, &mut state, scale, w, h, &mut buffer);
+    let content_w = params.width * u32::from(scale);
+    let content_h = params.height * u32::from(scale);
+    let buf_w = (content_w + 2 * padding.0) as i32;
+    let buf_h = (content_h + 2 * padding.1) as i32;
+
+    let mut buffer = vec![0u32; (buf_w * buf_h) as usize];
+    let viewport = yofi::Viewport::full(buf_w, buf_h).inset(
+        (padding.0 as f32, padding.1 as f32),
+        (content_w as f32, content_h as f32),
+    );
+    yofi::render_to_buffer(&config, &mut state, scale, &mut buffer, viewport);
 
     let actual_rgba = unpremultiply_to_rgba(&buffer);
-    let w = w as u32;
-    let h = h as u32;
+    let (w, h) = (buf_w as u32, buf_h as u32);
 
     let fixture = format!("tests/fixtures/{name}.png");
     let new_file = format!("tests/fixtures/{name}.new.png");

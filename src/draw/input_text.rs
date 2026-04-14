@@ -96,7 +96,7 @@ impl<'a> Drawable for InputText<'a> {
 
         let pos = Point::new(rect_point.x + padding.left, rect_point.y + padding.top);
         let end_pos = Point::new(
-            dt.width() as f32 - self.params.padding.right - self.params.margin.right,
+            point.x + space.width - self.params.padding.right - self.params.margin.right,
             pos.y,
         );
 

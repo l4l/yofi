@@ -273,8 +273,7 @@ impl Window {
             }
         };
 
-        use crate::draw::*;
-        let mut dt = {
+        let canvas = {
             #[allow(clippy::needless_lifetimes)]
             fn transmute_slice<'a>(a: &'a mut [u8]) -> &'a mut [u32] {
                 assert_eq!(a.as_ptr().align_offset(std::mem::align_of::<u32>()), 0);
@@ -289,30 +288,17 @@ impl Window {
                     &mut *std::ptr::slice_from_raw_parts_mut(a.as_mut_ptr().cast(), a.len() / 4)
                 }
             }
-            let canvas = transmute_slice(canvas);
-            DrawTarget::from_backing(width, height, canvas)
+            transmute_slice(canvas)
         };
 
-        let mut space_left = Space {
-            width: content_w as f32,
-            height: content_h as f32,
-        };
-        let mut point = Point::new(scaled_offset_x, scaled_offset_y);
-
-        let (mut drawables, dyn_space) =
-            crate::draw::make_drawables(&self.config, &mut self.state, self.scale);
-        if let Some(dyn_space) = dyn_space {
-            space_left.height = space_left.height.min(dyn_space.height);
-        }
-        while let Some(d) = drawables.borrowed_next() {
-            let occupied = d.draw(&mut dt, self.scale, space_left, point);
-            debug_assert!(
-                occupied.width <= space_left.width && occupied.height <= space_left.height
+        let mut viewport = crate::Viewport::full(width, height);
+        if overlay {
+            viewport = viewport.inset(
+                (scaled_offset_x, scaled_offset_y),
+                (content_w as f32, content_h as f32),
             );
-
-            point.y += occupied.height;
-            space_left.height -= occupied.height;
         }
+        crate::render_to_buffer(&self.config, &mut self.state, self.scale, canvas, viewport);
 
         self.surface.damage_buffer(0, 0, width, height);
         self.surface.frame(qh, self.surface.clone());
