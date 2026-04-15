@@ -30,6 +30,7 @@ impl CompositorHandler for Window {
             {
                 self.error = Some(err);
             }
+            self.dirty = true;
         }
     }
 
@@ -46,10 +47,9 @@ impl CompositorHandler for Window {
     fn frame(
         &mut self,
         _conn: &Connection,
-        qh: &QueueHandle<Self>,
+        _qh: &QueueHandle<Self>,
         _surface: &WlSurface,
         _time: u32,
     ) {
-        self.draw(qh);
     }
 }

@@ -67,6 +67,7 @@ pub struct Window {
     wheel_scroll_pending: f64,
 
     loop_handle: LoopHandle<'static, Window>,
+    dirty: bool,
     exit: bool,
 
     error: Option<anyhow::Error>,
@@ -187,6 +188,7 @@ impl Window {
                 key_modifiers: Default::default(),
                 wheel_scroll_pending: 0.0,
                 loop_handle: event_loop.handle(),
+                dirty: true,
                 exit: false,
                 error: None,
             },
@@ -207,6 +209,14 @@ impl Window {
         (params.width, params.height)
     }
 
+    fn update_size(&mut self, new_w: u32, new_h: u32) {
+        if new_w != self.width || new_h != self.height {
+            self.width = new_w;
+            self.height = new_h;
+            self.dirty = true;
+        }
+    }
+
     /// Returns the (x, y) pixel offset to position the content area within the
     /// surface, in logical (unscaled) coordinates.
     fn content_offset(&self) -> (f32, f32) {
@@ -224,7 +234,14 @@ impl Window {
         }
     }
 
-    pub fn draw(&mut self, qh: &QueueHandle<Self>) {
+    pub fn redraw_if_dirty(&mut self) {
+        if !self.dirty {
+            return;
+        }
+        self.draw();
+    }
+
+    fn draw(&mut self) {
         let width = self.width().try_into().expect("width overflow");
         let height = self.height().try_into().expect("height overflow");
         let stride = width * 4;
@@ -301,10 +318,10 @@ impl Window {
         crate::render_to_buffer(&self.config, &mut self.state, self.scale, canvas, viewport);
 
         self.surface.damage_buffer(0, 0, width, height);
-        self.surface.frame(qh, self.surface.clone());
         buffer.attach_to(&self.surface).expect("buffer attach");
         self.buffer = Some(buffer);
         self.surface.commit();
+        self.dirty = false;
     }
 
     pub fn asked_exit(&self) -> bool {

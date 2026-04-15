@@ -40,13 +40,17 @@ impl Window {
             (_, M { ctrl: false, .. }) if event.utf8.is_some() => {
                 self.state.append_to_input(event.utf8.as_ref().unwrap())
             }
-            (k, m) => log::debug!(
-                "unhandled sym: {:?} (ctrl: {}, shift: {})",
-                k,
-                m.ctrl,
-                m.shift
-            ),
+            (k, m) => {
+                log::debug!(
+                    "unhandled sym: {:?} (ctrl: {}, shift: {})",
+                    k,
+                    m.ctrl,
+                    m.shift
+                );
+                return;
+            }
         }
+        self.dirty = true;
     }
 }
 

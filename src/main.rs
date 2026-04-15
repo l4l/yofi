@@ -199,6 +199,7 @@ fn main_inner() -> Result<()> {
         if let Some(err) = window.take_error() {
             return Err(err);
         }
+        window.redraw_if_dirty();
     }
 
     Ok(())

@@ -97,17 +97,17 @@ impl PointerHandler for Window {
             changed = true;
         }
 
-        if changed {
-            let scroll_per_step = SCROLL_PER_STEP
-                * if config.wheel_scroll_multiplier > 0.0 {
-                    config.wheel_scroll_multiplier
-                } else {
-                    1.0
-                };
-            let wheel_steps = (self.wheel_scroll_pending / scroll_per_step) as i32;
-            if wheel_steps != 0 {
-                self.wheel_scroll_pending -= f64::from(wheel_steps) * scroll_per_step;
-            }
+        let scroll_per_step = SCROLL_PER_STEP
+            * if config.wheel_scroll_multiplier > 0.0 {
+                config.wheel_scroll_multiplier
+            } else {
+                1.0
+            };
+        let wheel_steps = (self.wheel_scroll_pending / scroll_per_step) as i32;
+        if wheel_steps != 0 {
+            changed = true;
+
+            self.wheel_scroll_pending -= f64::from(wheel_steps) * scroll_per_step;
             let is_wheel_down = wheel_steps > 0;
             for _ in 0..wheel_steps.abs() {
                 if is_wheel_down {
@@ -116,6 +116,10 @@ impl PointerHandler for Window {
                     self.state.prev_item();
                 }
             }
+        }
+
+        if changed {
+            self.dirty = true;
         }
     }
 }
