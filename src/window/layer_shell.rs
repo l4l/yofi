@@ -28,7 +28,6 @@ impl LayerShellHandler for Window {
 
         if !self.configured_surface {
             self.configured_surface = true;
-            self.dirty = true;
             self.draw();
         }
     }

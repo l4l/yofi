@@ -24,7 +24,6 @@ impl PointerHandler for Window {
         _pointer: &protocol::wl_pointer::WlPointer,
         events: &[PointerEvent],
     ) {
-        let mut changed = false;
         let config = self.config.param::<Params>();
 
         for event in events {
@@ -94,7 +93,6 @@ impl PointerHandler for Window {
                 | PointerEventKind::Release { .. }
                 | PointerEventKind::Axis { .. } => continue,
             }
-            changed = true;
         }
 
         let scroll_per_step = SCROLL_PER_STEP
@@ -105,8 +103,6 @@ impl PointerHandler for Window {
             };
         let wheel_steps = (self.wheel_scroll_pending / scroll_per_step) as i32;
         if wheel_steps != 0 {
-            changed = true;
-
             self.wheel_scroll_pending -= f64::from(wheel_steps) * scroll_per_step;
             let is_wheel_down = wheel_steps > 0;
             for _ in 0..wheel_steps.abs() {
@@ -116,10 +112,6 @@ impl PointerHandler for Window {
                     self.state.prev_item();
                 }
             }
-        }
-
-        if changed {
-            self.dirty = true;
         }
     }
 }

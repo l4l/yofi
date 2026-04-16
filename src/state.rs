@@ -53,6 +53,7 @@ pub struct State {
     selected_subitem: usize,
     filtered_lines: FilteredLines,
     inner: Mode,
+    dirty: bool,
 }
 
 impl State {
@@ -64,13 +65,27 @@ impl State {
             selected_subitem: 0,
             filtered_lines: FilteredLines::unfiltred(inner.entries_len()),
             inner,
+            dirty: true,
         }
+    }
+
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn clear_dirty(&mut self) {
+        self.dirty = false;
     }
 
     pub fn remove_input_char(&mut self) {
         self.input_buffer.update_input(|input| {
             input.pop();
-        })
+        });
+        self.mark_dirty();
     }
 
     pub fn remove_input_word(&mut self) {
@@ -80,15 +95,18 @@ impl State {
             } else {
                 input.clear();
             }
-        })
+        });
+        self.mark_dirty();
     }
 
     pub fn append_to_input(&mut self, s: &str) {
-        self.input_buffer.update_input(|input| input.push_str(s))
+        self.input_buffer.update_input(|input| input.push_str(s));
+        self.mark_dirty();
     }
 
     pub fn clear_input(&mut self) {
-        self.input_buffer.update_input(|input| input.clear())
+        self.input_buffer.update_input(|input| input.clear());
+        self.mark_dirty();
     }
 
     pub fn eval_input(&mut self, with_fork: bool) -> anyhow::Result<()> {
@@ -113,22 +131,26 @@ impl State {
             .entries_len()
             .saturating_sub(1)
             .min(self.selected_item + 1);
+        self.mark_dirty();
     }
 
     pub fn prev_item(&mut self) {
         self.selected_subitem = 0;
         self.selected_item = self.selected_item.saturating_sub(1);
+        self.mark_dirty();
     }
 
     pub fn next_subitem(&mut self) {
         self.selected_subitem = self
             .inner
             .subentries_len(self.filtered_lines.index(self.selected_item).unwrap_or(0))
-            .min(self.selected_subitem + 1)
+            .min(self.selected_subitem + 1);
+        self.mark_dirty();
     }
 
     pub fn prev_subitem(&mut self) {
-        self.selected_subitem = self.selected_subitem.saturating_sub(1)
+        self.selected_subitem = self.selected_subitem.saturating_sub(1);
+        self.mark_dirty();
     }
 
     pub fn raw_input(&self) -> &str {

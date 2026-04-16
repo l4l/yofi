@@ -47,10 +47,8 @@ impl Window {
                     m.ctrl,
                     m.shift
                 );
-                return;
             }
         }
-        self.dirty = true;
     }
 }
 

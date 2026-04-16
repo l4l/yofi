@@ -30,7 +30,7 @@ impl CompositorHandler for Window {
             {
                 self.error = Some(err);
             }
-            self.dirty = true;
+            self.state.mark_dirty();
         }
     }
 
