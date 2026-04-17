@@ -6,6 +6,38 @@ use filtered_lines::FilteredLines;
 
 mod filtered_lines;
 
+struct MarqueeState {
+    scroll_offset: f32,
+    last_frame_time: Option<u32>,
+    tracked_item: usize,
+    overflow_width: f32,
+    pause_remaining: f32,
+}
+
+const SCROLL_SPEED: f32 = 30.0; // px/s
+const INITIAL_PAUSE: f32 = 1000.0; // ms
+const LOOP_PAUSE: f32 = 500.0; // ms
+const END_PAUSE: f32 = 1000.0; // ms
+const MIN_TICK_MS: u32 = 50; // ~20 fps cap
+
+impl MarqueeState {
+    fn new() -> Self {
+        Self {
+            scroll_offset: 0.0,
+            last_frame_time: None,
+            tracked_item: 0,
+            overflow_width: 0.0,
+            pause_remaining: INITIAL_PAUSE,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.scroll_offset = 0.0;
+        self.last_frame_time = None;
+        self.pause_remaining = INITIAL_PAUSE;
+    }
+}
+
 struct InputBuffer {
     raw_input: String,
     parsed_input: InputValue<'static>,
@@ -53,6 +85,8 @@ pub struct State {
     selected_subitem: usize,
     filtered_lines: FilteredLines,
     inner: Mode,
+    marquee: MarqueeState,
+    dirty: bool,
 }
 
 impl State {
@@ -64,13 +98,29 @@ impl State {
             selected_subitem: 0,
             filtered_lines: FilteredLines::unfiltred(inner.entries_len()),
             inner,
+            marquee: MarqueeState::new(),
+            dirty: true,
         }
+    }
+
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn clear_dirty(&mut self) {
+        self.dirty = false;
     }
 
     pub fn remove_input_char(&mut self) {
         self.input_buffer.update_input(|input| {
             input.pop();
-        })
+        });
+        self.marquee.reset();
+        self.mark_dirty();
     }
 
     pub fn remove_input_word(&mut self) {
@@ -80,15 +130,21 @@ impl State {
             } else {
                 input.clear();
             }
-        })
+        });
+        self.marquee.reset();
+        self.mark_dirty();
     }
 
     pub fn append_to_input(&mut self, s: &str) {
-        self.input_buffer.update_input(|input| input.push_str(s))
+        self.input_buffer.update_input(|input| input.push_str(s));
+        self.marquee.reset();
+        self.mark_dirty();
     }
 
     pub fn clear_input(&mut self) {
-        self.input_buffer.update_input(|input| input.clear())
+        self.input_buffer.update_input(|input| input.clear());
+        self.marquee.reset();
+        self.mark_dirty();
     }
 
     pub fn eval_input(&mut self, with_fork: bool) -> anyhow::Result<()> {
@@ -113,22 +169,88 @@ impl State {
             .entries_len()
             .saturating_sub(1)
             .min(self.selected_item + 1);
+        self.marquee.reset();
+        self.mark_dirty();
     }
 
     pub fn prev_item(&mut self) {
         self.selected_subitem = 0;
         self.selected_item = self.selected_item.saturating_sub(1);
+        self.marquee.reset();
+        self.mark_dirty();
+    }
+
+    pub fn update_marquee(&mut self, time_ms: u32) {
+        if self.selected_item != self.marquee.tracked_item {
+            self.marquee.reset();
+            self.marquee.tracked_item = self.selected_item;
+        }
+
+        if self.marquee.overflow_width <= 0.0 {
+            return;
+        }
+
+        let delta = match self.marquee.last_frame_time {
+            Some(last) => {
+                let dt = time_ms.wrapping_sub(last);
+                if dt < MIN_TICK_MS {
+                    return;
+                }
+                dt as f32
+            }
+            None => {
+                self.marquee.last_frame_time = Some(time_ms);
+                self.mark_dirty();
+                return;
+            }
+        };
+        self.marquee.last_frame_time = Some(time_ms);
+        self.mark_dirty();
+
+        if self.marquee.pause_remaining > 0.0 {
+            self.marquee.pause_remaining -= delta;
+            let at_end = self.marquee.scroll_offset >= self.marquee.overflow_width;
+            if self.marquee.pause_remaining <= 0.0 && at_end {
+                self.marquee.scroll_offset = 0.0;
+                self.marquee.pause_remaining = LOOP_PAUSE;
+            }
+            return;
+        }
+
+        self.marquee.scroll_offset += SCROLL_SPEED * delta / 1000.0;
+
+        if self.marquee.scroll_offset >= self.marquee.overflow_width {
+            self.marquee.scroll_offset = self.marquee.overflow_width;
+            self.marquee.pause_remaining = END_PAUSE;
+        }
+    }
+
+    pub fn marquee_scroll_offset(&self) -> f32 {
+        self.marquee.scroll_offset
+    }
+
+    pub fn is_marquee_animating(&self) -> bool {
+        self.marquee.overflow_width > 0.0
+    }
+
+    pub fn set_marquee_overflow(&mut self, overflow: f32) {
+        self.marquee.overflow_width = overflow;
+        if overflow <= 0.0 {
+            self.marquee.reset();
+        }
     }
 
     pub fn next_subitem(&mut self) {
         self.selected_subitem = self
             .inner
             .subentries_len(self.filtered_lines.index(self.selected_item).unwrap_or(0))
-            .min(self.selected_subitem + 1)
+            .min(self.selected_subitem + 1);
+        self.mark_dirty();
     }
 
     pub fn prev_subitem(&mut self) {
-        self.selected_subitem = self.selected_subitem.saturating_sub(1)
+        self.selected_subitem = self.selected_subitem.saturating_sub(1);
+        self.mark_dirty();
     }
 
     pub fn raw_input(&self) -> &str {

@@ -1,6 +1,5 @@
 use std::f32::consts;
 
-use oneshot::Sender;
 pub use raqote::Point;
 use raqote::{DrawOptions, Path, PathBuilder, Source, StrokeStyle};
 
@@ -8,6 +7,7 @@ pub use background::Params as BgParams;
 pub use input_text::Params as InputTextParams;
 pub use list_view::{ListItem, Params as ListParams};
 
+use crate::feedback::{self, Feedback, FeedbackListener};
 use crate::{style::Radius, Color};
 
 pub type DrawTarget<'a> = raqote::DrawTarget<&'a mut [u32]>;
@@ -36,8 +36,8 @@ pub enum Widget<'a, It = std::iter::Empty<ListItem<'a>>> {
 
 pub struct Drawables<'a> {
     counter: u32,
-    tx: Option<oneshot::Sender<usize>>,
-    rx: Option<oneshot::Receiver<usize>>,
+    feedback: Option<Feedback>,
+    listener: Option<FeedbackListener>,
     state: &'a mut crate::state::State,
     background_config: BgParams,
     input_config: InputTextParams<'a>,
@@ -55,12 +55,12 @@ impl<'a> Drawables<'a> {
                 self.state.skip_offset(),
                 self.state.selected_item(),
                 self.state.selected_has_subitems(),
-                self.tx.take().unwrap(),
+                self.feedback.take().unwrap(),
+                self.state.marquee_scroll_offset(),
                 &self.list_config,
             ),
             4 => {
-                self.state
-                    .update_skip_offset(self.rx.take().unwrap().recv().unwrap());
+                self.listener.take().unwrap().apply(self.state);
                 return None;
             }
             _ => return None,
@@ -94,12 +94,12 @@ pub fn make_drawables<'c: 'it, 's: 'it, 'it>(
         None
     };
 
-    let (tx, rx) = oneshot::channel();
+    let (feedback, listener) = feedback::channel();
     (
         Drawables {
             counter: 0,
-            tx: Some(tx),
-            rx: Some(rx),
+            feedback: Some(feedback),
+            listener: Some(listener),
             state,
 
             background_config,
@@ -120,7 +120,8 @@ impl<'a, It> Widget<'a, It> {
         skip_offset: usize,
         selected_item: usize,
         has_subitems: bool,
-        tx: Sender<usize>,
+        feedback: Feedback,
+        marquee_scroll_offset: f32,
         params: &'a ListParams,
     ) -> Self {
         Self::ListView(list_view::ListView::new(
@@ -128,7 +129,8 @@ impl<'a, It> Widget<'a, It> {
             skip_offset,
             selected_item,
             has_subitems,
-            tx,
+            feedback,
+            marquee_scroll_offset,
             params,
         ))
     }

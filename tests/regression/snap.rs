@@ -6,6 +6,11 @@ use yofi::window::Params;
 pub enum Action {
     Type(&'static str),
     NextItem,
+    /// Simulate `count` frame callbacks at `fps` to advance marquee animation.
+    SimulateFrames {
+        count: u32,
+        fps: u32,
+    },
 }
 
 fn to_entries(items: &[&str]) -> Vec<String> {
@@ -109,13 +114,6 @@ pub fn run_regression_with_padding(
     let mode = Mode::dialog_from_lines(entries);
     let mut state = State::new(mode);
 
-    for action in actions {
-        match action {
-            Action::Type(s) => state.append_to_input(s),
-            Action::NextItem => state.next_item(),
-        }
-    }
-
     let params: Params = config.param();
     let scale = params.scale.unwrap_or(1);
     let content_w = params.width * u32::from(scale);
@@ -128,6 +126,22 @@ pub fn run_regression_with_padding(
         (padding.0 as f32, padding.1 as f32),
         (content_w as f32, content_h as f32),
     );
+
+    for action in actions {
+        match action {
+            Action::Type(s) => state.append_to_input(s),
+            Action::NextItem => state.next_item(),
+            Action::SimulateFrames { count, fps } => {
+                // First render establishes overflow_width via the feedback channel.
+                yofi::render_to_buffer(&config, &mut state, scale, &mut buffer, viewport);
+                let frame_ms = 1000 / fps;
+                for i in 0..*count {
+                    state.update_marquee(i * frame_ms);
+                }
+            }
+        }
+    }
+
     yofi::render_to_buffer(&config, &mut state, scale, &mut buffer, viewport);
 
     let actual_rgba = unpremultiply_to_rgba(&buffer);

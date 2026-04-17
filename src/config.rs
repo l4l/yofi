@@ -105,6 +105,8 @@ struct ListItems {
     margin: Margin,
     #[def = "false"]
     hide_actions: bool,
+    #[def = "false"]
+    hide_marquee: bool,
     #[def = "60.0"]
     action_left_margin: f32,
     #[def = "2.0"]

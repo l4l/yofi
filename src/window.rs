@@ -66,8 +66,8 @@ pub struct Window {
     key_modifiers: sctk::seat::keyboard::Modifiers,
     wheel_scroll_pending: f64,
 
+    qh: QueueHandle<Window>,
     loop_handle: LoopHandle<'static, Window>,
-    dirty: bool,
     exit: bool,
 
     error: Option<anyhow::Error>,
@@ -187,8 +187,8 @@ impl Window {
                 },
                 key_modifiers: Default::default(),
                 wheel_scroll_pending: 0.0,
+                qh,
                 loop_handle: event_loop.handle(),
-                dirty: true,
                 exit: false,
                 error: None,
             },
@@ -213,7 +213,7 @@ impl Window {
         if new_w != self.width || new_h != self.height {
             self.width = new_w;
             self.height = new_h;
-            self.dirty = true;
+            self.state.mark_dirty();
         }
     }
 
@@ -235,7 +235,7 @@ impl Window {
     }
 
     pub fn redraw_if_dirty(&mut self) {
-        if !self.dirty {
+        if !self.state.is_dirty() {
             return;
         }
         self.draw();
@@ -318,10 +318,13 @@ impl Window {
         crate::render_to_buffer(&self.config, &mut self.state, self.scale, canvas, viewport);
 
         self.surface.damage_buffer(0, 0, width, height);
+        if self.state.is_marquee_animating() {
+            self.surface.frame(&self.qh, (*self.surface).clone());
+        }
         buffer.attach_to(&self.surface).expect("buffer attach");
         self.buffer = Some(buffer);
         self.surface.commit();
-        self.dirty = false;
+        self.state.clear_dirty();
     }
 
     pub fn asked_exit(&self) -> bool {

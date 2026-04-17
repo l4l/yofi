@@ -1,14 +1,17 @@
 use std::marker::PhantomData;
 
-use oneshot::Sender;
-use raqote::{AntialiasMode, DrawOptions, Image, Point};
+use raqote::{AntialiasMode, DrawOptions, Image, IntPoint, IntRect, Point};
 
 use super::{DrawTarget, Drawable, Space};
+use crate::feedback::Feedback;
 use crate::font::{Font, FontBackend, FontColor};
 use crate::state::ContinuousMatch;
 use crate::style::Margin;
 use crate::Color;
 use unicode_segmentation::UnicodeSegmentation;
+
+// Padding past the measured text width so the shifted end-point stays past the last glyph.
+const MARQUEE_DRAW_PADDING: f32 = 100.0;
 
 pub struct Params {
     pub font: Font,
@@ -20,6 +23,7 @@ pub struct Params {
     pub fallback_icon: Option<crate::icon::Icon>,
     pub margin: Margin,
     pub hide_actions: bool,
+    pub hide_marquee: bool,
     pub action_left_margin: f32,
     pub item_spacing: f32,
     pub icon_spacing: f32,
@@ -37,7 +41,8 @@ pub struct ListView<'a, It> {
     skip_offset: usize,
     selected_item: usize,
     has_subitems: bool,
-    new_skip: Sender<usize>,
+    feedback: Feedback,
+    marquee_scroll_offset: f32,
     params: &'a Params,
     _tparam: PhantomData<&'a ()>,
 }
@@ -79,7 +84,8 @@ impl<'a, It> ListView<'a, It> {
         skip_offset: usize,
         selected_item: usize,
         has_subitems: bool,
-        new_skip: Sender<usize>,
+        feedback: Feedback,
+        marquee_scroll_offset: f32,
         params: &'a Params,
     ) -> Self {
         Self {
@@ -87,7 +93,8 @@ impl<'a, It> ListView<'a, It> {
             skip_offset,
             selected_item,
             has_subitems,
-            new_skip,
+            feedback,
+            marquee_scroll_offset,
             params,
             _tparam: PhantomData,
         }
@@ -98,7 +105,7 @@ impl<'a, It> Drawable for ListView<'a, It>
 where
     It: Iterator<Item = ListItem<'a>>,
 {
-    fn draw(self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
+    fn draw(mut self, dt: &mut DrawTarget<'_>, scale: u16, space: Space, point: Point) -> Space {
         let (margin, item_spacing, entry_height) = self.params.common_bounds(scale);
         let icon_size = self.params.icon_size.unwrap_or(0) * scale;
         let icon_spacing = self.params.icon_spacing * f32::from(scale);
@@ -124,7 +131,7 @@ where
             (self.selected_item - self.skip_offset, self.skip_offset)
         };
 
-        self.new_skip.send(skip_offset).unwrap();
+        self.feedback.report_skip_offset(skip_offset);
 
         for (i, item) in self
             .items
@@ -207,7 +214,40 @@ where
             };
 
             let font = &self.params.font;
-            font.draw(dt, item.name, font_size, pos, end_pos, color, &draw_opts);
+
+            if i == selected_item && !self.params.hide_marquee {
+                let available_width = end_pos.x - pos.x;
+                let text_width = font.measure_text_width(item.name, font_size);
+
+                if text_width > available_width {
+                    self.feedback
+                        .report_marquee_overflow(text_width - available_width);
+
+                    let clip = IntRect::new(
+                        IntPoint::new(pos.x as i32, 0),
+                        IntPoint::new(end_pos.x as i32, dt.height()),
+                    );
+                    dt.push_clip_rect(clip);
+
+                    let shifted_pos = Point::new(pos.x - self.marquee_scroll_offset, pos.y);
+                    let wide_end = Point::new(pos.x + text_width + MARQUEE_DRAW_PADDING, end_pos.y);
+                    font.draw(
+                        dt,
+                        item.name,
+                        font_size,
+                        shifted_pos,
+                        wide_end,
+                        color,
+                        &draw_opts,
+                    );
+
+                    dt.pop_clip();
+                } else {
+                    font.draw(dt, item.name, font_size, pos, end_pos, color, &draw_opts);
+                }
+            } else {
+                font.draw(dt, item.name, font_size, pos, end_pos, color, &draw_opts);
+            }
 
             if i == selected_item && has_subname {
                 if let Some(subname) = item.subname {
@@ -258,6 +298,7 @@ mod tests {
                 right: 3.,
             },
             hide_actions: false,
+            hide_marquee: false,
             action_left_margin: 0.,
             item_spacing: 1.5,
             icon_spacing: 0.5,

@@ -32,7 +32,6 @@ impl WindowHandler for Window {
             window.set_title(crate::prog_name!().to_owned());
             window.unset_fullscreen();
             self.configured_surface = true;
-            self.dirty = true;
             self.draw();
         }
     }

@@ -56,3 +56,16 @@ fn long_input() {
         (20, 10),
     );
 }
+
+#[test]
+fn marquee_long_selected() {
+    // Past the 1s initial pause, scroll should be mid-animation.
+    run_regression(
+        "marquee_long_selected",
+        test_entries_with_long_name(),
+        &[Action::SimulateFrames {
+            count: 120,
+            fps: 60,
+        }],
+    );
+}
