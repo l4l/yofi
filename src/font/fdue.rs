@@ -182,6 +182,24 @@ impl FontBackend for Font {
         Font::from_path(path, None)
     }
 
+    fn measure_text_width(&self, text: &str, font_size: f32) -> f32 {
+        let mut layout = self.layout.borrow_mut();
+        layout.reset(&LayoutSettings {
+            x: 0.0,
+            y: 0.0,
+            max_height: Some(font_size),
+            vertical_align: VerticalAlign::Middle,
+            wrap_style: WrapStyle::Letter,
+            ..LayoutSettings::default()
+        });
+        layout.append(&[&self.inner], &TextStyle::new(text, font_size, 0));
+        layout
+            .glyphs()
+            .last()
+            .map(|g| g.x + g.width as f32)
+            .unwrap_or(0.0)
+    }
+
     fn draw(
         &self,
         dt: &mut DrawTarget,

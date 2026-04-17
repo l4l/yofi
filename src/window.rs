@@ -66,6 +66,7 @@ pub struct Window {
     key_modifiers: sctk::seat::keyboard::Modifiers,
     wheel_scroll_pending: f64,
 
+    qh: QueueHandle<Window>,
     loop_handle: LoopHandle<'static, Window>,
     exit: bool,
 
@@ -186,6 +187,7 @@ impl Window {
                 },
                 key_modifiers: Default::default(),
                 wheel_scroll_pending: 0.0,
+                qh,
                 loop_handle: event_loop.handle(),
                 exit: false,
                 error: None,
@@ -316,6 +318,9 @@ impl Window {
         crate::render_to_buffer(&self.config, &mut self.state, self.scale, canvas, viewport);
 
         self.surface.damage_buffer(0, 0, width, height);
+        if self.state.is_marquee_animating() {
+            self.surface.frame(&self.qh, (*self.surface).clone());
+        }
         buffer.attach_to(&self.surface).expect("buffer attach");
         self.buffer = Some(buffer);
         self.surface.commit();

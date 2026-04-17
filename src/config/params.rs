@@ -78,6 +78,7 @@ impl<'a> From<&'a Config> for ListParams {
                 .map(Icon::new),
             margin: config.list_items.margin.clone(),
             hide_actions: config.list_items.hide_actions,
+            hide_marquee: config.list_items.hide_marquee,
             action_left_margin: config.list_items.action_left_margin,
             item_spacing: config.list_items.item_spacing,
             icon_spacing: config.list_items.icon_spacing,

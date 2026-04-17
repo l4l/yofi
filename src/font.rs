@@ -25,6 +25,8 @@ pub trait FontBackend: Sized {
 
     fn font_by_path(path: &Path) -> Result<Self>;
 
+    fn measure_text_width(&self, text: &str, font_size: f32) -> f32;
+
     #[allow(clippy::too_many_arguments)]
     fn draw(
         &self,

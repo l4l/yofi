@@ -6,6 +6,7 @@
 - Add flag to hide input bar.
 - Adaptive height config option.
 - Quit on outer region click.
+- Marquee-like animation for the itmes that do not fit the window.
 
 ## Changes
 

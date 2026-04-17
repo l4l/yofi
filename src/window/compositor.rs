@@ -49,7 +49,14 @@ impl CompositorHandler for Window {
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
         _surface: &WlSurface,
-        _time: u32,
+        time: u32,
     ) {
+        self.state.update_marquee(time);
+        // On throttle-skipped ticks keep the frame-callback chain alive with
+        // a bare re-request + commit; Wayland ties callbacks to commits.
+        if self.state.is_marquee_animating() && !self.state.is_dirty() {
+            self.surface.frame(&self.qh, (*self.surface).clone());
+            self.surface.commit();
+        }
     }
 }

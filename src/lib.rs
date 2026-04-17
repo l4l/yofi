@@ -5,6 +5,7 @@ pub(crate) use draw::DrawTarget;
 mod color;
 mod draw;
 mod exec;
+mod feedback;
 mod font;
 mod icon;
 mod input_parser;
@@ -24,6 +25,7 @@ macro_rules! prog_name {
     };
 }
 
+#[derive(Clone, Copy)]
 pub struct Viewport {
     buf_size: (i32, i32),
     content_offset: (f32, f32),
