@@ -40,10 +40,13 @@
 
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
-            rustc
             cargo
-            pkg-config
+            clippy
             libxkbcommon
+            pkg-config
+            rust-analyzer
+            rustc
+            rustfmt
           ];
 
           LD_LIBRARY_PATH = rpath;

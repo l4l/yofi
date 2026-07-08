@@ -6,12 +6,14 @@
 - Add flag to hide input bar.
 - Adaptive height config option.
 - Quit on outer region click.
+- yofi.toml is now supported.
 
 ## Changes
 
 - Log to stderr instead of stdout.
 - Prefer earlier match with same score for input search.
 - Empty subitems now hidden.
+- yofi.config is deprecated.
 
 ## Fixes
 
