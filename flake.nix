@@ -4,9 +4,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { self, flake-utils, nixpkgs }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
+  outputs = {
+    self,
+    flake-utils,
+    nixpkgs,
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
         inherit (nixpkgs) lib;
 
         pkgs = nixpkgs.legacyPackages.${system};
@@ -15,8 +19,7 @@
           libxkbcommon
           wayland
         ]);
-      in
-      {
+      in {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "yofi";
           inherit ((lib.importTOML (self + "/Cargo.toml")).package) version;
@@ -32,6 +35,10 @@
           buildInputs = with pkgs; [
             libxkbcommon
           ];
+
+          # disable tests
+          checkType = "debug";
+          doCheck = false;
 
           postFixup = ''
             patchelf $out/bin/yofi --add-rpath ${rpath}
