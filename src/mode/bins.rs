@@ -74,10 +74,13 @@ impl BinsMode {
                 .filter(|&&cnt| cnt > 1)
                 .is_none()
             {
-                log::warn!("file name {} found multiple times, skipping", bin.fname);
                 continue;
             }
 
+            log::debug!(
+                "file name {} found multiple times, showing full path",
+                bin.fname
+            );
             entry_name_cache.insert(bin.path.clone(), format!("{} ({})", bin.fname, bin.path));
         }
 
